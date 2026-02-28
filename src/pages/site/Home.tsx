@@ -17,7 +17,6 @@ import {
   Terminal,
   Globe,
   Server,
-  Star,
   Monitor,
   Bot,
   Mail,
@@ -38,12 +37,13 @@ import {
   Radio,
   ShieldCheck,
   Smartphone,
-  ChevronRight,
   ArrowUpRight,
-  Grid3x3,
+  Check,
+  X,
+  MousePointer,
 } from "lucide-react";
 import { useAppStore } from "@/stores/app-store";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 // ──────────────────────────────────────────────
 // Theme Toggle (floating)
@@ -79,13 +79,13 @@ function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="fixed bottom-5 right-5 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-neutral-800 bg-black shadow-2xl shadow-black/50 transition-all hover:scale-110 hover:border-claw-red/50 active:scale-95"
+      className="fixed bottom-5 right-5 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-900 border border-neutral-800 shadow-2xl shadow-black/60 transition-all hover:scale-110 hover:border-claw-red/40 active:scale-95"
       aria-label="Toggle theme"
     >
       {isDark ? (
-        <Sun className="h-4 w-4 text-white" />
+        <Sun className="h-4 w-4 text-neutral-300" />
       ) : (
-        <Moon className="h-4 w-4 text-white" />
+        <Moon className="h-4 w-4 text-neutral-300" />
       )}
     </button>
   );
@@ -95,297 +95,223 @@ function ThemeToggle() {
 // Shared micro-components
 // ──────────────────────────────────────────────
 
-function SectionLabel({
+function Tag({
   children,
   icon: Icon,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   icon?: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-neutral-800 dark:border-neutral-700 bg-neutral-950 dark:bg-neutral-900 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-400 mb-6">
-      {Icon && <Icon className="h-3 w-3 text-claw-red" />}
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-claw-red">
+      {Icon && <Icon className="h-3 w-3" />}
       {children}
+    </span>
+  );
+}
+
+function Divider() {
+  return (
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="h-px bg-neutral-800/50" />
     </div>
   );
 }
 
-function GridLine({
-  orientation = "horizontal",
-  className = "",
-}: {
-  orientation?: "horizontal" | "vertical";
-  className?: string;
-}) {
-  if (orientation === "vertical") {
-    return (
-      <div
-        className={`w-px bg-gradient-to-b from-transparent via-neutral-800/50 to-transparent ${className}`}
-      />
-    );
-  }
-  return (
-    <div
-      className={`h-px bg-gradient-to-r from-transparent via-neutral-800/50 to-transparent ${className}`}
-    />
-  );
-}
-
 // ──────────────────────────────────────────────
-// 1 · Hero — Asymmetric Grid
+// 1 · Hero — Cinematic, centered, full-impact
 // ──────────────────────────────────────────────
 
 function Hero() {
   return (
     <section className="relative overflow-hidden">
-      {/* Subtle grid background */}
+      {/* Background atmosphere */}
       <div className="absolute inset-0 -z-10">
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: `linear-gradient(to right, oklch(0.5 0 0) 1px, transparent 1px), linear-gradient(to bottom, oklch(0.5 0 0) 1px, transparent 1px)`,
-            backgroundSize: "80px 80px",
-          }}
-        />
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[700px] w-[700px] rounded-full bg-claw-red/[0.03] blur-[180px]" />
+        <div className="absolute top-[20%] left-1/2 -translate-x-1/2 h-[600px] w-[900px] rounded-full bg-claw-red/[0.035] blur-[150px]" />
+        <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-background to-transparent" />
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Top stat strip */}
-        <div className="grid grid-cols-3 border-b border-neutral-800/50 dark:border-neutral-800/40">
-          {[
-            { value: "240k+", label: "GitHub Stars" },
-            { value: "30s", label: "Deploy Time" },
-            { value: "920+", label: "Contributors" },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="flex flex-col items-center py-6 border-r last:border-r-0 border-neutral-800/50 dark:border-neutral-800/40"
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col items-center text-center pt-20 sm:pt-28 lg:pt-36 pb-8">
+          {/* Badge */}
+          <div className="mb-8 animate-fade-in">
+            <span className="inline-flex items-center gap-2 rounded-full bg-claw-red/8 border border-claw-red/15 px-4 py-1.5 text-[12px] font-semibold text-claw-red backdrop-blur-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-claw-red opacity-40" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-claw-red" />
+              </span>
+              Now in Beta
+            </span>
+          </div>
+
+          {/* Headline — big, centered, dramatic */}
+          <h1 className="max-w-4xl text-[clamp(2.5rem,6vw,4.5rem)] font-black leading-[1.05] tracking-tight animate-slide-up">
+            <span className="text-foreground">Your AI agent,</span>
+            <br />
+            <span className="text-gradient-red animate-text-glow inline-block">
+              deployed in 30 seconds.
+            </span>
+          </h1>
+
+          {/* Sub — tight, clear */}
+          <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-neutral-400 animate-fade-in [animation-delay:200ms]">
+            Clawed Chat gives you a fully deployed{" "}
+            <a
+              href="https://github.com/openclaw/openclaw"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-claw-red hover:text-claw-red-bright transition-colors underline underline-offset-[3px] decoration-claw-red/30 hover:decoration-claw-red/60"
             >
-              <span className="text-2xl font-black text-foreground tracking-tight">
-                {stat.value}
-              </span>
-              <span className="text-[10px] uppercase tracking-[0.15em] text-neutral-500 mt-1">
-                {stat.label}
-              </span>
-            </div>
-          ))}
+              OpenClaw
+            </a>{" "}
+            agent — on your hardware or in the cloud. Watch it work live. Talk
+            to it from smart glasses. Control it from anywhere.
+          </p>
+
+          {/* CTAs */}
+          <div className="mt-10 flex flex-col sm:flex-row items-center gap-3 animate-fade-in [animation-delay:400ms]">
+            <Button
+              size="lg"
+              asChild
+              className="gap-2 px-8 h-12 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[15px] rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_24px_rgba(200,0,0,0.15)] hover:shadow-[0_0_32px_rgba(200,0,0,0.25)]"
+            >
+              <Link to="/sign-in">
+                Deploy your agent
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="gap-2 px-8 h-12 rounded-xl border-neutral-800 hover:border-neutral-700 text-neutral-300 hover:text-white hover:bg-white/[0.03] font-semibold text-[15px] transition-all"
+            >
+              <Link to="/glasses">
+                <Glasses className="h-4 w-4 text-claw-red" />
+                Try the glasses demo
+              </Link>
+            </Button>
+          </div>
+
+          <p className="mt-5 text-[12px] text-neutral-600 animate-fade-in [animation-delay:600ms]">
+            Free tier available · Smart glasses included · No DevOps required
+          </p>
         </div>
 
-        {/* Main hero grid */}
-        <div className="grid lg:grid-cols-[1fr,1px,1fr] min-h-[70vh] lg:min-h-[75vh]">
-          {/* Left — Copy */}
-          <div className="flex flex-col justify-center py-16 sm:py-20 lg:py-24 lg:pr-12">
-            <div className="inline-flex items-center gap-2 rounded-full bg-claw-red/10 border border-claw-red/20 px-3.5 py-1 text-[11px] font-semibold text-claw-red w-fit mb-8 animate-fade-in">
-              <Sparkles className="h-3 w-3" />
-              Powered by OpenClaw
-            </div>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-black tracking-tight leading-[1.05] animate-slide-up">
-              <span className="text-foreground">Deploy your</span>
-              <br />
-              <span className="text-foreground">AI agent.</span>
-              <br />
-              <span
-                className="text-gradient-red animate-text-glow"
-                style={{ animationDelay: "0.4s" }}
-              >
-                Talk to it
-              </span>
-              <br />
-              <span
-                className="text-gradient-red animate-text-glow"
-                style={{ animationDelay: "0.4s" }}
-              >
-                on glasses.
-              </span>
-            </h1>
-
-            <p
-              className="mt-6 max-w-md text-neutral-400 leading-relaxed text-[15px] animate-fade-in"
-              style={{ animationDelay: "0.25s" }}
-            >
-              Clawed Chat deploys an{" "}
-              <a
-                href="https://github.com/openclaw/openclaw"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-claw-red hover:text-claw-red-bright underline underline-offset-2 transition-colors"
-              >
-                OpenClaw
-              </a>{" "}
-              agent in one click — on your hardware or in the cloud. Then talk
-              to it from smart glasses, watch it work live, and control it from
-              anywhere.
-            </p>
-
-            <div
-              className="mt-8 flex flex-col sm:flex-row items-start gap-3 animate-fade-in"
-              style={{ animationDelay: "0.45s" }}
-            >
-              <Button
-                size="lg"
-                asChild
-                className="gap-2.5 px-8 bg-black hover:bg-neutral-900 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-black font-bold border border-neutral-700 dark:border-neutral-300 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-black/20 dark:shadow-white/10"
-              >
-                <Link to="/sign-in">
-                  Deploy your agent
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                asChild
-                className="gap-2 px-8 border-neutral-700 dark:border-neutral-600 text-foreground hover:bg-neutral-900 dark:hover:bg-neutral-800 hover:border-neutral-600 transition-all"
-              >
-                <Link to="/glasses">
-                  <Glasses className="h-4 w-4 text-claw-red" />
-                  Glasses demo
-                </Link>
-              </Button>
-            </div>
-
-            <p
-              className="mt-5 text-[11px] text-neutral-600 dark:text-neutral-500 tracking-wide animate-fade-in"
-              style={{ animationDelay: "0.6s" }}
-            >
-              30-second deploy · Smart glasses included · Free tier available
-            </p>
+        {/* 3D Claw — hero visual */}
+        <div className="relative flex items-center justify-center pb-12 sm:pb-16 animate-fade-in-scale [animation-delay:300ms]">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="h-[320px] w-[320px] sm:h-[400px] sm:w-[400px] rounded-full bg-claw-red/[0.04] blur-[80px] animate-pulse-subtle" />
           </div>
 
-          {/* Vertical divider */}
-          <div className="hidden lg:block w-px bg-neutral-800/50 dark:bg-neutral-800/40" />
-
-          {/* Right — 3D Claw */}
-          <div
-            className="relative flex items-center justify-center py-12 lg:py-0 lg:pl-8 animate-fade-in-scale"
-            style={{ animationDelay: "0.3s" }}
-          >
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="h-[350px] w-[350px] sm:h-[420px] sm:w-[420px] rounded-full bg-claw-red/[0.04] blur-[80px] animate-pulse-subtle" />
-            </div>
-
-            {/* Rotating arcs */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <svg
-                viewBox="0 0 500 500"
-                className="w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] lg:w-[460px] lg:h-[460px] animate-spin-slow"
-                style={{ animationDuration: "50s" }}
-              >
-                <circle
-                  cx="250"
-                  cy="250"
-                  r="200"
-                  fill="none"
-                  stroke="var(--claw-red)"
-                  strokeWidth="0.5"
-                  opacity="0.1"
-                  strokeDasharray="8 16"
-                />
-                <circle
-                  cx="250"
-                  cy="250"
-                  r="160"
-                  fill="none"
-                  stroke="var(--claw-red)"
-                  strokeWidth="0.3"
-                  opacity="0.06"
-                  strokeDasharray="4 20"
-                />
-                <circle
-                  cx="50"
-                  cy="250"
-                  r="2"
-                  fill="var(--claw-red)"
-                  opacity="0.2"
-                />
-                <circle
-                  cx="450"
-                  cy="250"
-                  r="2"
-                  fill="var(--claw-red)"
-                  opacity="0.15"
-                />
-              </svg>
-            </div>
-
-            <ClawScene
-              className="w-[320px] h-[320px] sm:w-[420px] sm:h-[420px] lg:w-[480px] lg:h-[480px]"
-              scale={0.055}
-              showParticles={true}
-              showRing={false}
-              showShadow={true}
-              showControls={false}
-              autoRotate={true}
-              rotationSpeed={0.005}
-              cameraPosition={[0, 0.8, 4.2]}
-              cameraFov={40}
-            />
-
-            {/* Corner accent */}
-            <div className="absolute top-4 right-4 flex items-center gap-1.5 text-[10px] text-neutral-600">
-              <div className="h-1.5 w-1.5 rounded-full bg-claw-red animate-pulse" />
-              LIVE 3D
-            </div>
+          {/* Orbit ring */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <svg
+              viewBox="0 0 500 500"
+              className="w-[280px] h-[280px] sm:w-[380px] sm:h-[380px] lg:w-[440px] lg:h-[440px] animate-spin-slow"
+              style={{ animationDuration: "50s" }}
+            >
+              <circle
+                cx="250"
+                cy="250"
+                r="200"
+                fill="none"
+                stroke="var(--claw-red)"
+                strokeWidth="0.4"
+                opacity="0.1"
+                strokeDasharray="6 14"
+              />
+              <circle
+                cx="50"
+                cy="250"
+                r="2"
+                fill="var(--claw-red)"
+                opacity="0.2"
+              />
+              <circle
+                cx="450"
+                cy="250"
+                r="2"
+                fill="var(--claw-red)"
+                opacity="0.15"
+              />
+            </svg>
           </div>
+
+          <ClawScene
+            className="w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] lg:w-[480px] lg:h-[480px]"
+            scale={0.055}
+            showParticles={true}
+            showRing={false}
+            showShadow={true}
+            showControls={false}
+            autoRotate={true}
+            rotationSpeed={0.005}
+            cameraPosition={[0, 0.8, 4.2]}
+            cameraFov={40}
+          />
         </div>
       </div>
-
-      <GridLine />
     </section>
   );
 }
 
 // ──────────────────────────────────────────────
-// 2 · The Problem / Solution — Split Card Grid
+// 2 · The Problem / Solution
 // ──────────────────────────────────────────────
 
 function ProblemSolution() {
   return (
-    <section className="relative py-20 sm:py-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <SectionLabel icon={Zap}>The Problem</SectionLabel>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+    <section className="relative py-24 sm:py-32">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="max-w-2xl mb-16">
+          <Tag icon={Zap}>The Problem</Tag>
+          <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
             OpenClaw is <span className="text-gradient-red">incredible</span>.
-            <br className="hidden sm:block" />
+            <br />
             Setting it up is not.
           </h2>
-          <p className="mt-4 text-neutral-500 max-w-xl mx-auto leading-relaxed">
-            OpenClaw is the hottest open-source AI project — 240k+ stars on
-            GitHub. It's a personal AI agent that actually does things. Think
-            Jarvis, but real and open source.
+          <p className="mt-4 text-neutral-400 leading-relaxed max-w-lg">
+            OpenClaw is the hottest open-source AI agent — it browses the web,
+            manages files, sends emails, controls your desktop. Think Jarvis,
+            but real and open source. The hard part? Getting it running.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-0 border border-neutral-800/60 dark:border-neutral-800/50 rounded-2xl overflow-hidden">
+        {/* Comparison — two columns, clean contrast */}
+        <div className="grid md:grid-cols-2 gap-5">
           {/* Without */}
-          <div className="p-8 sm:p-10 bg-neutral-950/50 dark:bg-neutral-950/30 border-b md:border-b-0 md:border-r border-neutral-800/60 dark:border-neutral-800/50">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-3 w-3 rounded-full bg-red-600 shadow-lg shadow-red-600/30" />
-              <span className="text-sm font-bold tracking-wide uppercase text-red-500">
+          <div className="rounded-2xl bg-neutral-950 border border-neutral-800/50 p-8 sm:p-10">
+            <div className="flex items-center gap-2.5 mb-8">
+              <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
+              <span className="text-[13px] font-bold text-red-400 uppercase tracking-wider">
                 Without Clawed
               </span>
             </div>
 
-            <div className="space-y-2 font-mono text-xs mb-6">
+            {/* Terminal lines */}
+            <div className="space-y-2 mb-8">
               {[
-                { text: "$ git clone openclaw && cd openclaw", error: false },
-                { text: "$ docker compose up", error: false },
-                { text: "ERROR: port 5432 already in use", error: true },
-                { text: "Build failed. 14 errors.", error: true },
+                { text: "$ git clone openclaw && cd openclaw", ok: true },
+                { text: "$ docker compose up", ok: true },
+                { text: "ERROR: port 5432 already in use", ok: false },
+                { text: "Build failed. 14 errors.", ok: false },
               ].map((line, i) => (
                 <div
                   key={i}
-                  className={`rounded-lg px-4 py-2.5 ${line.error ? "bg-red-950/40 text-red-400 border border-red-900/30" : "bg-neutral-900 text-neutral-500 border border-neutral-800/40"}`}
+                  className={`font-mono text-[12px] px-4 py-2.5 rounded-lg ${
+                    line.ok
+                      ? "bg-neutral-900/80 text-neutral-500"
+                      : "bg-red-950/30 text-red-400/80 border border-red-900/20"
+                  }`}
                 >
                   {line.text}
                 </div>
               ))}
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {[
                 "SSH into servers, configure Docker",
                 "Manage API keys, DNS, firewalls",
@@ -394,9 +320,9 @@ function ProblemSolution() {
               ].map((item) => (
                 <div
                   key={item}
-                  className="flex items-center gap-2.5 text-sm text-neutral-500"
+                  className="flex items-center gap-3 text-[14px] text-neutral-500"
                 >
-                  <span className="text-red-500 text-xs">✗</span>
+                  <X className="h-3.5 w-3.5 text-red-500/70 shrink-0" />
                   {item}
                 </div>
               ))}
@@ -404,27 +330,29 @@ function ProblemSolution() {
           </div>
 
           {/* With */}
-          <div className="p-8 sm:p-10 bg-neutral-950/20 dark:bg-neutral-900/20 relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-claw-red/[0.04] blur-[60px] rounded-full" />
+          <div className="rounded-2xl bg-neutral-950 border border-neutral-800/50 p-8 sm:p-10 relative overflow-hidden">
+            {/* Subtle glow */}
+            <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-emerald-500/[0.06] blur-[60px]" />
 
-            <div className="flex items-center gap-3 mb-6 relative z-10">
-              <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30 animate-pulse" />
-              <span className="text-sm font-bold tracking-wide uppercase text-emerald-500">
+            <div className="flex items-center gap-2.5 mb-8 relative z-10">
+              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[13px] font-bold text-emerald-400 uppercase tracking-wider">
                 With Clawed Chat
               </span>
             </div>
 
-            <div className="rounded-xl bg-black border border-neutral-800/60 px-5 py-4 mb-6 relative z-10">
-              <div className="flex items-center gap-2.5 text-emerald-400 text-sm font-mono">
-                <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            {/* Live status */}
+            <div className="rounded-xl bg-black/60 border border-neutral-800/40 px-5 py-4 mb-8 relative z-10">
+              <div className="flex items-center gap-2.5 text-emerald-400 font-mono text-[13px]">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 Your OpenClaw agent is live.
               </div>
-              <div className="mt-2 text-[11px] text-neutral-600 font-mono">
-                Ready in 28 seconds.
+              <div className="mt-1.5 text-[11px] text-neutral-600 font-mono">
+                Deployed in 28 seconds.
               </div>
             </div>
 
-            <div className="space-y-2.5 relative z-10">
+            <div className="space-y-3 relative z-10">
               {[
                 "One-click cloud deploy or Mac companion app",
                 "Talk to your agent via smart glasses",
@@ -433,9 +361,9 @@ function ProblemSolution() {
               ].map((item) => (
                 <div
                   key={item}
-                  className="flex items-center gap-2.5 text-sm text-neutral-300"
+                  className="flex items-center gap-3 text-[14px] text-neutral-300"
                 >
-                  <span className="text-emerald-500 text-xs">✓</span>
+                  <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                   {item}
                 </div>
               ))}
@@ -448,65 +376,61 @@ function ProblemSolution() {
 }
 
 // ──────────────────────────────────────────────
-// 3 · Three Pillars — Numbered Grid
+// 3 · Three Pillars
 // ──────────────────────────────────────────────
 
 const pillars = [
   {
     icon: Cloud,
     title: "One-click deploy",
-    desc: "Spin up a cloud VM or install on your Mac Mini — your OpenClaw agent is live in 30 seconds. No Docker, no SSH, no headaches.",
-    num: "01",
+    desc: "Spin up a cloud VM or install on your Mac Mini. Your OpenClaw agent is live in 30 seconds flat. No Docker. No SSH. No headaches.",
   },
   {
     icon: Glasses,
     title: "Smart glasses control",
-    desc: "Talk to your agent hands-free via smart glasses. Ask questions, get summaries, trigger actions — all by voice while you're on the go.",
-    num: "02",
+    desc: "Talk to your agent hands-free. Ask questions, get summaries, trigger actions — all by voice while you're walking to lunch.",
   },
   {
     icon: Tv,
     title: "Live desktop streaming",
-    desc: "Watch your agent work in real-time. See it browse the web, fill forms, move files. Take over with full remote desktop control anytime.",
-    num: "03",
+    desc: "Watch your agent browse the web, fill forms, move files — in real-time. Take over with full remote desktop control anytime.",
   },
 ];
 
 function Pillars() {
   return (
-    <section className="relative">
-      <GridLine />
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
-        <div className="text-center mb-14">
-          <SectionLabel icon={Grid3x3}>Core Pillars</SectionLabel>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+    <section className="relative py-24 sm:py-32">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <Tag>How it works</Tag>
+          <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
             Deploy. Watch.{" "}
             <span className="text-gradient-red">Talk to your lobster.</span>
           </h2>
-          <p className="mt-4 text-neutral-500 max-w-md mx-auto">
+          <p className="mt-4 text-neutral-400">
             We handle the infrastructure. You focus on telling your AI what to
             do.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-0 border border-neutral-800/60 dark:border-neutral-800/50 rounded-2xl overflow-hidden">
+        <div className="grid md:grid-cols-3 gap-5">
           {pillars.map((p, i) => (
             <div
               key={p.title}
-              className={`group p-8 sm:p-10 transition-all hover:bg-neutral-900/40 ${i < 2 ? "border-b md:border-b-0 md:border-r border-neutral-800/60 dark:border-neutral-800/50" : ""}`}
+              className="group rounded-2xl bg-neutral-950 border border-neutral-800/50 p-8 transition-all duration-300 hover:border-neutral-700/80 hover:bg-neutral-950/80"
             >
-              <div className="flex items-start justify-between mb-8">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-black border border-neutral-800 group-hover:border-claw-red/30 transition-colors">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/12 group-hover:border-claw-red/20 transition-colors">
                   <p.icon className="h-5 w-5 text-claw-red" />
                 </div>
-                <span className="text-[40px] font-black text-neutral-800/60 dark:text-neutral-800/40 leading-none select-none group-hover:text-claw-red/20 transition-colors">
-                  {p.num}
+                <span className="text-[48px] font-black text-neutral-900 leading-none select-none group-hover:text-neutral-800 transition-colors">
+                  {String(i + 1).padStart(2, "0")}
                 </span>
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">
                 {p.title}
               </h3>
-              <p className="text-sm text-neutral-500 leading-relaxed">
+              <p className="text-[14px] text-neutral-500 leading-relaxed">
                 {p.desc}
               </p>
             </div>
@@ -518,7 +442,7 @@ function Pillars() {
 }
 
 // ──────────────────────────────────────────────
-// 4 · How It Works — Horizontal Steps
+// 4 · How It Works — Steps
 // ──────────────────────────────────────────────
 
 function HowItWorks() {
@@ -551,74 +475,53 @@ function HowItWorks() {
   ];
 
   return (
-    <section className="relative bg-neutral-950/50 dark:bg-neutral-950/30">
-      <GridLine />
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
-        <div className="text-center mb-14">
-          <SectionLabel icon={Play}>How it works</SectionLabel>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+    <section className="relative py-24 sm:py-32 bg-neutral-950/40">
+      <Divider />
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32">
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <Tag icon={MousePointer}>5 steps</Tag>
+          <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
             From zero to AI agent in{" "}
             <span className="text-gradient-red">30 seconds</span>
           </h2>
         </div>
 
-        {/* Desktop: horizontal grid */}
-        <div className="hidden md:grid grid-cols-5 gap-0 border border-neutral-800/60 dark:border-neutral-800/50 rounded-2xl overflow-hidden">
-          {steps.map((step, i) => (
-            <div
-              key={step.label}
-              className={`group relative p-6 text-center transition-all hover:bg-neutral-900/50 ${i < 4 ? "border-r border-neutral-800/60 dark:border-neutral-800/50" : ""}`}
-            >
-              <div className="absolute top-3 left-3 text-[10px] font-bold text-claw-red">
-                {String(i + 1).padStart(2, "0")}
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-black border border-neutral-800 mx-auto mb-4 group-hover:border-claw-red/30 transition-colors">
-                <step.icon className="h-5 w-5 text-claw-red" />
-              </div>
-              <h3 className="text-sm font-bold text-foreground mb-1">
-                {step.label}
-              </h3>
-              <p className="text-xs text-neutral-500 leading-relaxed">
-                {step.desc}
-              </p>
-              {i < 4 && (
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 hidden lg:flex h-6 w-6 items-center justify-center rounded-full bg-neutral-900 border border-neutral-800">
-                  <ChevronRight className="h-3 w-3 text-neutral-600" />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        {/* Steps — horizontal on desktop */}
+        <div className="relative">
+          {/* Connecting line (desktop only) */}
+          <div className="hidden md:block absolute top-6 left-[10%] right-[10%] h-px bg-gradient-to-r from-neutral-800 via-claw-red/20 to-neutral-800" />
 
-        {/* Mobile: vertical */}
-        <div className="md:hidden space-y-4">
-          {steps.map((step, i) => (
-            <div key={step.label} className="flex gap-4 items-start">
-              <div className="relative shrink-0">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-black border border-neutral-800">
-                  <step.icon className="h-5 w-5 text-claw-red" />
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 md:gap-4">
+            {steps.map((step, i) => (
+              <div
+                key={step.label}
+                className="flex flex-col items-center text-center"
+              >
+                <div className="relative mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-900 border border-neutral-800 relative z-10 group-hover:border-claw-red/30">
+                    <step.icon className="h-5 w-5 text-claw-red" />
+                  </div>
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-claw-red text-white text-[10px] font-bold z-20">
+                    {i + 1}
+                  </span>
                 </div>
-                <div className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-claw-red text-white text-[10px] font-bold">
-                  {i + 1}
-                </div>
-              </div>
-              <div className="pt-1">
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 className="text-[13px] font-bold text-foreground mb-1">
                   {step.label}
                 </h3>
-                <p className="text-xs text-neutral-500 mt-0.5">{step.desc}</p>
+                <p className="text-[12px] text-neutral-500 leading-relaxed">
+                  {step.desc}
+                </p>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-      <GridLine />
     </section>
   );
 }
 
 // ──────────────────────────────────────────────
-// 5 · Capabilities — Dense 4×2 Bento Grid
+// 5 · Capabilities
 // ──────────────────────────────────────────────
 
 const capabilities = [
@@ -666,39 +569,38 @@ const capabilities = [
 
 function Capabilities() {
   return (
-    <section className="relative">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
-        <div className="text-center mb-14">
-          <SectionLabel icon={Bot}>Capabilities</SectionLabel>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-            Not just chat —{" "}
-            <span className="text-gradient-red">real work, done for you</span>
+    <section className="relative py-24 sm:py-32">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="max-w-2xl mb-16">
+          <Tag icon={Bot}>Capabilities</Tag>
+          <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
+            Not just chat.{" "}
+            <span className="text-gradient-red">Real work, done for you.</span>
           </h2>
-          <p className="mt-4 text-neutral-500 max-w-lg mx-auto">
+          <p className="mt-4 text-neutral-400 leading-relaxed">
             Your OpenClaw agent sees your screen, uses your apps, and actually
-            does things.
+            does things. It browses, types, clicks, and thinks — you just say
+            the word.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 border border-neutral-800/60 dark:border-neutral-800/50 rounded-2xl overflow-hidden [&>*]:border-neutral-800/60 dark:[&>*]:border-neutral-800/50">
-          {capabilities.map((cap, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {capabilities.map((cap) => (
             <div
               key={cap.title}
-              className={`group p-6 transition-all hover:bg-neutral-900/40 ${
-                i % 2 !== 1 ? "max-lg:border-r" : ""
-              } ${i % 4 !== 3 ? "lg:border-r" : ""} ${
-                i < 6 ? "max-lg:border-b" : ""
-              } ${i < 4 ? "lg:border-b" : ""}`}
+              className="group flex items-start gap-4 rounded-xl bg-neutral-950 border border-neutral-800/40 p-5 transition-all duration-200 hover:border-neutral-700/60 hover:bg-neutral-900/40"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black border border-neutral-800 mb-4 group-hover:border-claw-red/30 transition-colors">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/12 transition-colors">
                 <cap.icon className="h-4 w-4 text-claw-red" />
               </div>
-              <h3 className="text-sm font-bold text-foreground mb-1">
-                {cap.title}
-              </h3>
-              <p className="text-xs text-neutral-500 leading-relaxed">
-                {cap.desc}
-              </p>
+              <div className="min-w-0">
+                <h3 className="text-[13px] font-bold text-foreground mb-0.5">
+                  {cap.title}
+                </h3>
+                <p className="text-[12px] text-neutral-500 leading-relaxed">
+                  {cap.desc}
+                </p>
+              </div>
             </div>
           ))}
         </div>
@@ -708,48 +610,46 @@ function Capabilities() {
 }
 
 // ──────────────────────────────────────────────
-// 6 · Deployment — Side-by-Side Cards
+// 6 · Deployment Options
 // ──────────────────────────────────────────────
 
 function DeploymentOptions() {
   return (
-    <section className="relative bg-neutral-950/50 dark:bg-neutral-950/30">
-      <GridLine />
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
-        <div className="text-center mb-14">
-          <SectionLabel icon={Server}>Deploy your way</SectionLabel>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+    <section className="relative py-24 sm:py-32 bg-neutral-950/40">
+      <Divider />
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32">
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <Tag icon={Server}>Deploy your way</Tag>
+          <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
             Your hardware or ours.{" "}
             <span className="text-gradient-red">You choose.</span>
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-5">
           {/* Cloud */}
-          <div className="group rounded-2xl border border-neutral-800/60 dark:border-neutral-800/50 bg-black/40 p-8 sm:p-10 transition-all hover:border-claw-red/20 hover:shadow-2xl hover:shadow-claw-red/5 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-claw-red/[0.03] blur-[60px] rounded-full" />
-
-            <div className="flex items-center gap-4 mb-6 relative z-10">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-black border border-neutral-800 group-hover:border-claw-red/30 transition-colors">
-                <Cloud className="h-6 w-6 text-claw-red" />
+          <div className="group rounded-2xl bg-neutral-950 border border-neutral-800/50 overflow-hidden transition-all duration-300 hover:border-neutral-700/80">
+            <div className="p-8 sm:p-10">
+              <div className="flex items-center gap-4 mb-5">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-claw-red/8 border border-claw-red/10">
+                  <Cloud className="h-6 w-6 text-claw-red" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-foreground">
+                    Cloud Deploy
+                  </h3>
+                  <p className="text-[12px] text-neutral-500">
+                    Instant · Always on · Zero maintenance
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-foreground">
-                  Cloud Deploy
-                </h3>
-                <p className="text-xs text-neutral-500 tracking-wide">
-                  Instant · Always on · Zero maintenance
-                </p>
-              </div>
+              <p className="text-[14px] text-neutral-400 leading-relaxed mb-6">
+                We spin up a persistent cloud VM for your OpenClaw agent. Pick
+                your plan, click deploy, and you're live in under 30 seconds.
+                Automatic updates, backups, and scaling — all handled.
+              </p>
             </div>
-
-            <p className="text-sm text-neutral-400 leading-relaxed mb-6 relative z-10">
-              We spin up a persistent cloud VM for your OpenClaw agent. Pick
-              your plan, click deploy, live in under 30 seconds. Automatic
-              updates, backups, and scaling.
-            </p>
-
-            <div className="grid grid-cols-3 gap-0 border border-neutral-800/50 rounded-xl overflow-hidden relative z-10">
+            <div className="grid grid-cols-3 border-t border-neutral-800/50">
               {[
                 { icon: Zap, label: "30s deploy" },
                 { icon: Monitor, label: "Live stream" },
@@ -757,10 +657,10 @@ function DeploymentOptions() {
               ].map((item, i) => (
                 <div
                   key={item.label}
-                  className={`flex flex-col items-center gap-2 py-4 text-center ${i < 2 ? "border-r border-neutral-800/50" : ""}`}
+                  className={`flex flex-col items-center gap-2 py-5 ${i < 2 ? "border-r border-neutral-800/50" : ""}`}
                 >
                   <item.icon className="h-4 w-4 text-claw-red" />
-                  <span className="text-[10px] text-neutral-500 font-medium">
+                  <span className="text-[11px] text-neutral-500 font-medium">
                     {item.label}
                   </span>
                 </div>
@@ -769,30 +669,28 @@ function DeploymentOptions() {
           </div>
 
           {/* Mac */}
-          <div className="group rounded-2xl border border-neutral-800/60 dark:border-neutral-800/50 bg-black/40 p-8 sm:p-10 transition-all hover:border-claw-red/20 hover:shadow-2xl hover:shadow-claw-red/5 relative overflow-hidden">
-            <div className="absolute bottom-0 left-0 w-40 h-40 bg-claw-red/[0.03] blur-[60px] rounded-full" />
-
-            <div className="flex items-center gap-4 mb-6 relative z-10">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-black border border-neutral-800 group-hover:border-claw-red/30 transition-colors">
-                <Download className="h-6 w-6 text-claw-red" />
+          <div className="group rounded-2xl bg-neutral-950 border border-neutral-800/50 overflow-hidden transition-all duration-300 hover:border-neutral-700/80">
+            <div className="p-8 sm:p-10">
+              <div className="flex items-center gap-4 mb-5">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-claw-red/8 border border-claw-red/10">
+                  <Download className="h-6 w-6 text-claw-red" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-foreground">
+                    Mac Companion
+                  </h3>
+                  <p className="text-[12px] text-neutral-500">
+                    Your hardware · Your data · Your rules
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-foreground">
-                  Mac Companion
-                </h3>
-                <p className="text-xs text-neutral-500 tracking-wide">
-                  Your hardware · Your data · Your rules
-                </p>
-              </div>
+              <p className="text-[14px] text-neutral-400 leading-relaxed mb-6">
+                Got a Mac Mini at home? Download our companion app — it installs
+                OpenClaw on your machine instantly. One download, one click.
+                Your data never leaves your hardware.
+              </p>
             </div>
-
-            <p className="text-sm text-neutral-400 leading-relaxed mb-6 relative z-10">
-              Got a Mac Mini at home? Download our companion app — it installs
-              OpenClaw on your machine instantly. Your data never leaves your
-              hardware.
-            </p>
-
-            <div className="grid grid-cols-3 gap-0 border border-neutral-800/50 rounded-xl overflow-hidden relative z-10">
+            <div className="grid grid-cols-3 border-t border-neutral-800/50">
               {[
                 { icon: Lock, label: "Fully local" },
                 { icon: Cpu, label: "Your GPU" },
@@ -800,10 +698,10 @@ function DeploymentOptions() {
               ].map((item, i) => (
                 <div
                   key={item.label}
-                  className={`flex flex-col items-center gap-2 py-4 text-center ${i < 2 ? "border-r border-neutral-800/50" : ""}`}
+                  className={`flex flex-col items-center gap-2 py-5 ${i < 2 ? "border-r border-neutral-800/50" : ""}`}
                 >
                   <item.icon className="h-4 w-4 text-claw-red" />
-                  <span className="text-[10px] text-neutral-500 font-medium">
+                  <span className="text-[11px] text-neutral-500 font-medium">
                     {item.label}
                   </span>
                 </div>
@@ -812,34 +710,38 @@ function DeploymentOptions() {
           </div>
         </div>
       </div>
-      <GridLine />
     </section>
   );
 }
 
 // ──────────────────────────────────────────────
-// 7 · Glasses — Immersive Section
+// 7 · Glasses — The wow section
 // ──────────────────────────────────────────────
 
 function GlassesSection() {
   return (
-    <section className="relative py-20 sm:py-24 overflow-hidden">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-[1fr,1px,1fr] gap-0 border border-neutral-800/60 dark:border-neutral-800/50 rounded-2xl overflow-hidden">
+    <section className="relative py-24 sm:py-32 overflow-hidden">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Left — Glasses Mockup */}
-          <div className="relative flex items-center justify-center p-10 sm:p-14 bg-neutral-950/40">
-            <div className="mx-auto max-w-xs w-full">
-              {/* Lens shape */}
-              <div className="relative overflow-hidden w-full aspect-[2/1] rounded-[50%/40%] bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-950 border border-white/[0.06] shadow-[0_0_80px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.03)]">
+          <div className="relative flex items-center justify-center order-2 lg:order-1">
+            {/* Ambient glow */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="h-[300px] w-[300px] rounded-full bg-claw-red/[0.03] blur-[80px]" />
+            </div>
+
+            <div className="relative w-full max-w-sm">
+              {/* Lens */}
+              <div className="relative overflow-hidden w-full aspect-[2/1] rounded-[50%/40%] bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-950 border border-white/[0.06] shadow-[0_0_80px_rgba(0,0,0,0.5),inset_0_2px_0_rgba(255,255,255,0.02)]">
                 {/* Scan lines */}
                 <div
-                  className="absolute inset-0 pointer-events-none opacity-[0.02]"
+                  className="absolute inset-0 pointer-events-none opacity-[0.015]"
                   style={{
                     backgroundImage:
-                      "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.1) 2px, rgba(255,255,255,0.1) 4px)",
+                      "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.15) 2px, rgba(255,255,255,0.15) 4px)",
                   }}
                 />
-                {/* HUD content */}
+                {/* HUD */}
                 <div className="absolute inset-0 flex items-center justify-center px-8 py-4">
                   <div className="flex flex-col gap-1.5 w-full">
                     <div className="flex items-center gap-1.5">
@@ -868,19 +770,15 @@ function GlassesSection() {
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="hidden lg:block w-px bg-neutral-800/60 dark:bg-neutral-800/50" />
-
           {/* Right — Copy */}
-          <div className="p-10 sm:p-14 flex flex-col justify-center">
-            <SectionLabel icon={Glasses}>Smart Glasses</SectionLabel>
-
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+          <div className="order-1 lg:order-2">
+            <Tag icon={Glasses}>Smart Glasses</Tag>
+            <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-foreground">
               Your agent,{" "}
-              <span className="text-gradient-red">on your face</span>
+              <span className="text-gradient-red">on your face.</span>
             </h2>
 
-            <div className="mt-5 space-y-3 text-sm text-neutral-400 leading-relaxed">
+            <div className="mt-6 space-y-4 text-[15px] text-neutral-400 leading-relaxed">
               <p>
                 Put on your smart glasses and talk to your OpenClaw agent by
                 voice. Ask it to check your email, find an article, or summarize
@@ -895,20 +793,20 @@ function GlassesSection() {
               </p>
             </div>
 
-            <div className="mt-7 grid grid-cols-2 gap-2">
+            <div className="mt-8 flex flex-wrap gap-2.5">
               {[
                 { icon: Mic, label: "Voice commands" },
                 { icon: Radio, label: "Audio responses" },
                 { icon: Eye, label: "Live desktop view" },
                 { icon: Smartphone, label: "Works on the go" },
               ].map((item) => (
-                <div
+                <span
                   key={item.label}
-                  className="flex items-center gap-2 rounded-lg border border-neutral-800/60 bg-black/40 px-3 py-2.5 text-xs text-neutral-400"
+                  className="inline-flex items-center gap-2 rounded-full bg-neutral-900 border border-neutral-800/60 px-4 py-2 text-[12px] text-neutral-400 font-medium"
                 >
-                  <item.icon className="h-3.5 w-3.5 text-claw-red shrink-0" />
+                  <item.icon className="h-3.5 w-3.5 text-claw-red" />
                   {item.label}
-                </div>
+                </span>
               ))}
             </div>
           </div>
@@ -919,7 +817,7 @@ function GlassesSection() {
 }
 
 // ──────────────────────────────────────────────
-// 8 · Testimonials — Masonry-ish Grid
+// 8 · Testimonials
 // ──────────────────────────────────────────────
 
 const testimonials = [
@@ -957,74 +855,66 @@ const testimonials = [
 
 function Testimonials() {
   return (
-    <section className="relative bg-neutral-950/50 dark:bg-neutral-950/30">
-      <GridLine />
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
-        <div className="text-center mb-14">
-          <SectionLabel icon={Quote}>Community</SectionLabel>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-            People are{" "}
-            <span className="text-gradient-red">obsessed with the engine</span>
+    <section className="relative py-24 sm:py-32 bg-neutral-950/40">
+      <Divider />
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32">
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <Tag icon={Quote}>Community</Tag>
+          <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
+            People are <span className="text-gradient-red">obsessed</span> with
+            the engine we build on.
           </h2>
-          <p className="mt-4 text-neutral-500 max-w-md mx-auto">
-            What people say about OpenClaw — the AI that powers every Clawed
+          <p className="mt-4 text-neutral-400">
+            Real reactions to OpenClaw — the AI that powers every Clawed
             deployment.
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Masonry-ish: 2 cols on md, 3 on lg */}
+        <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
           {testimonials.map((t, i) => (
             <div
               key={i}
-              className="group rounded-2xl border border-neutral-800/60 dark:border-neutral-800/50 bg-black/30 p-6 transition-all hover:border-neutral-700 hover:bg-neutral-900/40"
+              className="break-inside-avoid rounded-2xl bg-neutral-950 border border-neutral-800/40 p-6 transition-all duration-200 hover:border-neutral-700/60"
             >
-              <div className="flex items-center gap-1 mb-4">
-                {[...Array(5)].map((_, j) => (
-                  <Star
-                    key={j}
-                    className="h-3 w-3 fill-claw-red text-claw-red"
-                  />
-                ))}
-              </div>
-              <p className="text-sm text-neutral-300 leading-relaxed mb-5">
+              <p className="text-[14px] text-neutral-300 leading-relaxed mb-5">
                 "{t.text}"
               </p>
-              <div className="flex items-center gap-3 pt-4 border-t border-neutral-800/50">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black border border-neutral-800 text-claw-red text-[11px] font-bold">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-claw-red/8 border border-claw-red/10 text-claw-red text-[11px] font-bold">
                   {t.author[0]}
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-foreground">
+                  <p className="text-[13px] font-semibold text-foreground">
                     {t.author}
                   </p>
-                  <p className="text-[10px] text-neutral-600">{t.handle}</p>
+                  <p className="text-[11px] text-neutral-600">{t.handle}</p>
                 </div>
               </div>
             </div>
           ))}
         </div>
       </div>
-      <GridLine />
     </section>
   );
 }
 
 // ──────────────────────────────────────────────
-// 9 · Why the Claw — Story Grid
+// 9 · Why the Claw — Story
 // ──────────────────────────────────────────────
 
 function WhyTheClaw() {
   return (
-    <section className="relative py-20 sm:py-24 overflow-hidden">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-[1fr,1px,1.2fr] gap-0 border border-neutral-800/60 dark:border-neutral-800/50 rounded-2xl overflow-hidden">
+    <section className="relative py-24 sm:py-32 overflow-hidden">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Left — 3D claw */}
-          <div className="relative flex items-center justify-center p-8 sm:p-12 bg-neutral-950/40">
+          <div className="relative flex items-center justify-center">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="h-[250px] w-[250px] rounded-full bg-claw-red/[0.04] blur-[60px] animate-pulse-subtle" />
+              <div className="h-[280px] w-[280px] rounded-full bg-claw-red/[0.04] blur-[60px] animate-pulse-subtle" />
             </div>
             <ClawScene
-              className="w-[250px] h-[250px] sm:w-[300px] sm:h-[300px]"
+              className="w-[260px] h-[260px] sm:w-[320px] sm:h-[320px]"
               scale={0.048}
               showParticles={false}
               showRing={false}
@@ -1038,26 +928,22 @@ function WhyTheClaw() {
             />
           </div>
 
-          {/* Divider */}
-          <div className="hidden lg:block w-px bg-neutral-800/60 dark:bg-neutral-800/50" />
-
           {/* Right — story */}
-          <div className="p-8 sm:p-12">
-            <SectionLabel icon={Heart}>Origin Story</SectionLabel>
-
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+          <div>
+            <Tag icon={Heart}>Origin Story</Tag>
+            <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-foreground">
               Built on the{" "}
               <span className="text-gradient-red">hottest AI project</span> in
-              the world
+              the world.
             </h2>
 
-            <div className="mt-5 space-y-3 text-sm text-neutral-400 leading-relaxed">
+            <div className="mt-6 space-y-4 text-[15px] text-neutral-400 leading-relaxed">
               <p>
                 <a
                   href="https://github.com/openclaw/openclaw"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-claw-red hover:text-claw-red-bright underline underline-offset-2 transition-colors"
+                  className="text-claw-red hover:text-claw-red-bright transition-colors underline underline-offset-[3px] decoration-claw-red/30"
                 >
                   OpenClaw
                 </a>{" "}
@@ -1080,7 +966,7 @@ function WhyTheClaw() {
                   href="https://www.thingiverse.com/thing:5326334"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-claw-red hover:text-claw-red-bright underline underline-offset-2 transition-colors"
+                  className="text-claw-red hover:text-claw-red-bright transition-colors underline underline-offset-[3px] decoration-claw-red/30"
                 >
                   ScroffyToffee on Thingiverse
                 </a>{" "}
@@ -1088,42 +974,42 @@ function WhyTheClaw() {
               </p>
             </div>
 
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap gap-3">
               <Button
                 variant="outline"
                 size="sm"
                 asChild
-                className="gap-1.5 border-neutral-700 hover:bg-neutral-900 hover:border-neutral-600 text-xs font-semibold"
+                className="gap-1.5 rounded-lg border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50 text-[13px] font-semibold text-neutral-300 h-9"
               >
                 <a
                   href="https://github.com/openclaw/openclaw"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Github className="h-3 w-3" />
+                  <Github className="h-3.5 w-3.5" />
                   OpenClaw on GitHub
-                  <ArrowUpRight className="h-3 w-3 opacity-50" />
+                  <ArrowUpRight className="h-3 w-3 text-neutral-600" />
                 </a>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 asChild
-                className="gap-1.5 border-neutral-700 hover:bg-neutral-900 hover:border-neutral-600 text-xs font-semibold"
+                className="gap-1.5 rounded-lg border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50 text-[13px] font-semibold text-neutral-300 h-9"
               >
                 <a
                   href="https://openclaw.ai/blog/introducing-openclaw"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <ExternalLink className="h-3 w-3" />
+                  <ExternalLink className="h-3.5 w-3.5" />
                   The OpenClaw story
-                  <ArrowUpRight className="h-3 w-3 opacity-50" />
+                  <ArrowUpRight className="h-3 w-3 text-neutral-600" />
                 </a>
               </Button>
             </div>
 
-            <p className="mt-5 text-[10px] text-neutral-600">
+            <p className="mt-6 text-[11px] text-neutral-700">
               3D model: CC-BY · ScroffyToffee · Thingiverse
             </p>
           </div>
@@ -1134,7 +1020,7 @@ function WhyTheClaw() {
 }
 
 // ──────────────────────────────────────────────
-// 10 · CTA — Bold Final Section
+// 10 · CTA — Final push
 // ──────────────────────────────────────────────
 
 function BetaCTA() {
@@ -1147,89 +1033,89 @@ function BetaCTA() {
   };
 
   return (
-    <section className="relative bg-neutral-950/50 dark:bg-neutral-950/30">
-      <GridLine />
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
-        <div className="relative rounded-2xl border border-neutral-800/60 dark:border-neutral-800/50 overflow-hidden">
-          {/* Background glow */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[400px] w-[600px] rounded-full bg-claw-red/[0.04] blur-[120px]" />
+    <section className="relative py-24 sm:py-32 bg-neutral-950/40">
+      <Divider />
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32">
+        <div className="text-center">
+          {/* Glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[400px] w-[600px] rounded-full bg-claw-red/[0.03] blur-[120px] pointer-events-none" />
+
+          <Tag icon={Sparkles}>Get Started</Tag>
+
+          <h2 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.1] text-foreground relative z-10">
+            Ready to deploy your lobster? 🦞
+          </h2>
+          <p className="mt-5 text-neutral-400 max-w-md mx-auto leading-relaxed relative z-10">
+            Deploy your own OpenClaw agent in 30 seconds, watch it work from
+            anywhere, and talk to it from your smart glasses.
+          </p>
+
+          {/* Buttons */}
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 relative z-10">
+            <Button
+              size="lg"
+              asChild
+              className="gap-2 px-8 h-12 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[15px] rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_24px_rgba(200,0,0,0.15)] hover:shadow-[0_0_32px_rgba(200,0,0,0.25)]"
+            >
+              <Link to="/sign-in">
+                Deploy your agent
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="gap-2 px-8 h-12 rounded-xl border-neutral-800 hover:border-neutral-700 text-neutral-300 hover:text-white hover:bg-white/[0.03] font-semibold text-[15px] transition-all"
+            >
+              <Link to="/pricing">
+                View pricing
+                <ArrowRight className="h-4 w-4 opacity-40" />
+              </Link>
+            </Button>
           </div>
 
-          <div className="relative z-10 p-10 sm:p-16 text-center">
-            <SectionLabel icon={Sparkles}>Get Started</SectionLabel>
-
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground">
-              Ready to deploy your lobster? 🦞
-            </h2>
-            <p className="mt-4 text-neutral-400 max-w-md mx-auto leading-relaxed">
-              Deploy your own OpenClaw agent in 30 seconds, watch it work from
-              anywhere, and talk to it from your smart glasses.
+          {/* Waitlist */}
+          <div className="mt-16 relative z-10">
+            <div className="h-px bg-neutral-800/50 mb-10" />
+            <p className="text-[12px] text-neutral-500 mb-5 uppercase tracking-[0.15em] font-semibold">
+              Or join the waitlist for early access
             </p>
 
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button
-                size="lg"
-                asChild
-                className="gap-2.5 px-10 bg-black hover:bg-neutral-900 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-black font-bold border border-neutral-700 dark:border-neutral-300 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-black/20 dark:shadow-white/10 text-base"
+            {submitted ? (
+              <div className="rounded-xl bg-claw-red/5 border border-claw-red/15 px-6 py-5 max-w-sm mx-auto animate-fade-in-scale">
+                <p className="text-[15px] font-bold text-claw-red-bright">
+                  You're on the list! 🦞
+                </p>
+                <p className="mt-1 text-[13px] text-neutral-500">
+                  We'll reach out when your spot opens up.
+                </p>
+              </div>
+            ) : (
+              <form
+                onSubmit={handleSubmit}
+                className="flex gap-2 max-w-sm mx-auto"
               >
-                <Link to="/sign-in">
-                  Deploy your agent
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                asChild
-                className="gap-2 px-8 border-neutral-700 dark:border-neutral-600 text-foreground hover:bg-neutral-900 dark:hover:bg-neutral-800 transition-all"
-              >
-                <Link to="/pricing">
-                  View pricing
-                  <ArrowRight className="h-4 w-4 opacity-50" />
-                </Link>
-              </Button>
-            </div>
-
-            {/* Waitlist */}
-            <div className="mt-12 pt-8 border-t border-neutral-800/50 max-w-md mx-auto">
-              <p className="text-xs text-neutral-500 mb-4 uppercase tracking-widest">
-                Or join the waitlist
-              </p>
-
-              {submitted ? (
-                <div className="rounded-xl border border-claw-red/20 bg-claw-red/5 px-6 py-5 animate-fade-in-scale">
-                  <p className="text-sm font-bold text-claw-red-bright">
-                    You're on the list! 🦞
-                  </p>
-                  <p className="mt-1 text-xs text-neutral-500">
-                    We'll reach out when your spot opens up.
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="flex gap-2">
-                  <input
-                    type="email"
-                    required
-                    placeholder="you@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="flex-1 h-11 rounded-xl border border-neutral-800 bg-black px-4 text-sm text-foreground placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-claw-red/30 focus:border-claw-red/40 transition-all"
-                  />
-                  <Button
-                    type="submit"
-                    className="h-11 px-6 bg-claw-red hover:bg-claw-red-bright text-white font-bold transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
-                  >
-                    Join
-                    <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                  </Button>
-                </form>
-              )}
-            </div>
+                <input
+                  type="email"
+                  required
+                  placeholder="you@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1 h-11 rounded-xl border border-neutral-800 bg-neutral-950 px-4 text-[14px] text-foreground placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-claw-red/25 focus:border-claw-red/30 transition-all"
+                />
+                <Button
+                  type="submit"
+                  className="h-11 px-5 bg-claw-red hover:bg-claw-red-bright text-white font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
+                >
+                  Join
+                  <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                </Button>
+              </form>
+            )}
           </div>
         </div>
       </div>
-      <GridLine />
     </section>
   );
 }
@@ -1242,12 +1128,12 @@ function NotClaude() {
   const [revealed, setRevealed] = useState(false);
 
   return (
-    <section className="relative py-14">
+    <section className="relative py-16">
       <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 text-center">
         {!revealed ? (
           <button
             onClick={() => setRevealed(true)}
-            className="group inline-flex items-center gap-2 text-neutral-600 hover:text-claw-red transition-colors text-xs cursor-pointer"
+            className="group inline-flex items-center gap-2 text-neutral-600 hover:text-claw-red transition-colors text-[12px] cursor-pointer"
           >
             <AlertTriangle className="h-3 w-3" />
             <span className="underline underline-offset-2 decoration-dotted">
@@ -1258,15 +1144,15 @@ function NotClaude() {
           <div className="animate-fade-in-scale space-y-5">
             <div className="flex items-center gap-4 justify-center">
               <div className="h-px w-16 bg-neutral-800" />
-              <span className="text-lg">🦞</span>
+              <span className="text-xl">🦞</span>
               <div className="h-px w-16 bg-neutral-800" />
             </div>
 
-            <h3 className="text-base font-black text-foreground">
+            <h3 className="text-lg font-black text-foreground">
               Not to be confused with Claude.
             </h3>
 
-            <div className="space-y-3 text-sm text-neutral-400 leading-relaxed max-w-md mx-auto">
+            <div className="space-y-3 text-[14px] text-neutral-400 leading-relaxed max-w-lg mx-auto">
               <p>
                 We know what you're thinking.{" "}
                 <span className="italic">
@@ -1287,14 +1173,14 @@ function NotClaude() {
               </p>
             </div>
 
-            {/* Comparison */}
-            <div className="mt-6 rounded-xl border border-neutral-800/60 overflow-hidden text-xs max-w-sm mx-auto">
-              <div className="grid grid-cols-3 bg-black font-bold text-foreground border-b border-neutral-800/60">
+            {/* Comparison table */}
+            <div className="mt-8 rounded-xl overflow-hidden border border-neutral-800/50 text-[12px] max-w-sm mx-auto">
+              <div className="grid grid-cols-3 bg-neutral-950 border-b border-neutral-800/50">
                 <div className="px-4 py-3 text-left" />
-                <div className="px-4 py-3 text-center border-x border-neutral-800/60">
+                <div className="px-4 py-3 text-center font-bold text-neutral-400 border-x border-neutral-800/40">
                   Claude
                 </div>
-                <div className="px-4 py-3 text-center text-claw-red">
+                <div className="px-4 py-3 text-center font-bold text-claw-red">
                   Clawed
                 </div>
               </div>
@@ -1313,22 +1199,22 @@ function NotClaude() {
               ].map(([label, claude, claw], i) => (
                 <div
                   key={i}
-                  className={`grid grid-cols-3 ${i % 2 === 0 ? "bg-neutral-950/50" : "bg-neutral-900/20"}`}
+                  className={`grid grid-cols-3 ${i % 2 === 0 ? "bg-neutral-950/80" : "bg-neutral-900/20"}`}
                 >
-                  <div className="px-4 py-2 text-left text-neutral-500">
+                  <div className="px-4 py-2.5 text-left text-neutral-500">
                     {label}
                   </div>
-                  <div className="px-4 py-2 text-center text-neutral-600 border-x border-neutral-800/40">
+                  <div className="px-4 py-2.5 text-center text-neutral-600 border-x border-neutral-800/30">
                     {claude}
                   </div>
-                  <div className="px-4 py-2 text-center text-neutral-300">
+                  <div className="px-4 py-2.5 text-center text-neutral-300">
                     {claw}
                   </div>
                 </div>
               ))}
             </div>
 
-            <p className="text-[10px] text-neutral-700 pt-2">
+            <p className="text-[11px] text-neutral-700 pt-2">
               No AIs were harmed in the making of this disclaimer. Several fish
               were.
             </p>
@@ -1346,19 +1232,25 @@ function NotClaude() {
 export default function Home() {
   useDocumentTitle(
     "Clawed Chat — Deploy Your AI Agent. Talk to It on Glasses. 🦞",
-    { suffix: "" },
+    {
+      suffix: "",
+    },
   );
   return (
     <>
       <ThemeToggle />
       <Hero />
+      <Divider />
       <ProblemSolution />
+      <Divider />
       <Pillars />
       <HowItWorks />
       <Capabilities />
       <DeploymentOptions />
+      <Divider />
       <GlassesSection />
       <Testimonials />
+      <Divider />
       <WhyTheClaw />
       <BetaCTA />
       <NotClaude />

@@ -1,9 +1,9 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
+
 import {
   Menu,
   ArrowRight,
@@ -105,7 +105,7 @@ function NavLinks({
             to={item.href}
             onClick={onClick}
             className={cn(
-              "text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors",
+              "text-[13px] font-medium transition-colors",
               isActive
                 ? "text-foreground"
                 : "text-neutral-500 hover:text-foreground",
@@ -131,7 +131,7 @@ function HeaderThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-black transition-all hover:border-claw-red/30 active:scale-90"
+      className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-800/50 bg-transparent transition-all hover:border-neutral-600 active:scale-90"
       aria-label="Toggle theme"
     >
       {isDark ? (
@@ -147,7 +147,7 @@ function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-neutral-800/50 bg-background/95 backdrop-blur-xl transition-theme supports-[backdrop-filter]:bg-background/85">
+    <header className="sticky top-0 z-50 w-full border-b border-neutral-800/30 bg-background/90 backdrop-blur-2xl transition-theme supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link to="/" className="group flex items-center gap-2.5">
@@ -167,14 +167,14 @@ function SiteHeader() {
             variant="ghost"
             size="sm"
             asChild
-            className="text-neutral-500 hover:text-foreground text-[13px] font-semibold"
+            className="text-neutral-500 hover:text-foreground text-[13px] font-medium"
           >
             <Link to="/sign-in">Sign in</Link>
           </Button>
           <Button
             size="sm"
             asChild
-            className="gap-1.5 bg-black hover:bg-neutral-900 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-black font-bold border border-neutral-700 dark:border-neutral-300 transition-all text-[13px] shadow-sm"
+            className="gap-1.5 bg-claw-red hover:bg-claw-red-bright text-white font-semibold transition-all text-[13px] rounded-lg shadow-sm shadow-claw-red/10 hover:shadow-claw-red/20"
           >
             <Link to="/sign-in">
               Deploy agent
@@ -209,14 +209,14 @@ function SiteHeader() {
                 </Link>
               </div>
 
-              <Separator className="bg-neutral-800/60" />
+              <div className="h-px bg-neutral-800/40" />
 
               <NavLinks
                 onClick={() => setMobileOpen(false)}
                 className="flex flex-col gap-5"
               />
 
-              <Separator className="bg-neutral-800/60" />
+              <div className="h-px bg-neutral-800/40" />
 
               {/* Theme toggle in mobile */}
               <div className="flex items-center justify-between">
@@ -226,13 +226,13 @@ function SiteHeader() {
                 <HeaderThemeToggle />
               </div>
 
-              <Separator className="bg-neutral-800/60" />
+              <div className="h-px bg-neutral-800/40" />
 
               <div className="flex flex-col gap-3">
                 <Button
                   variant="outline"
                   asChild
-                  className="border-neutral-700 hover:bg-neutral-900 hover:border-neutral-600 font-semibold"
+                  className="border-neutral-800/60 hover:bg-neutral-900/50 hover:border-neutral-700 font-medium rounded-lg"
                 >
                   <Link to="/sign-in" onClick={() => setMobileOpen(false)}>
                     Sign in
@@ -240,7 +240,7 @@ function SiteHeader() {
                 </Button>
                 <Button
                   asChild
-                  className="bg-black hover:bg-neutral-900 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-black font-bold border border-neutral-700 dark:border-neutral-300 gap-1.5 shadow-sm"
+                  className="bg-claw-red hover:bg-claw-red-bright text-white font-semibold gap-1.5 shadow-sm shadow-claw-red/10 rounded-lg"
                 >
                   <Link to="/sign-in" onClick={() => setMobileOpen(false)}>
                     Deploy agent
@@ -278,13 +278,10 @@ function SiteFooter() {
   ];
 
   return (
-    <footer className="relative border-t border-neutral-800/50 bg-background transition-theme">
-      {/* Top accent line */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-claw-red/15 to-transparent" />
-
+    <footer className="relative border-t border-neutral-800/30 bg-background transition-theme">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Main footer grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-[1.5fr,1fr,1fr,1fr] gap-10 py-14">
+        <div className="grid grid-cols-1 sm:grid-cols-[1.5fr,1fr,1fr,1fr] gap-10 py-16">
           {/* Brand column */}
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2.5">
@@ -292,12 +289,9 @@ function SiteFooter() {
               <span className="text-base font-black text-gradient-red">
                 Clawed
               </span>
-              <Badge
-                variant="outline"
-                className="ml-1 text-[9px] px-1.5 py-0 border-neutral-800 text-neutral-500 font-bold uppercase tracking-widest"
-              >
+              <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded border border-claw-red/20 text-claw-red/70 font-bold uppercase tracking-widest">
                 Beta
-              </Badge>
+              </span>
             </div>
             <p className="text-[13px] text-neutral-500 leading-relaxed max-w-xs">
               Deploy your AI agent in 30 seconds. Watch it work. Talk to it on
@@ -310,17 +304,17 @@ function SiteFooter() {
                 href="https://github.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-black transition-all hover:border-neutral-700 hover:bg-neutral-900"
+                className="text-neutral-600 transition-colors hover:text-neutral-400"
               >
-                <Github className="h-3.5 w-3.5 text-neutral-500" />
+                <Github className="h-4 w-4" />
               </a>
               <a
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-black transition-all hover:border-neutral-700 hover:bg-neutral-900"
+                className="text-neutral-600 transition-colors hover:text-neutral-400"
               >
-                <Twitter className="h-3.5 w-3.5 text-neutral-500" />
+                <Twitter className="h-4 w-4" />
               </a>
             </div>
           </div>
@@ -357,7 +351,7 @@ function SiteFooter() {
             <Button
               size="sm"
               asChild
-              className="gap-1.5 bg-black hover:bg-neutral-900 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-black font-bold border border-neutral-700 dark:border-neutral-300 text-[12px] shadow-sm w-full sm:w-auto"
+              className="gap-1.5 bg-claw-red hover:bg-claw-red-bright text-white font-semibold text-[12px] rounded-lg shadow-sm shadow-claw-red/10 w-full sm:w-auto"
             >
               <Link to="/sign-in">
                 Deploy agent
@@ -368,9 +362,9 @@ function SiteFooter() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-neutral-800/50 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[11px] text-neutral-600 tracking-wide">
-            &copy; {currentYear} Clawed Chat. Powered by OpenClaw.
+        <div className="border-t border-neutral-800/30 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-[11px] text-neutral-600">
+            &copy; {currentYear} Clawed Chat · Powered by OpenClaw
           </p>
           <p className="text-[11px] text-neutral-700">🦞</p>
         </div>
