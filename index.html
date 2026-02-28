@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <!-- Primary Meta Tags -->
+        <title>Clawed — Personal Assistant for People on the Go</title>
+        <meta
+            name="title"
+            content="Clawed — Personal Assistant for People on the Go"
+        />
+        <meta
+            name="description"
+            content="Glanceable on glasses, controlled in the web hub. Ask questions in under 3 seconds, get useful results in under 5, and approve actions with one tap."
+        />
+        <meta name="theme-color" content="#0a0a0a" />
+        <meta name="color-scheme" content="dark" />
+
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://clawed.app/" />
+        <meta
+            property="og:title"
+            content="Clawed — Personal Assistant for People on the Go"
+        />
+        <meta
+            property="og:description"
+            content="Glanceable on glasses, controlled in the web hub. Ask questions in under 3 seconds, get useful results in under 5, and approve actions with one tap."
+        />
+        <meta property="og:site_name" content="Clawed" />
+
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://clawed.app/" />
+        <meta
+            property="twitter:title"
+            content="Clawed — Personal Assistant for People on the Go"
+        />
+        <meta
+            property="twitter:description"
+            content="Glanceable on glasses, controlled in the web hub. Ask questions in under 3 seconds, get useful results in under 5, and approve actions with one tap."
+        />
+
+        <!-- Favicon -->
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        <!-- Preconnect to font CDN -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&display=swap"
+            rel="stylesheet"
+        />
+
+        <!-- Prevent FOUC — read persisted theme, fallback to dark -->
+        <script>
+            (function () {
+                try {
+                    var store = JSON.parse(
+                        localStorage.getItem("clawed-app-store") || "{}",
+                    );
+                    var theme = (store.state && store.state.theme) || "dark";
+                    if (theme === "system") {
+                        theme = window.matchMedia(
+                            "(prefers-color-scheme: dark)",
+                        ).matches
+                            ? "dark"
+                            : "light";
+                    }
+                    document.documentElement.classList.add(theme);
+                    document.documentElement.style.colorScheme = theme;
+                } catch (e) {
+                    document.documentElement.classList.add("dark");
+                    document.documentElement.style.colorScheme = "dark";
+                }
+            })();
+        </script>
+
+        <style>
+            /* Critical: themed background immediately to prevent flash */
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+                overflow-x: hidden;
+                transition: background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            html.dark,
+            html.dark body {
+                background: #111111;
+                color: #ededed;
+            }
+            html.light,
+            html.light body {
+                background: #f2f2f2;
+                color: #1a1a1a;
+            }
+            #root {
+                min-height: 100vh;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="root"></div>
+        <script type="module" src="/src/main.tsx"></script>
+    </body>
+</html>
