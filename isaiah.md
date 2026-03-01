@@ -14,19 +14,19 @@ Claude can help with anything that has a CLI. Install these so agents can do the
 ```bash
 # Already installed ✅
 # - bun
-# - ngrok (authed)
-# - mentra CLI (authed)
+# - ngrok 3.35.0 (authed)
+# - mentra CLI 1.0.3 (authed)
+# - gcloud 558.0.0 (installed, needs auth)
+# - pulumi 3.224.0 (installed, needs auth)
+# - convex 1.32.0 (installed, needs auth)
 
-# Install these so agents can help:
-brew install --cask google-cloud-sdk   # gcloud CLI — agents can create firewall rules, bake images, etc.
-brew install pulumi                     # pulumi CLI — agents can set up stacks, config
-brew install cloudflare/cloudflare/cloudflared  # wrangler alternative for tunnels (optional)
-bun add -g convex                       # convex CLI — agents can push schema, run functions
-
-# Auth each one after install:
+# Just auth these — they're already installed:
 gcloud auth login
 gcloud config set project <YOUR_PROJECT_ID>
 pulumi login
+
+# Optional:
+brew install cloudflare/cloudflare/cloudflared  # wrangler alternative for tunnels
 ```
 
 Once these are authed, spin up agents and they can handle most of the infra setup for you.
@@ -131,7 +131,7 @@ PUBLIC_URL=https://<your-static-url>.ngrok-free.app
    ```
 5. Keep `bunx convex dev` running in a separate terminal during development — it syncs schema changes live
 
-**Once the CLI is authed, agents can push schema changes and test functions.**
+✅ **Convex CLI installed** (v1.32.0). Just needs first run to create the project.
 
 ---
 
@@ -155,14 +155,14 @@ PUBLIC_URL=https://<your-static-url>.ngrok-free.app
 
 ---
 
-## ❌ 7. GCP (VM provisioning) — ~30 min
+## ⏳ 7. GCP (VM provisioning) — ~30 min
 
 ⚠️ This is the most involved setup. Do it when you have 30+ minutes.
-⚠️ **Install the gcloud CLI first** so agents can help with firewall rules, image baking, etc:
+✅ **gcloud CLI installed** (v558.0.0). Just need to auth and configure:
 
 ```bash
-brew install --cask google-cloud-sdk
 gcloud auth login
+gcloud config set project <YOUR_PROJECT_ID>
 ```
 
 ### 7a. Project setup
@@ -257,16 +257,14 @@ I'll flesh out the full bake script in `scripts/bake-image/` — but you need th
 
 ---
 
-## ❌ 9. Pulumi (infrastructure as code) — ~5 min
+## ⏳ 9. Pulumi (infrastructure as code) — ~5 min
 
 ⚠️ Do this after GCP is set up.
+✅ **Pulumi CLI installed** (v3.224.0). Just need to auth:
 
 1. Go to [app.pulumi.com](https://app.pulumi.com) → Sign up (GitHub OAuth is easiest)
 2. Create an organization or use your personal account
-3. Install the CLI:
-   ```bash
-   brew install pulumi
-   ```
+3. ~~Install the CLI~~ ✅ already installed
 4. Login:
    ```bash
    pulumi login
@@ -363,12 +361,15 @@ Once everything is set up, you should be able to:
 - [x] `bun --version` → 1.2+
 - [x] MentraOS app created: `com.isaiah.clawed` (MICROPHONE + CAMERA)
 - [x] ngrok installed and authed
+- [x] `gcloud version` → 558.0.0 installed
+- [x] `pulumi version` → 3.224.0 installed
+- [x] `convex --version` → 1.32.0 installed
 - [ ] ngrok static URL set + Mentra app public URL updated
 - [ ] Clerk dashboard shows app with Google OAuth enabled
 - [ ] `bunx convex dev` → connects to your Convex project
 - [ ] `curl` to Browser Use API → returns a browser session
-- [ ] `gcloud auth login` → authed (install gcloud first: `brew install --cask google-cloud-sdk`)
+- [ ] `gcloud auth login` → authed
 - [ ] `gcloud compute instances list` → no errors (GCP project works)
 - [ ] Cloudflare zone has `clawed.chat` with Zone ID noted
-- [ ] `pulumi whoami` → shows your account (install first: `brew install pulumi`)
+- [ ] `pulumi whoami` → shows your account
 - [ ] Anthropic API key ready for demo day
