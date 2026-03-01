@@ -70,14 +70,17 @@ cd "$NEW_DIR"
 # needs devDependencies like tailwindcss and bun-plugin-tailwind to compile the frontend.
 bun install 2>&1 | tail -3
 
-# ─── Step 4: Fix GOOGLE_APPLICATION_CREDENTIALS path ─────────────────────────
+# ─── Step 4: Fix env vars for server context ─────────────────────────────────
 
 if [ -f "$NEW_DIR/app/.env" ]; then
+  # Fix GCP credentials path for server
   if grep -q "GOOGLE_APPLICATION_CREDENTIALS" "$NEW_DIR/app/.env"; then
     sed -i 's|GOOGLE_APPLICATION_CREDENTIALS=.*|GOOGLE_APPLICATION_CREDENTIALS=/opt/gcp-sa-key.json|' "$NEW_DIR/app/.env"
   else
     echo "GOOGLE_APPLICATION_CREDENTIALS=/opt/gcp-sa-key.json" >> "$NEW_DIR/app/.env"
   fi
+  # Remove PORT from .env — systemd sets PORT=80 for Cloudflare proxy
+  sed -i '/^PORT=/d' "$NEW_DIR/app/.env"
 fi
 
 # ─── Step 5: Swap Directories ────────────────────────────────────────────────
