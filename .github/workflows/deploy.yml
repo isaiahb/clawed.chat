@@ -90,10 +90,6 @@ jobs:
 
       - name: Upload code to server
         run: |
-          gcloud compute ssh "${{ env.SERVER_NAME }}" \
-            --zone="${{ env.GCP_ZONE }}" \
-            --quiet \
-            --command="rm -rf ${{ env.APP_DIR }}-new && mkdir -p ${{ env.APP_DIR }}-new"
           tar czf /tmp/code.tar.gz \
             --exclude='.git' \
             --exclude='node_modules' \
@@ -104,11 +100,11 @@ jobs:
             --compress \
             --quiet \
             /tmp/code.tar.gz \
-            "${{ env.SERVER_NAME }}:${{ env.APP_DIR }}-new/code.tar.gz"
+            "${{ env.SERVER_NAME }}:/tmp/code.tar.gz"
           gcloud compute ssh "${{ env.SERVER_NAME }}" \
             --zone="${{ env.GCP_ZONE }}" \
             --quiet \
-            --command="cd ${{ env.APP_DIR }}-new && tar xzf code.tar.gz && rm code.tar.gz"
+            --command="sudo rm -rf ${{ env.APP_DIR }}-new && sudo mkdir -p ${{ env.APP_DIR }}-new && sudo tar xzf /tmp/code.tar.gz -C ${{ env.APP_DIR }}-new && rm /tmp/code.tar.gz"
 
       - name: Upload env file
         run: |
@@ -117,7 +113,11 @@ jobs:
             --zone="${{ env.GCP_ZONE }}" \
             --quiet \
             /tmp/app.env \
-            "${{ env.SERVER_NAME }}:${{ env.APP_DIR }}-new/app/.env"
+            "${{ env.SERVER_NAME }}:/tmp/app.env"
+          gcloud compute ssh "${{ env.SERVER_NAME }}" \
+            --zone="${{ env.GCP_ZONE }}" \
+            --quiet \
+            --command="sudo mv /tmp/app.env ${{ env.APP_DIR }}-new/app/.env"
 
       - name: Upload GCP service account key
         run: |
@@ -125,14 +125,18 @@ jobs:
             --zone="${{ env.GCP_ZONE }}" \
             --quiet \
             /tmp/gcp-key.json \
-            "${{ env.SERVER_NAME }}:/opt/gcp-sa-key.json"
+            "${{ env.SERVER_NAME }}:/tmp/gcp-sa-key.json"
+          gcloud compute ssh "${{ env.SERVER_NAME }}" \
+            --zone="${{ env.GCP_ZONE }}" \
+            --quiet \
+            --command="sudo mv /tmp/gcp-sa-key.json /opt/gcp-sa-key.json"
 
       - name: Run deploy script on server
         run: |
           gcloud compute ssh "${{ env.SERVER_NAME }}" \
             --zone="${{ env.GCP_ZONE }}" \
             --quiet \
-            --command="bash ${{ env.APP_DIR }}-new/scripts/remote-deploy.sh"
+            --command="sudo bash ${{ env.APP_DIR }}-new/scripts/remote-deploy.sh"
 
       # ── Phase 3: Verify ───────────────────────────────────────────────
 
