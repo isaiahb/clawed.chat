@@ -61,19 +61,17 @@ jobs:
         with:
           project_id: ${{ env.GCP_PROJECT }}
 
-      # ── Phase 1: Infrastructure (Pulumi) ──────────────────────────────
+      # ── Phase 1: Infrastructure (Pulumi via Bun) ────────────────────────
 
       - name: Install Pulumi dependencies
         run: bun install
         working-directory: deploy
 
       - name: Pulumi up (ensure VM + DNS exist)
-        uses: pulumi/actions@v6
-        with:
-          command: up
-          stack-name: dev
-          work-dir: deploy
-          cloud-url: https://api.pulumi.com
+        run: |
+          cd deploy
+          bunx pulumi login
+          bunx pulumi up --yes --stack dev
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -82,7 +80,7 @@ jobs:
         id: infra
         run: |
           cd deploy
-          SERVER_IP=$(pulumi stack output serverIp --stack dev 2>/dev/null || echo "")
+          SERVER_IP=$(bunx pulumi stack output serverIp --stack dev 2>/dev/null || echo "")
           echo "server_ip=$SERVER_IP" >> $GITHUB_OUTPUT
           echo "Server IP: $SERVER_IP"
         env:
@@ -92,11 +90,25 @@ jobs:
 
       - name: Upload code to server
         run: |
-          gcloud compute scp --recurse \
+          gcloud compute ssh "${{ env.SERVER_NAME }}" \
+            --zone="${{ env.GCP_ZONE }}" \
+            --quiet \
+            --command="rm -rf ${{ env.APP_DIR }}-new && mkdir -p ${{ env.APP_DIR }}-new"
+          tar czf /tmp/code.tar.gz \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='deploy/node_modules' \
+            .
+          gcloud compute scp \
             --zone="${{ env.GCP_ZONE }}" \
             --compress \
             --quiet \
-            . "${{ env.SERVER_NAME }}:${{ env.APP_DIR }}-new"
+            /tmp/code.tar.gz \
+            "${{ env.SERVER_NAME }}:${{ env.APP_DIR }}-new/code.tar.gz"
+          gcloud compute ssh "${{ env.SERVER_NAME }}" \
+            --zone="${{ env.GCP_ZONE }}" \
+            --quiet \
+            --command="cd ${{ env.APP_DIR }}-new && tar xzf code.tar.gz && rm code.tar.gz"
 
       - name: Upload env file
         run: |

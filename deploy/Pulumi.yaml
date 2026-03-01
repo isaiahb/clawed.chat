@@ -11,6 +11,4 @@ runtime:
   name: nodejs
   options:
     packagemanager: bun
-    typescript: false
-    nodeargs: "--import tsx"
 description: clawed.chat backend infrastructure — deploys the Hono/Bun server to GCP
