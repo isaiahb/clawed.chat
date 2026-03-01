@@ -1,0 +1,108 @@
+name: Desktop Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Release channel"
+        required: true
+        default: "canary"
+        type: choice
+        options:
+          - canary
+          - stable
+      publish_to_r2:
+        description: "Upload artifacts to Cloudflare R2"
+        required: true
+        default: true
+        type: boolean
+      create_github_release:
+        description: "Create a GitHub Release and attach artifacts"
+        required: true
+        default: true
+        type: boolean
+  push:
+    tags:
+      - "desktop-v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    name: Build Desktop Artifacts
+    runs-on: macos-14
+    defaults:
+      run:
+        shell: bash
+        working-directory: desktop
+
+    env:
+      CHANNEL: ${{ github.event.inputs.channel || 'stable' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.10"
+
+      - name: Install desktop dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build desktop artifacts
+        run: |
+          if [[ "${CHANNEL}" == "stable" ]]; then
+            bun run build:release
+          else
+            bun run build:canary
+          fi
+
+      - name: Prepare release manifest
+        run: ./ci/scripts/prepare-release.sh "${CHANNEL}"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-artifacts-${{ env.CHANNEL }}-${{ github.sha }}
+          path: desktop/artifacts/*
+          if-no-files-found: error
+
+      - name: Publish to Cloudflare R2
+        if: ${{ github.event.inputs.publish_to_r2 != 'false' }}
+        run: ./ci/scripts/publish-r2.sh
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.DESKTOP_CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_R2_BUCKET: ${{ vars.DESKTOP_CLOUDFLARE_R2_BUCKET }}
+          CLOUDFLARE_R2_PUBLIC_BASE_URL: ${{ vars.DESKTOP_CLOUDFLARE_R2_PUBLIC_BASE_URL }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.DESKTOP_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.DESKTOP_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+
+      - name: Create GitHub Release
+        if: ${{ github.event.inputs.create_github_release != 'false' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          TAG="desktop-v${VERSION}"
+
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists, uploading artifacts"
+          else
+            gh release create "${TAG}" --title "Desktop ${VERSION}" --notes "Desktop build (${CHANNEL})"
+          fi
+
+          gh release upload "${TAG}" artifacts/* --clobber
+
+      - name: Summary
+        run: |
+          echo "## Desktop Release" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Channel: ${CHANNEL}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Artifacts: \\`desktop/artifacts/*\\`" >> "$GITHUB_STEP_SUMMARY"
