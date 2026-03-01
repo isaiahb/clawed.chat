@@ -946,6 +946,36 @@ export default function AskPage({ userId }: AskPageProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const actionIndicator = useActionIndicator();
 
+  // Draggable sidebar width
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const isDraggingRef = useRef(false);
+
+  const handleSidebarDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDraggingRef.current = true;
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!isDraggingRef.current) return;
+      const newWidth = Math.min(Math.max(startWidth + (ev.clientX - startX), 200), 600);
+      setSidebarWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      isDraggingRef.current = false;
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, [sidebarWidth]);
+
   const activeConversation = conversations.find(
     (c) => c.id === activeConversationId,
   );
@@ -966,6 +996,15 @@ export default function AskPage({ userId }: AskPageProps) {
     const unlockWakeWord = () => {
       fetch(`/api/wake-word-unlock?userId=${encodeURIComponent(userId)}`, {
         method: "POST",
+      }).catch(() => {});
+    };
+
+    /** Speak the final response text aloud on the glasses */
+    const speakResponse = (text: string) => {
+      fetch("/api/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, userId }),
       }).catch(() => {});
     };
 
@@ -1024,6 +1063,9 @@ export default function AskPage({ userId }: AskPageProps) {
               return c;
             }),
           );
+
+          // Read the response aloud on the glasses
+          speakResponse(finalContent);
         }
         return;
       }
@@ -1311,7 +1353,7 @@ export default function AskPage({ userId }: AskPageProps) {
       {/* ══════════════════════════════════════════════
           LEFT COLUMN — Session Boxes
           ══════════════════════════════════════════════ */}
-      <div className="hidden md:flex w-72 lg:w-80 flex-col border-r border-border bg-background shrink-0">
+      <div className="hidden md:flex flex-col border-r border-border bg-background shrink-0" style={{ width: sidebarWidth }}>
         {/* Header */}
         <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
           <h2 className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground select-none">
@@ -1385,6 +1427,12 @@ export default function AskPage({ userId }: AskPageProps) {
           </p>
         </div>
       </div>
+
+      {/* Drag handle */}
+      <div
+        onMouseDown={handleSidebarDragStart}
+        className="hidden md:block w-1 cursor-col-resize hover:bg-claw-red/30 active:bg-claw-red/50 transition-colors duration-150 shrink-0"
+      />
 
       {/* ══════════════════════════════════════════════
           RIGHT COLUMN — Active Chat / Empty State
