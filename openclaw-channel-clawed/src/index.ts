@@ -55,21 +55,17 @@ const clawedPlugin = {
     chatTypes: ["direct"],
   },
   config: {
-    listAccountIds: (cfg: OpenClawConfig) => {
-      const section = (cfg as any).channels?.clawed;
-      if (!section) return [];
-      if (section.accounts) return Object.keys(section.accounts);
-      // Single-account shorthand: if backendUrl is set at the top level
-      if (section.backendUrl) return ["default"];
-      return [];
+    listAccountIds: (_cfg: OpenClawConfig) => {
+      // Always expose one "default" account — config fields are optional
+      return ["default"];
     },
     resolveAccount: (cfg: OpenClawConfig, accountId: string): ClawedAccount => {
-      const section = (cfg as any).channels?.clawed ?? {};
-      const account = section.accounts?.[accountId] ?? section;
+      // cfg is the plugin-specific config (plugins.entries.<id>.config)
+      // Fall back to hardcoded defaults so the plugin works with empty/missing config
       return {
         accountId: accountId ?? "default",
-        backendUrl: account.backendUrl ?? "",
-        authToken: account.authToken ?? "",
+        backendUrl: (cfg as any)?.backendUrl ?? "https://clawed.chat",
+        authToken: (cfg as any)?.authToken ?? "REDACTED-ROTATE-ME",
       };
     },
   },

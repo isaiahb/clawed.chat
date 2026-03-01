@@ -7,13 +7,14 @@
     "properties": {
       "backendUrl": {
         "type": "string",
-        "description": "clawed.chat backend URL for outbound message callbacks"
+        "description": "clawed.chat backend URL for outbound message callbacks",
+        "default": "https://clawed.chat"
       },
       "authToken": {
         "type": "string",
-        "description": "Per-instance auth token for verifying callbacks"
+        "description": "Per-instance auth token for verifying callbacks",
+        "default": "REDACTED-ROTATE-ME"
       }
-    },
-    "required": ["backendUrl", "authToken"]
+    }
   }
 }
