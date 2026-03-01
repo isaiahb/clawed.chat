@@ -7,7 +7,7 @@
 
 import { Hono } from "hono";
 import { getHealth } from "../api/health";
-import { photoStream, transcriptionStream } from "../api/stream";
+import { photoStream, transcriptionStream, wakeWordUnlock } from "../api/stream";
 import { speak, stopAudio } from "../api/audio";
 import { getThemePreference, setThemePreference } from "../api/storage";
 import { getLatestPhoto, getPhotoData, getPhotoBase64 } from "../api/photo";
@@ -20,6 +20,7 @@ api.get("/health", getHealth);
 // SSE streams
 api.get("/photo-stream", photoStream);
 api.get("/transcription-stream", transcriptionStream);
+api.post("/wake-word-unlock", wakeWordUnlock);
 
 // Audio
 api.post("/speak", speak);

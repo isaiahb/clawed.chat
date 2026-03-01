@@ -22,7 +22,7 @@ export class TranscriptionManager {
         console.log(
           `🔊 [${this.user.userId}] Voice query ready: "${query}"`,
         );
-        // TODO: wire to OpenClaw chat when ready
+        this.broadcastVoiceQuery(query);
       },
       silenceTimeoutMs: 2000,
     });
@@ -60,6 +60,29 @@ export class TranscriptionManager {
         this.sseClients.delete(client);
       }
     }
+  }
+
+  /** Send a voice-query event to all SSE clients so the frontend can submit it to OpenClaw */
+  broadcastVoiceQuery(query: string): void {
+    const payload = JSON.stringify({
+      type: "voice-query",
+      query,
+      timestamp: Date.now(),
+      userId: this.user.userId,
+    });
+
+    for (const client of this.sseClients) {
+      try {
+        client.write(payload);
+      } catch {
+        this.sseClients.delete(client);
+      }
+    }
+  }
+
+  /** Call when Claude's response is done to re-enable wake word detection */
+  unlockWakeWord(): void {
+    this.wakeWord.unlock();
   }
 
   addSSEClient(client: SSEWriter): void {

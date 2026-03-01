@@ -53,6 +53,18 @@ export function photoStream(c: Context) {
   });
 }
 
+/** POST /wake-word-unlock — re-enable wake word detection after Claude responds */
+export function wakeWordUnlock(c: Context) {
+  const userId = c.req.query("userId");
+  if (!userId) return c.json({ error: "userId is required" }, 400);
+
+  const user = sessions.get(userId);
+  if (!user) return c.json({ error: `No user for ${userId}` }, 404);
+
+  user.transcription.unlockWakeWord();
+  return c.json({ ok: true });
+}
+
 /** GET /transcription-stream — SSE for real-time transcriptions */
 export function transcriptionStream(c: Context) {
   const userId = c.req.query("userId");

@@ -41,6 +41,13 @@ export default function HomePage({ userId }: HomePageProps) {
     const streamRef = { content: "" };
     const finalizedRuns = new Set<string>();
 
+    /** Notify server that Claude is done so wake word detection re-enables */
+    const unlockWakeWord = () => {
+      fetch(`/api/wake-word-unlock?userId=${encodeURIComponent(userId)}`, {
+        method: "POST",
+      }).catch(() => {});
+    };
+
     const unsubscribe = onDelta((delta) => {
       const convId = activeConvRef.current;
       if (!convId) return;
@@ -67,6 +74,7 @@ export default function HomePage({ userId }: HomePageProps) {
         streamRef.content = "";
         setStreamingContent("");
         setIsLoading(false);
+        unlockWakeWord();
 
         if (finalContent) {
           const assistantMsg: Message = {
@@ -101,6 +109,7 @@ export default function HomePage({ userId }: HomePageProps) {
         streamRef.content = "";
         setStreamingContent("");
         setIsLoading(false);
+        unlockWakeWord();
 
         const errorMsg: Message = {
           id: `msg-${Date.now()}`,
@@ -123,6 +132,7 @@ export default function HomePage({ userId }: HomePageProps) {
         streamRef.content = "";
         setStreamingContent("");
         setIsLoading(false);
+        unlockWakeWord();
 
         if (partial) {
           const assistantMsg: Message = {
@@ -172,40 +182,6 @@ export default function HomePage({ userId }: HomePageProps) {
                 ...prev,
               ].slice(0, 20);
             });
-          } catch {}
-        };
-
-        eventSource.onerror = () => {
-          eventSource?.close();
-          setTimeout(connect, 3000);
-        };
-      } catch {}
-    };
-
-    connect();
-    return () => eventSource?.close();
-  }, [userId]);
-
-  // Connect to SSE transcription stream — log only
-  useEffect(() => {
-    let eventSource: EventSource | null = null;
-
-    const connect = () => {
-      try {
-        eventSource = new EventSource(
-          `/api/transcription-stream?userId=${encodeURIComponent(userId)}`
-        );
-
-        eventSource.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data.type === "connected") return;
-            const prefix = data.isFinal
-              ? "[Transcription FINAL]"
-              : "[Transcription]";
-            console.log(
-              `${prefix} ${data.text} (${new Date(data.timestamp).toLocaleTimeString()})`
-            );
           } catch {}
         };
 
@@ -313,6 +289,56 @@ export default function HomePage({ userId }: HomePageProps) {
     },
     [activeConversationId, createConversation, photos, sendMessage]
   );
+
+  // Keep a ref to handleSend so the SSE effect doesn't reconnect on every render
+  const handleSendRef = useRef(handleSend);
+  useEffect(() => {
+    handleSendRef.current = handleSend;
+  }, [handleSend]);
+
+  // Connect to SSE transcription stream — log transcriptions + handle voice queries
+  useEffect(() => {
+    let eventSource: EventSource | null = null;
+
+    const connect = () => {
+      try {
+        eventSource = new EventSource(
+          `/api/transcription-stream?userId=${encodeURIComponent(userId)}`
+        );
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === "connected") return;
+
+            // Voice query from wake word detection — auto-submit to OpenClaw
+            if (data.type === "voice-query") {
+              console.log(
+                `[VoiceQuery] "${data.query}" (${new Date(data.timestamp).toLocaleTimeString()})`
+              );
+              handleSendRef.current(data.query);
+              return;
+            }
+
+            const prefix = data.isFinal
+              ? "[Transcription FINAL]"
+              : "[Transcription]";
+            console.log(
+              `${prefix} ${data.text} (${new Date(data.timestamp).toLocaleTimeString()})`
+            );
+          } catch {}
+        };
+
+        eventSource.onerror = () => {
+          eventSource?.close();
+          setTimeout(connect, 3000);
+        };
+      } catch {}
+    };
+
+    connect();
+    return () => eventSource?.close();
+  }, [userId]);
 
   return (
     <div className="flex h-screen overflow-hidden">

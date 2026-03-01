@@ -45,6 +45,7 @@ export class WakeWordDetector {
   private active = false;
   private queryParts: string[] = [];
   private silenceTimer: ReturnType<typeof setTimeout> | null = null;
+  private processing = false;
   private onQueryReady: QueryCallback;
   private silenceTimeoutMs: number;
 
@@ -53,12 +54,19 @@ export class WakeWordDetector {
     this.silenceTimeoutMs = opts.silenceTimeoutMs ?? 2000;
   }
 
+  /** Call this when Claude's response is done (final/error/aborted) to re-enable wake word detection */
+  unlock(): void {
+    this.processing = false;
+    console.log(`🎙️  Wake word detection unlocked`);
+  }
+
   /**
    * Feed every transcription event into this method.
    * Only final transcriptions trigger activation / query accumulation.
    */
   process(text: string, isFinal: boolean): void {
     if (!isFinal) return;
+    if (this.processing) return;
 
     const cleaned = text.trim();
     if (!cleaned) return;
@@ -126,6 +134,8 @@ export class WakeWordDetector {
     }
 
     console.log(`🎙️  Query finalized: "${query}"`);
+    this.processing = true;
+    console.log(`🎙️  Wake word detection locked (waiting for response)`);
     this.onQueryReady(query);
   }
 
