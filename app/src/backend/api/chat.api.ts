@@ -18,7 +18,6 @@ import type {Context} from "hono"
 import {getAuth} from "@hono/clerk-auth"
 import {ConvexHttpClient} from "convex/browser"
 import {api} from "../../../../convex/_generated/api"
-import * as openclawService from "../services/openclaw.service"
 
 const app = new Hono()
 
@@ -94,33 +93,10 @@ async function sendMessage(c: Context) {
     return c.json({error: "Failed to save message"}, 500)
   }
 
-  // ─── Dispatch to OpenClaw via Gateway RPC ────────────────────────────
-  // The agent's response will arrive asynchronously via:
-  //   channel plugin sendText → POST /api/openclaw/outbound → Convex → frontend
-  // Fall back to OPENCLAW_GATEWAY_URL env var for demo/dev (when instance has no IP yet)
-  const gatewayEnvUrl = process.env.OPENCLAW_GATEWAY_URL
-  const gatewayIp = instance.ip || (gatewayEnvUrl ? new URL(gatewayEnvUrl).hostname : null)
-
-  if (gatewayIp && (instance.status === "running" || instance.status === "starting" || gatewayEnvUrl)) {
-    try {
-      const result = await openclawService.sendMessage({
-        ip: gatewayIp,
-        token: process.env.OPENCLAW_GATEWAY_TOKEN || "clawed-default",
-        text: message,
-        userId: auth.userId,
-        source: source as "web" | "glasses" | "desktop",
-        instanceId,
-      })
-      console.log(`[chat] dispatched to OpenClaw: session=${result.sessionKey} dispatched=${result.dispatched}`)
-    } catch (err: any) {
-      // Don't fail the request — the message is already saved in Convex.
-      // The user sees their message, and we log the dispatch failure.
-      // They can retry or the agent may still respond if the gateway recovers.
-      console.error(`[chat] failed to dispatch to OpenClaw (message saved, agent may not respond):`, err.message)
-    }
-  } else {
-    console.warn(`[chat] instance ${instanceId} is not running (status=${instance.status}, ip=${instance.ip}) — message saved but not dispatched`)
-  }
+  // ─── Agent dispatch is handled by the WebSocket proxy ────────────────
+  // The frontend sends messages to the agent via /api/openclaw-ws (useOpenClaw hook).
+  // This endpoint ONLY writes the user message to Convex.
+  // The WebSocket proxy handles: auth → chat.send → streaming response → persist.
 
   // ─── Touch last_active_at ────────────────────────────────────────────
   try {
