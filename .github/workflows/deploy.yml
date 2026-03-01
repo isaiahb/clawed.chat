@@ -2,12 +2,7 @@
 #
 # Two-phase deploy:
 #   1. Pulumi ensures our backend GCP VM + DNS exists (infra)
-#   2. SSH into the VM, pull latest code, install deps, restart service
-#
-# The backend VM runs the Hono/Bun server that serves:
-#   - Dashboard frontend (React)
-#   - API routes (instances, chat, LLM proxy, etc.)
-#   - Pulumi Automation API (creates per-user VMs at runtime)
+#   2. SSH into the VM, upload code, run remote-deploy.sh
 #
 # Required GitHub Secrets:
 #   PULUMI_ACCESS_TOKEN      — from app.pulumi.com/account/tokens
@@ -30,6 +25,12 @@ concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  SERVER_NAME: clawed-chat-server
+  GCP_ZONE: ${{ vars.GCP_ZONE || 'us-west1-a' }}
+  GCP_PROJECT: ${{ vars.GCP_PROJECT || 'clawed-chat' }}
+  APP_DIR: /opt/clawed-chat
+
 jobs:
   deploy:
     name: Deploy to GCP
@@ -45,12 +46,22 @@ jobs:
         with:
           bun-version: "1.3.10"
 
-      # ── Phase 1: Infrastructure (Pulumi) ──────────────────────────────
-
       - name: Setup GCP credentials
         run: |
           echo "${{ secrets.GCP_CREDENTIALS_BASE64 }}" | base64 -d > /tmp/gcp-key.json
           echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
+
+      - name: Authenticate gcloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS_BASE64 }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT }}
+
+      # ── Phase 1: Infrastructure (Pulumi) ──────────────────────────────
 
       - name: Install Pulumi dependencies
         run: bun install
@@ -73,145 +84,61 @@ jobs:
           cd deploy
           SERVER_IP=$(pulumi stack output serverIp --stack dev 2>/dev/null || echo "")
           echo "server_ip=$SERVER_IP" >> $GITHUB_OUTPUT
+          echo "Server IP: $SERVER_IP"
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
-      # ── Phase 2: Deploy App Code via SSH ──────────────────────────────
+      # ── Phase 2: Deploy App Code ──────────────────────────────────────
 
-      - name: Setup SSH key from GCP service account
+      - name: Upload code to server
         run: |
-          mkdir -p ~/.ssh
-          # Use gcloud to configure SSH access to the VM
-          gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
-          gcloud config set project ${{ vars.GCP_PROJECT }}
-          # Generate SSH keys and add to project metadata if needed
-          ssh-keygen -t rsa -b 4096 -f ~/.ssh/gcp_deploy -N "" -q
-          gcloud compute os-login ssh-keys add --key-file=~/.ssh/gcp_deploy.pub --ttl=1h 2>/dev/null || true
-
-      - name: Deploy app to server
-        run: |
-          SERVER="clawed-chat-server"
-          ZONE="${{ vars.GCP_ZONE || 'us-west1-a' }}"
-          APP_DIR="/opt/clawed-chat"
-
-          # Upload the full repo to the server
           gcloud compute scp --recurse \
-            --zone="$ZONE" \
+            --zone="${{ env.GCP_ZONE }}" \
             --compress \
-            --exclude=".git,node_modules,.repos,.isaiah,desktop/build" \
-            . "${SERVER}:${APP_DIR}-new"
+            --quiet \
+            . "${{ env.SERVER_NAME }}:${{ env.APP_DIR }}-new"
 
-          # Write the .env file (secrets from GitHub)
-          echo '${{ secrets.APP_ENV }}' | gcloud compute ssh "$SERVER" \
-            --zone="$ZONE" \
-            --command="cat > ${APP_DIR}-new/app/.env"
+      - name: Upload env file
+        run: |
+          echo '${{ secrets.APP_ENV }}' > /tmp/app.env
+          gcloud compute scp \
+            --zone="${{ env.GCP_ZONE }}" \
+            --quiet \
+            /tmp/app.env \
+            "${{ env.SERVER_NAME }}:${{ env.APP_DIR }}-new/app/.env"
 
-          # Also write GCP service account key for Pulumi Automation API
-          gcloud compute scp --zone="$ZONE" \
+      - name: Upload GCP service account key
+        run: |
+          gcloud compute scp \
+            --zone="${{ env.GCP_ZONE }}" \
+            --quiet \
             /tmp/gcp-key.json \
-            "${SERVER}:/opt/gcp-sa-key.json"
+            "${{ env.SERVER_NAME }}:/opt/gcp-sa-key.json"
 
-          # Run the deploy script on the server
-          gcloud compute ssh "$SERVER" --zone="$ZONE" --command="bash -s" << 'DEPLOY_SCRIPT'
-            set -euo pipefail
+      - name: Run deploy script on server
+        run: |
+          gcloud compute ssh "${{ env.SERVER_NAME }}" \
+            --zone="${{ env.GCP_ZONE }}" \
+            --quiet \
+            --command="bash ${{ env.APP_DIR }}-new/scripts/remote-deploy.sh"
 
-            APP_DIR="/opt/clawed-chat"
-            NEW_DIR="${APP_DIR}-new"
-            OLD_DIR="${APP_DIR}-old"
-
-            echo "==> Installing Bun if needed..."
-            if ! command -v bun &> /dev/null; then
-              curl -fsSL https://bun.sh/install | bash
-              export PATH="/root/.bun/bin:$PATH"
-            fi
-            export PATH="/root/.bun/bin:$PATH"
-
-            echo "==> Installing dependencies..."
-            cd "$NEW_DIR"
-            bun install --production
-
-            echo "==> Updating GOOGLE_APPLICATION_CREDENTIALS in .env..."
-            if ! grep -q "GOOGLE_APPLICATION_CREDENTIALS" app/.env 2>/dev/null; then
-              echo "GOOGLE_APPLICATION_CREDENTIALS=/opt/gcp-sa-key.json" >> app/.env
-            else
-              sed -i 's|GOOGLE_APPLICATION_CREDENTIALS=.*|GOOGLE_APPLICATION_CREDENTIALS=/opt/gcp-sa-key.json|' app/.env
-            fi
-
-            echo "==> Swapping directories (zero-downtime)..."
-            if [ -d "$APP_DIR" ]; then
-              mv "$APP_DIR" "$OLD_DIR"
-            fi
-            mv "$NEW_DIR" "$APP_DIR"
-
-            echo "==> Setting up systemd service..."
-            cat > /etc/systemd/system/clawed-chat.service << 'SYSTEMD'
-[Unit]
-Description=clawed.chat Hono/Bun Server
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/opt/clawed-chat/app
-ExecStart=/root/.bun/bin/bun run start
-Restart=always
-RestartSec=3
-Environment=NODE_ENV=production
-Environment=PATH=/root/.bun/bin:/usr/local/bin:/usr/bin:/bin
-EnvironmentFile=/opt/clawed-chat/app/.env
-
-# Security
-NoNewPrivileges=true
-ProtectSystem=strict
-ReadWritePaths=/opt/clawed-chat /tmp /root/.pulumi
-PrivateTmp=true
-
-[Install]
-WantedBy=multi-user.target
-SYSTEMD
-
-            systemctl daemon-reload
-            systemctl enable clawed-chat
-            systemctl restart clawed-chat
-
-            echo "==> Waiting for health check..."
-            for i in $(seq 1 20); do
-              if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
-                echo "==> Server is healthy!"
-                break
-              fi
-              if [ "$i" -eq 20 ]; then
-                echo "==> WARNING: Health check failed after 60s"
-                systemctl status clawed-chat --no-pager || true
-                journalctl -u clawed-chat --no-pager -n 30 || true
-                exit 1
-              fi
-              sleep 3
-            done
-
-            echo "==> Cleaning up old deploy..."
-            rm -rf "$OLD_DIR"
-
-            echo "==> Deploy complete!"
-          DEPLOY_SCRIPT
+      # ── Phase 3: Verify ───────────────────────────────────────────────
 
       - name: Verify deployment
         if: steps.infra.outputs.server_ip != ''
         run: |
-          echo "Server IP: ${{ steps.infra.outputs.server_ip }}"
-          echo "Testing health endpoint..."
+          echo "Testing health endpoint at ${{ steps.infra.outputs.server_ip }}..."
           for i in $(seq 1 10); do
             STATUS=$(curl -sf "http://${{ steps.infra.outputs.server_ip }}:3000/api/health" 2>/dev/null | jq -r '.status' 2>/dev/null || echo "unreachable")
             if [ "$STATUS" = "ok" ]; then
-              echo "✅ Deploy verified — server is healthy at ${{ steps.infra.outputs.server_ip }}"
+              echo "Deploy verified — server is healthy"
               exit 0
             fi
             sleep 5
           done
-          echo "⚠️ Could not verify deploy — server may still be starting"
+          echo "WARNING: Could not verify deploy — server may still be starting"
 
-      - name: Post deploy summary
+      - name: Deploy summary
         if: always()
         run: |
           echo "## Deploy Summary" >> $GITHUB_STEP_SUMMARY
