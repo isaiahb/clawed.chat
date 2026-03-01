@@ -60,8 +60,8 @@ function PageLoader() {
     <div className="flex min-h-[50vh] items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
         <div className="relative h-10 w-10">
-          <div className="absolute inset-0 animate-spin border-2 border-claw-red/20 border-t-claw-red" />
-          <div className="absolute inset-1 animate-[spin_1.5s_linear_infinite_reverse] border border-claw-red/10 border-b-claw-red/40" />
+          <div className="absolute inset-0 rounded-full animate-spin border-2 border-claw-red/20 border-t-claw-red" />
+          <div className="absolute inset-1 rounded-full animate-[spin_1.5s_linear_infinite_reverse] border border-claw-red/10 border-b-claw-red/40" />
         </div>
         <span className="text-xs text-muted-foreground tracking-widest uppercase">
           Loading…
@@ -138,10 +138,14 @@ export default function App() {
             closeButton
             toastOptions={{
               style: {
-                background: "var(--card)",
+                background: "oklch(from var(--card) l c h / 0.7)",
                 borderColor: "var(--border)",
                 color: "var(--foreground)",
-                borderRadius: "0px",
+                borderRadius: "12px",
+                backdropFilter: "blur(20px) saturate(1.4)",
+                WebkitBackdropFilter: "blur(20px) saturate(1.4)",
+                boxShadow:
+                  "0 4px 24px oklch(0 0 0 / 0.1), inset 0 1px 0 oklch(1 0 0 / 0.05)",
               },
             }}
           />

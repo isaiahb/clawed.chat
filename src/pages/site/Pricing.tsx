@@ -826,7 +826,7 @@ function LimitBadge({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-2 border bg-muted/50 px-3 py-2">
+    <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/40 backdrop-blur-sm px-3 py-2">
       <span className="text-muted-foreground">{icon}</span>
       <div className="min-w-0">
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider leading-none">

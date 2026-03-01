@@ -5,93 +5,35 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   Glasses,
-  Sun,
-  Moon,
   Sparkles,
   Zap,
   Lock,
-  ExternalLink,
-  Heart,
   AlertTriangle,
-  Github,
   Terminal,
-  Globe,
   Server,
   Monitor,
-  Bot,
-  Mail,
-  Calendar,
-  Code2,
-  FileText,
-  Plug,
-  Image,
-  UserCheck,
-  Quote,
+  Check,
+  X,
+  ChevronRight,
   Cloud,
   Eye,
-  Tv,
   Download,
-  Play,
   Cpu,
   Mic,
   Radio,
   ShieldCheck,
   Smartphone,
-  ArrowUpRight,
-  Check,
-  X,
-  MousePointer,
-  ChevronRight,
+  Quote,
 } from "lucide-react";
-import { useAppStore } from "@/stores/app-store";
 import { useEffect, useState, type ReactNode } from "react";
 
-// ──────────────────────────────────────────────
-// Theme Toggle (floating)
-// ──────────────────────────────────────────────
-
-function ThemeToggle() {
-  const { theme, setTheme } = useAppStore();
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const applyTheme = (isDark: boolean) => {
-      root.classList.toggle("dark", isDark);
-      root.classList.toggle("light", !isDark);
-      root.style.colorScheme = isDark ? "dark" : "light";
-    };
-
-    if (theme === "system") {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
-      applyTheme(prefersDark.matches);
-      const handler = (e: MediaQueryListEvent) => applyTheme(e.matches);
-      prefersDark.addEventListener("change", handler);
-      return () => prefersDark.removeEventListener("change", handler);
-    }
-    applyTheme(theme === "dark");
-  }, [theme]);
-
-  const isDark =
-    theme === "dark" ||
-    (theme === "system" &&
-      (typeof window !== "undefined"
-        ? window.matchMedia("(prefers-color-scheme: dark)").matches
-        : true));
-
-  return (
-    <button
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="fixed bottom-5 right-5 z-50 flex h-10 w-10 items-center justify-center border border-border bg-card shadow-lg transition-all hover:border-foreground hover:bg-muted active:translate-y-px backdrop-blur-xl"
-      aria-label="Toggle theme"
-    >
-      {isDark ? (
-        <Sun className="h-4 w-4 text-muted-foreground" />
-      ) : (
-        <Moon className="h-4 w-4 text-muted-foreground" />
-      )}
-    </button>
-  );
-}
+// ── Visual enhancement imports ──
+import { useScrollReveal, useStaggerReveal } from "@/hooks/useScrollReveal";
+import { ParticleField } from "@/components/shared/ParticleField";
+import { GlowCursor, CardGlow } from "@/components/shared/GlowCursor";
+import { ScrollProgress } from "@/components/shared/ScrollProgress";
+import { WordRotator, Typewriter } from "@/components/shared/AnimatedText";
+import { LobsterClaw3D } from "@/components/shared/LobsterClaw3D";
 
 // ──────────────────────────────────────────────
 // Shared micro-components
@@ -105,7 +47,7 @@ function Tag({
   icon?: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-claw-red">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-claw-red/5 border border-claw-red/10 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.16em] text-claw-red backdrop-blur-sm">
       {Icon && <Icon className="h-3 w-3" />}
       {children}
     </span>
@@ -115,13 +57,80 @@ function Tag({
 function SectionDivider() {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent rounded-full" />
     </div>
   );
 }
 
 // ──────────────────────────────────────────────
-// 1 · Hero — Split layout: left copy, right 3D claw
+// Animated Terminal Lines
+// ──────────────────────────────────────────────
+
+const terminalLines = [
+  { text: "$ git clone openclaw && cd openclaw", ok: true },
+  { text: "$ docker compose up", ok: true },
+  { text: "ERROR: port 5432 already in use", ok: false },
+  { text: "Build failed. 14 errors.", ok: false },
+];
+
+function TerminalLines({ revealed }: { revealed: boolean }) {
+  const [visibleLines, setVisibleLines] = useState(0);
+
+  useEffect(() => {
+    if (!revealed) {
+      setVisibleLines(0);
+      return;
+    }
+    let i = 0;
+    const show = () => {
+      i++;
+      setVisibleLines(i);
+      if (i < terminalLines.length) {
+        const delay = terminalLines[i]?.ok ? 400 : 700;
+        setTimeout(show, delay);
+      }
+    };
+    const initial = setTimeout(show, 300);
+    return () => clearTimeout(initial);
+  }, [revealed]);
+
+  return (
+    <div className="space-y-2 mb-8">
+      {terminalLines.map((line, i) => (
+        <div
+          key={i}
+          className={`font-mono text-[12px] rounded-lg px-4 py-2.5 transition-all duration-500 ${
+            i < visibleLines
+              ? "opacity-100 translate-x-0"
+              : "opacity-0 -translate-x-4"
+          } ${
+            line.ok
+              ? "bg-muted/60 backdrop-blur-sm text-muted-foreground"
+              : "bg-destructive/10 text-destructive rounded-lg border border-destructive/20"
+          }`}
+          style={{ transitionDelay: `${i * 80}ms` }}
+        >
+          {i < visibleLines && line.ok ? (
+            <Typewriter
+              text={line.text}
+              speed={20}
+              delay={i * 200}
+              cursor={i === visibleLines - 1 && line.ok}
+              cursorChar="_"
+            />
+          ) : i < visibleLines ? (
+            <span className="animate-fade-in">{line.text}</span>
+          ) : (
+            <span className="invisible">{line.text}</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// 1 · Hero
 // ──────────────────────────────────────────────
 
 function Hero() {
@@ -134,16 +143,30 @@ function Hero() {
         <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-background to-transparent" />
       </div>
 
+      {/* Interactive particle field */}
+      <div className="absolute inset-0 -z-[5]">
+        <ParticleField
+          count={35}
+          hue={10}
+          hueSpread={25}
+          opacity={0.6}
+          speed={0.7}
+        />
+      </div>
+
+      {/* Cursor glow */}
+      <GlowCursor size={500} opacity={0.05} />
+
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-4 items-center min-h-[calc(100vh-5rem)] py-16 sm:py-20 lg:py-0">
           {/* Left — Content */}
           <div className="flex flex-col max-w-xl lg:max-w-lg xl:max-w-xl order-2 lg:order-1">
             {/* Badge */}
             <div className="mb-6 animate-fade-in">
-              <span className="inline-flex items-center gap-2 bg-claw-red/8 border border-claw-red/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-claw-red">
+              <span className="inline-flex items-center gap-2 rounded-full bg-claw-red/8 border border-claw-red/15 px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-claw-red backdrop-blur-sm">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping bg-claw-red opacity-40" />
-                  <span className="relative inline-flex h-2 w-2 bg-claw-red" />
+                  <span className="absolute inline-flex h-full w-full rounded-full animate-ping bg-claw-red opacity-40" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-claw-red" />
                 </span>
                 Beta
               </span>
@@ -153,9 +176,14 @@ function Hero() {
             <h1 className="text-[clamp(2.2rem,5vw,3.75rem)] font-black leading-[1.08] tracking-tight animate-slide-up">
               <span className="text-foreground">Your AI agent,</span>
               <br />
-              <span className="text-gradient-red">deployed in</span>
-              <br />
-              <span className="text-gradient-red">30 seconds.</span>
+              <WordRotator
+                words={["deployed", "running", "live", "working"]}
+                interval={3000}
+                transition="blur"
+                className="min-w-[3ch]"
+                wordClassName="text-gradient-red"
+              />{" "}
+              <span className="text-gradient-red">in 30 seconds.</span>
             </h1>
 
             {/* Sub */}
@@ -178,11 +206,11 @@ function Hero() {
               <Button
                 size="lg"
                 asChild
-                className="gap-2 px-7 h-12 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[15px] transition-all active:translate-y-px"
+                className="group/btn gap-2 px-7 h-12 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[15px] transition-all active:translate-y-px shadow-md hover:shadow-lg hover:shadow-claw-red/20"
               >
                 <Link to="/sign-in">
                   Deploy your agent
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />
                 </Link>
               </Button>
               <Button
@@ -199,122 +227,31 @@ function Hero() {
             </div>
 
             {/* Trust line */}
-            <div className="mt-8 flex items-center gap-5 text-[12px] text-muted-foreground animate-fade-in [animation-delay:600ms]">
-              <span className="flex items-center gap-1.5">
+            <div className="mt-8 flex items-center gap-4 text-[12px] text-muted-foreground animate-fade-in [animation-delay:600ms]">
+              <span className="flex items-center gap-1.5 rounded-full bg-card/50 border border-border/40 px-3 py-1 backdrop-blur-sm">
                 <Check className="h-3 w-3 text-claw-red" />
                 Free tier available
               </span>
-              <span className="h-3 w-px bg-border" />
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1.5 rounded-full bg-card/50 border border-border/40 px-3 py-1 backdrop-blur-sm">
                 <Check className="h-3 w-3 text-claw-red" />
                 Smart glasses included
               </span>
-              <span className="hidden sm:block h-3 w-px bg-border" />
-              <span className="hidden sm:flex items-center gap-1.5">
+              <span className="hidden sm:flex items-center gap-1.5 rounded-full bg-card/50 border border-border/40 px-3 py-1 backdrop-blur-sm">
                 <Check className="h-3 w-3 text-claw-red" />
                 No DevOps required
               </span>
             </div>
           </div>
 
-          {/* Right — 3D Claw */}
+          {/* Right — 3D Claw (STL) */}
           <div className="relative flex items-center justify-center order-1 lg:order-2 animate-fade-in-scale [animation-delay:300ms]">
             {/* Ambient glow behind claw */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="h-[300px] w-[300px] sm:h-[400px] sm:w-[400px] bg-claw-red/[0.05] blur-[80px] animate-pulse-subtle" />
             </div>
 
-            {/* Orbit ring */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <svg
-                viewBox="0 0 500 500"
-                className="w-[260px] h-[260px] sm:w-[360px] sm:h-[360px] lg:w-[420px] lg:h-[420px] animate-spin-slow"
-                style={{ animationDuration: "60s" }}
-              >
-                <circle
-                  cx="250"
-                  cy="250"
-                  r="210"
-                  fill="none"
-                  stroke="var(--claw-red)"
-                  strokeWidth="0.5"
-                  opacity="0.08"
-                  strokeDasharray="4 16"
-                />
-                <circle
-                  cx="250"
-                  cy="250"
-                  r="170"
-                  fill="none"
-                  stroke="var(--claw-red)"
-                  strokeWidth="0.3"
-                  opacity="0.05"
-                  strokeDasharray="2 20"
-                />
-                <circle
-                  cx="40"
-                  cy="250"
-                  r="2"
-                  fill="var(--claw-red)"
-                  opacity="0.15"
-                />
-                <circle
-                  cx="460"
-                  cy="250"
-                  r="1.5"
-                  fill="var(--claw-red)"
-                  opacity="0.1"
-                />
-              </svg>
-            </div>
-
-            <div className="w-[280px] h-[280px] sm:w-[380px] sm:h-[380px] lg:w-[460px] lg:h-[460px] xl:w-[520px] xl:h-[520px] flex items-center justify-center">
-              <svg
-                viewBox="-24 -24 48 48"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-3/4 h-3/4 drop-shadow-2xl"
-              >
-                <g transform="scale(1.5)">
-                  <path
-                    d="M-10 2 C-10 2, -6 8, 2 10 C6 11, 12 8, 14 4 C14 4, 10 6, 6 5 C2 4, -4 2, -10 2Z"
-                    fill="#8B0000"
-                    stroke="#aa0000"
-                    strokeWidth="0.5"
-                  />
-                  <path
-                    d="M-10 -1 C-10 -1, -6 -8, 2 -10 C6 -11, 12 -6, 14 -2 C14 -2, 10 -5, 6 -4 C2 -3, -4 -1, -10 -1Z"
-                    fill="#cc0000"
-                    stroke="#ee2222"
-                    strokeWidth="0.5"
-                  >
-                    <animateTransform
-                      attributeName="transform"
-                      type="rotate"
-                      values="0 -10 0;-8 -10 0;0 -10 0"
-                      dur="1.5s"
-                      repeatCount="indefinite"
-                      keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
-                      calcMode="spline"
-                    />
-                  </path>
-                  <circle
-                    cx={-10}
-                    cy={0.5}
-                    r={3}
-                    fill="#550000"
-                    stroke="#770000"
-                    strokeWidth="0.5"
-                  />
-                  <path
-                    d="M-6 -5 C-4 -7, 2 -8, 6 -6"
-                    fill="none"
-                    stroke="#ff4444"
-                    strokeWidth="0.4"
-                    opacity="0.5"
-                  />
-                </g>
-              </svg>
+            <div className="w-[280px] h-[280px] sm:w-[380px] sm:h-[380px] lg:w-[460px] lg:h-[460px] xl:w-[520px] xl:h-[520px]">
+              <LobsterClaw3D className="w-full h-full" />
             </div>
           </div>
         </div>
@@ -328,11 +265,22 @@ function Hero() {
 // ──────────────────────────────────────────────
 
 function ProblemSolution() {
+  const { ref: headerRef, isRevealed: headerRevealed } = useScrollReveal();
+  const { ref: withoutRef, isRevealed: withoutRevealed } = useScrollReveal({
+    delay: 100,
+  });
+  const { ref: withRef, isRevealed: withRevealed } = useScrollReveal({
+    delay: 250,
+  });
+
   return (
     <section className="relative py-24 sm:py-32">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="max-w-2xl mb-16">
+        <div
+          ref={headerRef}
+          className={`max-w-2xl mb-16 transition-all duration-700 ${headerRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+        >
           <Tag icon={Zap}>The Problem</Tag>
           <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
             OpenClaw is <span className="text-gradient-red">incredible</span>.
@@ -341,41 +289,27 @@ function ProblemSolution() {
           </h2>
           <p className="mt-4 text-muted-foreground leading-relaxed max-w-lg">
             OpenClaw is the hottest open-source AI agent — it browses the web,
-            manages files, sends emails, controls your desktop. Think Jarvis,
-            but real and open source. The hard part? Getting it running.
+            manages files, sends emails, controls your desktop. The hard part?
+            Getting it running.
           </p>
         </div>
 
         {/* Comparison */}
         <div className="grid md:grid-cols-2 gap-4">
           {/* Without */}
-          <div className="border border-border bg-card p-8 sm:p-10">
+          <div
+            ref={withoutRef}
+            className={`rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-8 sm:p-10 relative overflow-hidden transition-all duration-700 shadow-sm ${withoutRevealed ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"}`}
+          >
+            <CardGlow color="oklch(0.55 0.22 28)" opacity={0.04} />
             <div className="flex items-center gap-2.5 mb-8">
-              <div className="h-2 w-2 bg-red-500" />
+              <div className="h-2 w-2 rounded-full bg-red-500" />
               <span className="text-[11px] font-bold text-red-400 uppercase tracking-[0.12em]">
                 Without Clawed
               </span>
             </div>
 
-            <div className="space-y-2 mb-8">
-              {[
-                { text: "$ git clone openclaw && cd openclaw", ok: true },
-                { text: "$ docker compose up", ok: true },
-                { text: "ERROR: port 5432 already in use", ok: false },
-                { text: "Build failed. 14 errors.", ok: false },
-              ].map((line, i) => (
-                <div
-                  key={i}
-                  className={`font-mono text-[12px] px-4 py-2.5 ${
-                    line.ok
-                      ? "bg-muted text-muted-foreground"
-                      : "bg-destructive/10 text-destructive border border-destructive/20"
-                  }`}
-                >
-                  {line.text}
-                </div>
-              ))}
-            </div>
+            <TerminalLines revealed={withoutRevealed} />
 
             <div className="space-y-3">
               {[
@@ -396,22 +330,42 @@ function ProblemSolution() {
           </div>
 
           {/* With */}
-          <div className="border border-border bg-card p-8 sm:p-10 relative overflow-hidden">
+          <div
+            ref={withRef}
+            className={`rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-8 sm:p-10 relative overflow-hidden transition-all duration-700 shadow-sm ${withRevealed ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"}`}
+          >
+            <CardGlow color="oklch(0.55 0.2 145)" opacity={0.05} />
             <div className="absolute -top-20 -right-20 h-40 w-40 bg-emerald-500/[0.06] blur-[60px]" />
 
             <div className="flex items-center gap-2.5 mb-8 relative z-10">
-              <div className="h-2 w-2 bg-emerald-500 animate-pulse" />
+              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-[0.12em]">
                 With Clawed Chat
               </span>
             </div>
 
-            <div className="border border-emerald-500/20 bg-emerald-500/[0.03] px-5 py-4 mb-8 relative z-10">
+            <div
+              className={`rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] backdrop-blur-sm px-5 py-4 mb-8 relative z-10 transition-all duration-700 ${withRevealed ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
+              style={{ transitionDelay: "400ms" }}
+            >
               <div className="flex items-center gap-2.5 text-emerald-400 font-mono text-[13px]">
-                <div className="h-2 w-2 bg-emerald-500 animate-pulse" />
-                Your OpenClaw agent is live.
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                {withRevealed ? (
+                  <Typewriter
+                    text="Your OpenClaw agent is live."
+                    speed={35}
+                    delay={600}
+                  />
+                ) : (
+                  <span className="opacity-0">
+                    Your OpenClaw agent is live.
+                  </span>
+                )}
               </div>
-              <div className="mt-1.5 text-[11px] text-muted-foreground font-mono">
+              <div
+                className={`mt-1.5 text-[11px] text-muted-foreground font-mono transition-opacity duration-500 ${withRevealed ? "opacity-100" : "opacity-0"}`}
+                style={{ transitionDelay: "1800ms" }}
+              >
                 Deployed in 28 seconds · 3 channels active
               </div>
             </div>
@@ -422,10 +376,11 @@ function ProblemSolution() {
                 "Talk to your agent via smart glasses",
                 "Watch it work — live desktop stream",
                 "Dashboard for status, channels & skills",
-              ].map((item) => (
+              ].map((item, i) => (
                 <div
                   key={item}
-                  className="flex items-center gap-3 text-[14px] text-foreground"
+                  className={`flex items-center gap-3 text-[14px] text-foreground transition-all duration-500 ${withRevealed ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"}`}
+                  style={{ transitionDelay: `${800 + i * 150}ms` }}
                 >
                   <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                   {item}
@@ -440,248 +395,27 @@ function ProblemSolution() {
 }
 
 // ──────────────────────────────────────────────
-// 3 · Three Pillars
-// ──────────────────────────────────────────────
-
-const pillars = [
-  {
-    icon: Cloud,
-    title: "One-click deploy",
-    desc: "Spin up a cloud VM or install on your Mac Mini. Your OpenClaw agent is live in 30 seconds flat. No Docker. No SSH. No headaches.",
-  },
-  {
-    icon: Glasses,
-    title: "Smart glasses control",
-    desc: "Talk to your agent hands-free. Ask questions, get summaries, trigger actions — all by voice while you're walking to lunch.",
-  },
-  {
-    icon: Tv,
-    title: "Live desktop streaming",
-    desc: "Watch your agent browse the web, fill forms, move files — in real-time. Take over with full remote desktop control anytime.",
-  },
-];
-
-function Pillars() {
-  return (
-    <section className="relative py-24 sm:py-32">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <Tag>How it works</Tag>
-          <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
-            Deploy. Watch.{" "}
-            <span className="text-gradient-red">Talk to your lobster.</span>
-          </h2>
-          <p className="mt-4 text-muted-foreground">
-            We handle the infrastructure. You focus on telling your AI what to
-            do.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-5">
-          {pillars.map((p, i) => (
-            <div
-              key={p.title}
-              className="group border border-border bg-card p-8 transition-all duration-200 hover:border-foreground"
-            >
-              <div className="flex items-center gap-4 mb-6">
-                <div className="flex h-11 w-11 items-center justify-center bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/15 group-hover:border-claw-red/25 transition-all duration-200">
-                  <p.icon className="h-5 w-5 text-claw-red" />
-                </div>
-                <span className="text-[48px] font-black text-border leading-none select-none group-hover:text-muted-foreground/60 transition-colors duration-300">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">
-                {p.title}
-              </h3>
-              <p className="text-[14px] text-muted-foreground leading-relaxed">
-                {p.desc}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ──────────────────────────────────────────────
-// 4 · How It Works — Steps
-// ──────────────────────────────────────────────
-
-function HowItWorks() {
-  const steps = [
-    {
-      icon: UserCheck,
-      label: "Create account",
-      desc: "Sign up at clawed.chat. One click.",
-    },
-    {
-      icon: Server,
-      label: "Choose deploy",
-      desc: "Cloud VM or Mac companion app.",
-    },
-    {
-      icon: Play,
-      label: "Agent goes live",
-      desc: "Dashboard shows status & skills.",
-    },
-    {
-      icon: Eye,
-      label: "Watch it work",
-      desc: "Live stream of your agent's desktop.",
-    },
-    {
-      icon: Glasses,
-      label: "Put on glasses",
-      desc: "Talk hands-free, get audio answers.",
-    },
-  ];
-
-  return (
-    <section className="relative py-24 sm:py-32">
-      <div className="absolute inset-0 bg-muted" />
-      <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <Tag icon={MousePointer}>5 steps</Tag>
-          <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
-            From zero to AI agent in{" "}
-            <span className="text-gradient-red">30 seconds</span>
-          </h2>
-        </div>
-
-        <div className="relative">
-          {/* Connecting line */}
-          <div className="hidden md:block absolute top-6 left-[10%] right-[10%] h-px bg-gradient-to-r from-transparent via-claw-red/15 to-transparent" />
-
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 md:gap-4">
-            {steps.map((step, i) => (
-              <div
-                key={step.label}
-                className="flex flex-col items-center text-center"
-              >
-                <div className="relative mb-4">
-                  <div className="flex h-12 w-12 items-center justify-center bg-card border border-border relative z-10">
-                    <step.icon className="h-5 w-5 text-claw-red" />
-                  </div>
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center bg-claw-red text-white text-[10px] font-bold z-20">
-                    {i + 1}
-                  </span>
-                </div>
-                <h3 className="text-[13px] font-bold text-foreground mb-1">
-                  {step.label}
-                </h3>
-                <p className="text-[12px] text-muted-foreground leading-relaxed">
-                  {step.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ──────────────────────────────────────────────
-// 5 · Capabilities
-// ──────────────────────────────────────────────
-
-const capabilities = [
-  {
-    icon: Mail,
-    title: "Email & Messaging",
-    desc: "Draft replies, triage inbox, send across channels.",
-  },
-  {
-    icon: Code2,
-    title: "Code & Dev Tools",
-    desc: "Review PRs, generate tests, refactor and deploy.",
-  },
-  {
-    icon: Globe,
-    title: "Browser Control",
-    desc: "Fill forms, scrape data, navigate like a human.",
-  },
-  {
-    icon: FileText,
-    title: "File Management",
-    desc: "Organize, rename, convert files across your machine.",
-  },
-  {
-    icon: Calendar,
-    title: "Scheduling",
-    desc: "Manage calendar, prep meetings, track habits 24/7.",
-  },
-  {
-    icon: Plug,
-    title: "App Integration",
-    desc: "Slack, Discord, GitHub, databases — your middleware.",
-  },
-  {
-    icon: Image,
-    title: "Content Creation",
-    desc: "Generate images, write docs, produce creative assets.",
-  },
-  {
-    icon: Cpu,
-    title: "Desktop Control",
-    desc: "Launch apps, screenshots, manage windows — full access.",
-  },
-];
-
-function Capabilities() {
-  return (
-    <section className="relative py-24 sm:py-32">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl mb-16">
-          <Tag icon={Bot}>Capabilities</Tag>
-          <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
-            Not just chat.{" "}
-            <span className="text-gradient-red">Real work, done for you.</span>
-          </h2>
-          <p className="mt-4 text-muted-foreground leading-relaxed">
-            Your OpenClaw agent sees your screen, uses your apps, and actually
-            does things. It browses, types, clicks, and thinks — you just say
-            the word.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {capabilities.map((cap) => (
-            <div
-              key={cap.title}
-              className="group flex items-start gap-4 border border-border bg-card p-5 transition-all duration-200 hover:border-foreground/60"
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/15 group-hover:border-claw-red/25 transition-all duration-200">
-                <cap.icon className="h-4 w-4 text-claw-red" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-[13px] font-bold text-foreground mb-0.5">
-                  {cap.title}
-                </h3>
-                <p className="text-[12px] text-muted-foreground leading-relaxed">
-                  {cap.desc}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ──────────────────────────────────────────────
-// 6 · Deployment Options
+// 3 · Deployment Options
 // ──────────────────────────────────────────────
 
 function DeploymentOptions() {
+  const { ref: titleRef, isRevealed: titleRevealed } = useScrollReveal();
+  const { ref: cloudRef, isRevealed: cloudRevealed } = useScrollReveal({
+    delay: 100,
+  });
+  const { ref: macRef, isRevealed: macRevealed } = useScrollReveal({
+    delay: 250,
+  });
+
   return (
     <section className="relative py-24 sm:py-32">
       <div className="absolute inset-0 bg-muted" />
+      <div className="absolute inset-0 bg-dots opacity-30 dark:opacity-15 pointer-events-none" />
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <div
+          ref={titleRef}
+          className={`text-center max-w-2xl mx-auto mb-16 transition-all duration-700 ${titleRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+        >
           <Tag icon={Server}>Deploy your way</Tag>
           <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
             Your hardware or ours.{" "}
@@ -691,10 +425,14 @@ function DeploymentOptions() {
 
         <div className="grid md:grid-cols-2 gap-5">
           {/* Cloud */}
-          <div className="group border border-border bg-card overflow-hidden transition-all duration-200 hover:border-foreground">
+          <div
+            ref={cloudRef}
+            className={`group rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl overflow-hidden transition-all duration-500 hover:border-foreground/25 hover:-translate-y-1 hover:shadow-[0_8px_30px_oklch(0_0_0/0.08)] relative ${cloudRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
+            <CardGlow />
             <div className="p-8 sm:p-10">
               <div className="flex items-center gap-4 mb-5">
-                <div className="flex h-12 w-12 items-center justify-center bg-claw-red/8 border border-claw-red/10">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-claw-red/8 border border-claw-red/10 backdrop-blur-sm">
                   <Cloud className="h-6 w-6 text-claw-red" />
                 </div>
                 <div>
@@ -706,10 +444,10 @@ function DeploymentOptions() {
                   </p>
                 </div>
               </div>
-              <p className="text-[14px] text-muted-foreground leading-relaxed mb-6">
-                We spin up a persistent cloud VM for your OpenClaw agent. Pick
-                your plan, click deploy, and you're live in under 30 seconds.
-                Automatic updates, backups, and scaling — all handled.
+              <p className="text-[14px] text-muted-foreground leading-relaxed">
+                We spin up a persistent cloud VM for your OpenClaw agent. Click
+                deploy and you're live in under 30 seconds. Automatic updates,
+                backups, and scaling — all handled.
               </p>
             </div>
             <div className="grid grid-cols-3 border-t border-border">
@@ -732,10 +470,14 @@ function DeploymentOptions() {
           </div>
 
           {/* Mac */}
-          <div className="group border border-border bg-card overflow-hidden transition-all duration-200 hover:border-foreground">
+          <div
+            ref={macRef}
+            className={`group rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl overflow-hidden transition-all duration-500 hover:border-foreground/25 hover:-translate-y-1 hover:shadow-[0_8px_30px_oklch(0_0_0/0.08)] relative ${macRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          >
+            <CardGlow />
             <div className="p-8 sm:p-10">
               <div className="flex items-center gap-4 mb-5">
-                <div className="flex h-12 w-12 items-center justify-center bg-claw-red/8 border border-claw-red/10">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-claw-red/8 border border-claw-red/10 backdrop-blur-sm">
                   <Download className="h-6 w-6 text-claw-red" />
                 </div>
                 <div>
@@ -747,8 +489,8 @@ function DeploymentOptions() {
                   </p>
                 </div>
               </div>
-              <p className="text-[14px] text-muted-foreground leading-relaxed mb-6">
-                Got a Mac Mini at home? Download our companion app — it installs
+              <p className="text-[14px] text-muted-foreground leading-relaxed">
+                Got a Mac at home? Download our companion app — it installs
                 OpenClaw on your machine instantly. One download, one click.
                 Your data never leaves your hardware.
               </p>
@@ -778,99 +520,48 @@ function DeploymentOptions() {
 }
 
 // ──────────────────────────────────────────────
-// 7 · Glasses Section
+// 4 · Smart Glasses
 // ──────────────────────────────────────────────
 
 function GlassesSection() {
+  const { ref: copyRef, isRevealed: copyRevealed } = useScrollReveal({
+    delay: 200,
+  });
+
   return (
     <section className="relative py-24 sm:py-32 overflow-hidden">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* Left — Glasses Mockup */}
-          <div className="relative flex items-center justify-center order-2 lg:order-1">
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="h-[300px] w-[300px] bg-claw-red/[0.03] blur-[80px]" />
-            </div>
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center">
+        <div
+          ref={copyRef}
+          className={`transition-all duration-700 ${copyRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+        >
+          <Tag icon={Glasses}>Smart Glasses</Tag>
+          <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-foreground">
+            Your agent, <span className="text-gradient-red">on your face.</span>
+          </h2>
 
-            <div className="relative w-full max-w-sm">
-              {/* Lens */}
-              <div className="relative overflow-hidden w-full aspect-[2/1] rounded-[50%/40%] bg-gradient-to-br from-card via-secondary/80 to-background border border-border shadow-[0_0_60px_rgba(0,0,0,0.3),0_0_120px_rgba(139,0,0,0.06),inset_0_2px_0_rgba(255,255,255,0.03)]">
-                {/* Scan lines */}
-                <div
-                  className="absolute inset-0 pointer-events-none opacity-[0.015]"
-                  style={{
-                    backgroundImage:
-                      "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.15) 2px, rgba(255,255,255,0.15) 4px)",
-                  }}
-                />
-                {/* HUD */}
-                <div className="absolute inset-0 flex items-center justify-center px-8 py-4">
-                  <div className="flex flex-col gap-1.5 w-full">
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[8px] uppercase tracking-[0.2em] text-white/40 font-medium">
-                        Done
-                      </span>
-                    </div>
-                    <p className="text-[10px] font-medium text-white leading-tight">
-                      3 emails summarized, 1 needs reply
-                    </p>
-                    <p className="text-[9px] text-white/50 leading-snug">
-                      "Q3 budget review from Alex — urgent"
-                    </p>
-                    <div className="flex items-center gap-2 pt-1.5">
-                      <span className="rounded-full bg-white/10 border border-white/10 px-2 py-0.5 text-[8px] font-medium text-white">
-                        Draft reply
-                      </span>
-                      <span className="text-[8px] text-white/30">Dismiss</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Nose bridge */}
-              <div className="mx-auto -mt-1 w-8 h-3 bg-muted border-x border-b border-border" />
-            </div>
-          </div>
+          <p className="mt-6 text-[15px] text-muted-foreground leading-relaxed max-w-xl mx-auto">
+            Put on your smart glasses and talk to your OpenClaw agent by voice.
+            Ask it to check your email, find an article, or summarize meeting
+            notes — hear the answer read back. On your dashboard, watch the
+            agent's desktop stream in real-time.
+          </p>
 
-          {/* Right — Copy */}
-          <div className="order-1 lg:order-2">
-            <Tag icon={Glasses}>Smart Glasses</Tag>
-            <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-foreground">
-              Your agent,{" "}
-              <span className="text-gradient-red">on your face.</span>
-            </h2>
-
-            <div className="mt-6 space-y-4 text-[15px] text-muted-foreground leading-relaxed">
-              <p>
-                Put on your smart glasses and talk to your OpenClaw agent by
-                voice. Ask it to check your email, find an article, or summarize
-                meeting notes — hear the answer read back.
-              </p>
-              <p>
-                On your dashboard, watch the agent's desktop stream — see it
-                navigate, open your inbox, or move files around in real-time.
-              </p>
-              <p className="font-semibold text-foreground">
-                Your AI has eyes and hands, and now so do you.
-              </p>
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-2.5">
-              {[
-                { icon: Mic, label: "Voice commands" },
-                { icon: Radio, label: "Audio responses" },
-                { icon: Eye, label: "Live desktop view" },
-                { icon: Smartphone, label: "Works on the go" },
-              ].map((item) => (
-                <span
-                  key={item.label}
-                  className="inline-flex items-center gap-2 border border-border bg-card px-3 py-1.5 text-[12px] text-muted-foreground font-medium"
-                >
-                  <item.icon className="h-3.5 w-3.5 text-claw-red" />
-                  {item.label}
-                </span>
-              ))}
-            </div>
+          <div className="mt-8 flex flex-wrap justify-center gap-2.5">
+            {[
+              { icon: Mic, label: "Voice commands" },
+              { icon: Radio, label: "Audio responses" },
+              { icon: Eye, label: "Live desktop view" },
+              { icon: Smartphone, label: "Works on the go" },
+            ].map((item) => (
+              <span
+                key={item.label}
+                className="inline-flex items-center gap-2 rounded-lg border border-border/50 bg-card/60 backdrop-blur-sm px-3 py-1.5 text-[12px] text-muted-foreground font-medium"
+              >
+                <item.icon className="h-3.5 w-3.5 text-claw-red" />
+                {item.label}
+              </span>
+            ))}
           </div>
         </div>
       </div>
@@ -879,7 +570,7 @@ function GlassesSection() {
 }
 
 // ──────────────────────────────────────────────
-// 8 · Testimonials
+// 5 · Testimonials (trimmed to 3)
 // ──────────────────────────────────────────────
 
 const testimonials = [
@@ -898,51 +589,42 @@ const testimonials = [
     author: "André Foeken",
     handle: "@dreetje",
   },
-  {
-    text: "Using @openclaw for a week now and it genuinely feels like early AGI. The gap between 'what I can imagine' and 'what actually works' has never been smaller.",
-    author: "Tobi",
-    handle: "@tobi_bsf",
-  },
-  {
-    text: "After years of AI hype, I thought nothing could faze me. Then I installed @openclaw. From a nervous 'hi what can you do?' to full throttle — design, code review, taxes, PM, content pipelines... AI as teammate, not tool.",
-    author: "Yucheng L",
-    handle: "@lycfyi",
-  },
-  {
-    text: "It's all collapsing into one unique personal OS — all apps, interfaces, walled gardens etc gone.",
-    author: "Jakub Krcmar",
-    handle: "@jakubkrcmar",
-  },
 ];
 
 function Testimonials() {
+  const { ref: titleRef, isRevealed: titleRevealed } = useScrollReveal();
+  const { containerRef, revealedSet } = useStaggerReveal(testimonials.length, {
+    staggerMs: 120,
+    threshold: 0.05,
+  });
+
   return (
     <section className="relative py-24 sm:py-32">
       <div className="absolute inset-0 bg-muted" />
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+      <div className="absolute inset-0 bg-dots opacity-30 dark:opacity-15 pointer-events-none" />
+      <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <div
+          ref={titleRef}
+          className={`text-center max-w-2xl mx-auto mb-14 transition-all duration-700 ${titleRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+        >
           <Tag icon={Quote}>Community</Tag>
           <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
-            People are <span className="text-gradient-red">obsessed</span> with
-            the engine we build on.
+            People are <span className="text-gradient-red">obsessed</span>.
           </h2>
-          <p className="mt-4 text-muted-foreground">
-            Real reactions to OpenClaw — the AI that powers every Clawed
-            deployment.
-          </p>
         </div>
 
-        <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
+        <div ref={containerRef} className="grid sm:grid-cols-3 gap-4">
           {testimonials.map((t, i) => (
             <div
               key={i}
-              className="break-inside-avoid border border-border bg-card p-6 transition-all duration-200 hover:border-foreground/60 hover:shadow-[0_2px_12px_oklch(0_0_0/0.06)]"
+              className={`rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-6 transition-all duration-500 hover:border-foreground/25 hover:shadow-[0_4px_20px_oklch(0_0_0/0.08)] hover:-translate-y-0.5 relative overflow-hidden ${revealedSet.has(i) ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-6 scale-[0.97]"}`}
             >
-              <p className="text-[14px] text-foreground/80 leading-relaxed mb-5">
+              <CardGlow size={250} opacity={0.04} />
+              <p className="text-[14px] text-foreground/80 leading-relaxed mb-5 relative z-10">
                 &ldquo;{t.text}&rdquo;
               </p>
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center bg-claw-red/8 border border-claw-red/10 text-claw-red text-[11px] font-bold select-none">
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-claw-red/8 border border-claw-red/10 text-claw-red text-[11px] font-bold select-none">
                   {t.author[0]}
                 </div>
                 <div>
@@ -963,167 +645,15 @@ function Testimonials() {
 }
 
 // ──────────────────────────────────────────────
-// 9 · Why the Claw — Origin Story
-// ──────────────────────────────────────────────
-
-function WhyTheClaw() {
-  return (
-    <section className="relative py-24 sm:py-32 overflow-hidden">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* Left — 3D claw */}
-          <div className="relative flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="h-[280px] w-[280px] bg-claw-red/[0.04] blur-[60px] animate-pulse-subtle" />
-            </div>
-            <div className="w-[260px] h-[260px] sm:w-[320px] sm:h-[320px] flex items-center justify-center">
-              <svg
-                viewBox="-24 -24 48 48"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-3/4 h-3/4 drop-shadow-xl"
-              >
-                <g transform="scale(1.5)">
-                  <path
-                    d="M-10 2 C-10 2, -6 8, 2 10 C6 11, 12 8, 14 4 C14 4, 10 6, 6 5 C2 4, -4 2, -10 2Z"
-                    fill="#8B0000"
-                    stroke="#aa0000"
-                    strokeWidth="0.5"
-                  />
-                  <path
-                    d="M-10 -1 C-10 -1, -6 -8, 2 -10 C6 -11, 12 -6, 14 -2 C14 -2, 10 -5, 6 -4 C2 -3, -4 -1, -10 -1Z"
-                    fill="#cc0000"
-                    stroke="#ee2222"
-                    strokeWidth="0.5"
-                  >
-                    <animateTransform
-                      attributeName="transform"
-                      type="rotate"
-                      values="0 -10 0;-8 -10 0;0 -10 0"
-                      dur="1.5s"
-                      repeatCount="indefinite"
-                      keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
-                      calcMode="spline"
-                    />
-                  </path>
-                  <circle
-                    cx={-10}
-                    cy={0.5}
-                    r={3}
-                    fill="#550000"
-                    stroke="#770000"
-                    strokeWidth="0.5"
-                  />
-                  <path
-                    d="M-6 -5 C-4 -7, 2 -8, 6 -6"
-                    fill="none"
-                    stroke="#ff4444"
-                    strokeWidth="0.4"
-                    opacity="0.5"
-                  />
-                </g>
-              </svg>
-            </div>
-          </div>
-
-          {/* Right — story */}
-          <div>
-            <Tag icon={Heart}>Origin Story</Tag>
-            <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-foreground">
-              Built on the{" "}
-              <span className="text-gradient-red">hottest AI project</span> in
-              the world.
-            </h2>
-
-            <div className="mt-6 space-y-4 text-[15px] text-muted-foreground leading-relaxed">
-              <p>
-                <a
-                  href="https://github.com/openclaw/openclaw"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-claw-red hover:text-claw-red-bright transition-colors underline underline-offset-[3px] decoration-claw-red/30"
-                >
-                  OpenClaw
-                </a>{" "}
-                is the world's fastest-growing open-source AI project — 240k+
-                stars, 920+ contributors. It started as "WhatsApp Relay" by
-                Peter Steinberger, evolved through Clawdbot, Moltbot, and became
-                OpenClaw. 🦞
-              </p>
-              <p>
-                <span className="font-semibold text-foreground">
-                  Clawed Chat
-                </span>{" "}
-                makes OpenClaw accessible to everyone. We handle deployment, add
-                smart glasses integration and live desktop streaming, and give
-                you a dashboard to control it all.
-              </p>
-              <p>
-                The 3D lobster claw is open-source too, created by{" "}
-                <a
-                  href="https://www.thingiverse.com/thing:5326334"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-claw-red hover:text-claw-red-bright transition-colors underline underline-offset-[3px] decoration-claw-red/30"
-                >
-                  ScroffyToffee on Thingiverse
-                </a>{" "}
-                under Creative Commons.
-              </p>
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                asChild
-                className="gap-1.5 text-[13px] h-9"
-              >
-                <a
-                  href="https://github.com/openclaw/openclaw"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Github className="h-3.5 w-3.5" />
-                  OpenClaw on GitHub
-                  <ArrowUpRight className="h-3 w-3 text-neutral-600" />
-                </a>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                asChild
-                className="gap-1.5 text-[13px] h-9"
-              >
-                <a
-                  href="https://openclaw.ai/blog/introducing-openclaw"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  The OpenClaw story
-                  <ArrowUpRight className="h-3 w-3 text-neutral-600" />
-                </a>
-              </Button>
-            </div>
-
-            <p className="mt-6 text-[11px] text-muted-foreground">
-              3D model: CC-BY · ScroffyToffee · Thingiverse
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ──────────────────────────────────────────────
-// 10 · CTA — Final push with waitlist
+// 6 · CTA
 // ──────────────────────────────────────────────
 
 function BetaCTA() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const { ref: ctaRef, isRevealed: ctaRevealed } = useScrollReveal({
+    threshold: 0.2,
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1132,17 +662,20 @@ function BetaCTA() {
 
   return (
     <section className="relative py-28 sm:py-36 overflow-hidden">
-      {/* Dramatic background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-secondary" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[700px] bg-claw-red/[0.04] blur-[150px]" />
         <div className="absolute top-0 left-0 right-0 h-px bg-border" />
       </div>
 
-      <div className="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          {/* Icon */}
-          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center bg-claw-red/10 border border-claw-red/15">
+      <div
+        ref={ctaRef}
+        className="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8"
+      >
+        <div
+          className={`text-center transition-all duration-1000 ${ctaRevealed ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-10 scale-[0.97]"}`}
+        >
+          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-claw-red/10 border border-claw-red/15 backdrop-blur-sm">
             <Sparkles className="h-6 w-6 text-claw-red" />
           </div>
 
@@ -1163,7 +696,7 @@ function BetaCTA() {
             <Button
               size="lg"
               asChild
-              className="gap-2 px-8 h-13 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[16px] transition-all active:translate-y-px"
+              className="gap-2 px-8 h-13 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[16px] transition-all active:translate-y-px shadow-lg hover:shadow-xl hover:shadow-claw-red/20"
             >
               <Link to="/sign-in">
                 Deploy your agent
@@ -1184,20 +717,19 @@ function BetaCTA() {
           </div>
 
           {/* Waitlist */}
-          <div className="mt-20">
-            <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-12" />
-
+          <div className="mt-16">
+            <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-10" />
             <div className="max-w-md mx-auto">
-              <div className="border border-border bg-card p-8">
+              <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-8 shadow-sm">
                 <p className="text-[13px] text-foreground mb-1 font-semibold">
-                  Not ready to deploy yet?
+                  Not ready yet?
                 </p>
                 <p className="text-[12px] text-muted-foreground mb-6">
-                  Join the waitlist. We'll let you know when your spot opens.
+                  Join the waitlist — we'll let you know when your spot opens.
                 </p>
 
                 {submitted ? (
-                  <div className="bg-claw-red/5 border border-claw-red/15 px-6 py-5 animate-fade-in-scale">
+                  <div className="rounded-xl bg-claw-red/5 border border-claw-red/15 px-6 py-5 animate-fade-in-scale backdrop-blur-sm">
                     <p className="text-[15px] font-bold text-claw-red-bright">
                       You're on the list! 🦞
                     </p>
@@ -1213,11 +745,11 @@ function BetaCTA() {
                       placeholder="you@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="flex-1 h-11 border border-border bg-background px-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-claw-red/25 focus:border-claw-red/30 transition-all"
+                      className="flex-1 h-11 rounded-xl border border-border/50 bg-background/60 backdrop-blur-sm px-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-claw-red/25 focus:border-claw-red/30 transition-all"
                     />
                     <Button
                       type="submit"
-                      className="h-11 px-5 bg-claw-red hover:bg-claw-red-bright text-white font-bold transition-all active:translate-y-px shrink-0"
+                      className="h-11 px-5 bg-claw-red hover:bg-claw-red-bright text-white font-bold transition-all active:translate-y-px shrink-0 shadow-sm hover:shadow-md hover:shadow-claw-red/20"
                     >
                       Join
                       <ArrowRight className="h-3.5 w-3.5 ml-1" />
@@ -1234,11 +766,36 @@ function BetaCTA() {
 }
 
 // ──────────────────────────────────────────────
-// 11 · Easter Egg — "Not Claude"
+// 7 · Easter Egg — "Not Claude"
 // ──────────────────────────────────────────────
 
 function NotClaude() {
   const [revealed, setRevealed] = useState(false);
+  const [visibleRows, setVisibleRows] = useState(0);
+
+  const tableRows: [string, string, string][] = [
+    ["Has a claw", "❌", "🦞"],
+    ["Eats fish on startup", "❌", "✅"],
+    ["Deploys in 30 sec", "❌", "✅"],
+    ["Smart glasses", "❌", "✅"],
+    ["Live desktop stream", "❌", "✅"],
+    ["Named after crustacean", "❌", "Basically"],
+    ["Will take over world", "Politely declines", "Too busy browsing HN"],
+  ];
+
+  useEffect(() => {
+    if (!revealed) return;
+    let i = 0;
+    const step = () => {
+      i++;
+      setVisibleRows(i);
+      if (i < tableRows.length) {
+        setTimeout(step, 90);
+      }
+    };
+    const initial = setTimeout(step, 600);
+    return () => clearTimeout(initial);
+  }, [revealed, tableRows.length]);
 
   return (
     <section className="relative py-16">
@@ -1246,19 +803,24 @@ function NotClaude() {
         {!revealed ? (
           <button
             onClick={() => setRevealed(true)}
-            className="group inline-flex items-center gap-2 text-muted-foreground hover:text-claw-red transition-colors text-[12px] cursor-pointer"
+            className="group inline-flex items-center gap-2 rounded-full bg-card/40 backdrop-blur-sm border border-border/30 px-3 py-1.5 text-muted-foreground hover:text-claw-red transition-colors text-[12px] cursor-pointer hover:animate-shake hover:border-claw-red/20"
           >
-            <AlertTriangle className="h-3 w-3" />
-            <span className="underline underline-offset-2 decoration-dotted">
+            <AlertTriangle className="h-3 w-3 transition-transform duration-300 group-hover:rotate-12" />
+            <span className="underline underline-offset-2 decoration-dotted group-hover:decoration-claw-red/50 transition-all">
               Important legal disclaimer
             </span>
           </button>
         ) : (
           <div className="animate-fade-in-scale space-y-5">
             <div className="flex items-center gap-4 justify-center">
-              <div className="h-px w-16 bg-border" />
-              <span className="text-xl">🦞</span>
-              <div className="h-px w-16 bg-border" />
+              <div className="h-px w-16 bg-border animate-scratch-in" />
+              <span
+                className="text-xl animate-float"
+                style={{ animationDuration: "3s" }}
+              >
+                🦞
+              </span>
+              <div className="h-px w-16 bg-border animate-scratch-in" />
             </div>
 
             <h3 className="text-lg font-black text-foreground">
@@ -1287,8 +849,8 @@ function NotClaude() {
             </div>
 
             {/* Comparison table */}
-            <div className="mt-8 overflow-hidden border border-border text-[12px] max-w-sm mx-auto">
-              <div className="grid grid-cols-3 bg-card border-b border-border">
+            <div className="mt-8 overflow-hidden rounded-xl border border-border/50 text-[12px] max-w-sm mx-auto shadow-sm">
+              <div className="grid grid-cols-3 bg-card/60 backdrop-blur-sm border-b border-border/50 animate-fade-in">
                 <div className="px-4 py-3 text-left" />
                 <div className="px-4 py-3 text-center font-bold text-muted-foreground border-x border-border">
                   Claude
@@ -1297,22 +859,15 @@ function NotClaude() {
                   Clawed
                 </div>
               </div>
-              {[
-                ["Has a claw", "❌", "🦞"],
-                ["Eats fish on startup", "❌", "✅"],
-                ["Deploys in 30 sec", "❌", "✅"],
-                ["Smart glasses", "❌", "✅"],
-                ["Live desktop stream", "❌", "✅"],
-                ["Named after crustacean", "❌", "Basically"],
-                [
-                  "Will take over world",
-                  "Politely declines",
-                  "Too busy browsing HN",
-                ],
-              ].map(([label, claude, claw], i) => (
+              {tableRows.map(([label, claude, claw], i) => (
                 <div
                   key={i}
-                  className={`grid grid-cols-3 ${i % 2 === 0 ? "bg-background" : "bg-card"}`}
+                  className={`grid grid-cols-3 transition-all duration-400 ${
+                    i < visibleRows
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-3"
+                  } ${i % 2 === 0 ? "bg-background/60" : "bg-card/40"} hover:bg-muted/40 backdrop-blur-sm`}
+                  style={{ transitionDelay: `${i * 40}ms` }}
                 >
                   <div className="px-4 py-2.5 text-left text-muted-foreground">
                     {label}
@@ -1327,7 +882,9 @@ function NotClaude() {
               ))}
             </div>
 
-            <p className="text-[11px] text-muted-foreground pt-2">
+            <p
+              className={`text-[11px] text-muted-foreground pt-2 transition-all duration-500 ${visibleRows >= tableRows.length ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+            >
               No AIs were harmed in the making of this disclaimer. Several fish
               were.
             </p>
@@ -1350,21 +907,15 @@ export default function Home() {
     },
   );
   return (
-    <div className="animate-page-enter">
-      <ThemeToggle />
+    <div className="animate-page-enter bg-grid-full">
+      <ScrollProgress />
       <Hero />
       <SectionDivider />
       <ProblemSolution />
-      <SectionDivider />
-      <Pillars />
-      <HowItWorks />
-      <Capabilities />
       <DeploymentOptions />
       <SectionDivider />
       <GlassesSection />
       <Testimonials />
-      <SectionDivider />
-      <WhyTheClaw />
       <BetaCTA />
       <NotClaude />
     </div>

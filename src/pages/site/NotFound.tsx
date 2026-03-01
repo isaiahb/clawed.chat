@@ -56,7 +56,7 @@ export default function NotFound() {
 
       <div className="relative mx-auto max-w-md text-center animate-fade-in">
         {/* Claw icon */}
-        <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center border border-border bg-card transition-colors duration-200 hover:border-claw-red/30">
+        <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-3xl border border-border/50 bg-card/60 backdrop-blur-xl shadow-sm transition-all duration-300 hover:border-claw-red/30 hover:shadow-[0_0_20px_var(--claw-red-glow)]">
           <ClawIcon className="h-14 w-14" />
         </div>
 
@@ -79,7 +79,7 @@ export default function NotFound() {
 
         <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
           The path{" "}
-          <code className="border border-border bg-muted px-1.5 py-0.5 text-xs font-mono text-foreground">
+          <code className="rounded-md border border-border/50 bg-muted/60 backdrop-blur-sm px-1.5 py-0.5 text-xs font-mono text-foreground">
             {location.pathname}
           </code>{" "}
           doesn't exist.
@@ -89,7 +89,7 @@ export default function NotFound() {
         <div className="mt-8 flex items-center justify-center gap-3">
           <Button
             asChild
-            className="gap-2 bg-claw-red hover:bg-claw-red-bright text-white"
+            className="gap-2 bg-claw-red hover:bg-claw-red-bright text-white shadow-md hover:shadow-lg hover:shadow-claw-red/20"
           >
             <Link to="/app">
               <MessageSquare className="h-4 w-4" />
@@ -98,7 +98,7 @@ export default function NotFound() {
           </Button>
           <Button
             variant="outline"
-            className="gap-2"
+            className="gap-2 backdrop-blur-sm"
             onClick={() => window.history.back()}
           >
             <ArrowLeft className="h-4 w-4" />

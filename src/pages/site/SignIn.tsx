@@ -92,7 +92,8 @@ export default function SignIn() {
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4 py-12 bg-background">
       {/* Subtle ambient glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[400px] w-[400px] bg-claw-red/[0.03] blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] bg-claw-red/[0.04] blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-1/4 left-1/3 h-[300px] w-[300px] bg-claw-red/[0.02] blur-[120px] rounded-full pointer-events-none" />
 
       <div className="relative w-full max-w-sm space-y-8 animate-page-enter">
         {/* Logo + Title */}
@@ -119,8 +120,8 @@ export default function SignIn() {
           <CardContent className="pt-6 space-y-4">
             {/* Error */}
             {error && (
-              <div className="border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-xs text-destructive font-medium flex items-center gap-2">
-                <span className="h-1.5 w-1.5 bg-destructive shrink-0" />
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 backdrop-blur-sm px-3 py-2.5 text-xs text-destructive font-medium flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />
                 {error}
               </div>
             )}
@@ -175,7 +176,7 @@ export default function SignIn() {
 
             {/* Login button */}
             <Button
-              className="w-full gap-2 bg-claw-red hover:bg-claw-red-bright text-white"
+              className="w-full gap-2 bg-claw-red hover:bg-claw-red-bright text-white shadow-md hover:shadow-lg hover:shadow-claw-red/20 transition-all"
               onClick={handleLogin}
               disabled={loading}
             >
@@ -194,7 +195,7 @@ export default function SignIn() {
 
             <p className="text-center text-[10px] text-muted-foreground/60 pt-1">
               Press{" "}
-              <kbd className="inline-flex h-4 items-center border bg-muted px-1 font-mono text-[9px]">
+              <kbd className="inline-flex h-4 items-center rounded border border-border/50 bg-muted/60 backdrop-blur-sm px-1 font-mono text-[9px]">
                 Enter
               </kbd>{" "}
               to sign in

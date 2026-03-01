@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -36,7 +36,7 @@ function ClawLogo({ className }: { className?: string }) {
         y={-18}
         width={36}
         height={36}
-        rx={0}
+        rx={4}
         className="fill-claw-black"
       />
       <g transform="scale(0.85)">
@@ -134,7 +134,7 @@ function HeaderThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="flex h-8 w-8 items-center justify-center border border-border bg-transparent transition-all duration-200 hover:bg-muted hover:border-foreground active:translate-y-px"
+      className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card/50 backdrop-blur-sm transition-all duration-200 hover:bg-muted hover:border-foreground/30 hover:shadow-sm active:translate-y-px"
       aria-label="Toggle theme"
     >
       {isDark ? (
@@ -150,7 +150,7 @@ function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/85 backdrop-blur-2xl backdrop-saturate-[1.3] transition-theme">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-2xl backdrop-saturate-[1.4] shadow-sm transition-theme">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link to="/" className="group flex items-center gap-2.5">
@@ -177,7 +177,7 @@ function SiteHeader() {
           <Button
             size="sm"
             asChild
-            className="gap-1.5 bg-claw-red hover:bg-claw-red-bright text-white text-[13px] h-8 px-4"
+            className="gap-1.5 bg-claw-red hover:bg-claw-red-bright text-white text-[13px] h-8 px-4 shadow-sm hover:shadow-md"
           >
             <Link to="/sign-in">
               Deploy agent
@@ -196,7 +196,7 @@ function SiteHeader() {
           </SheetTrigger>
           <SheetContent
             side="right"
-            className="w-[300px] sm:w-[360px] bg-background border-border"
+            className="w-[300px] sm:w-[360px] bg-background/80 backdrop-blur-2xl backdrop-saturate-[1.4] border-border/50"
           >
             <div className="flex flex-col gap-6 pt-6">
               <div className="flex items-center justify-between">
@@ -288,12 +288,12 @@ function SiteFooter() {
   };
 
   return (
-    <footer className="relative border-t border-border bg-card transition-theme">
+    <footer className="relative border-t border-border/50 bg-card/80 backdrop-blur-xl backdrop-saturate-[1.3] transition-theme">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* CTA strip */}
         <div className="py-8 sm:py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border-b border-border relative">
           <div className="flex items-start gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-claw-red/20 bg-claw-red/8 transition-colors group-hover:bg-claw-red/12">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-claw-red/20 bg-claw-red/8 backdrop-blur-sm transition-colors group-hover:bg-claw-red/12">
               <Zap className="h-4 w-4 text-claw-red" />
             </div>
             <div>
@@ -309,7 +309,7 @@ function SiteFooter() {
             <Button
               size="sm"
               asChild
-              className="gap-1.5 bg-claw-red hover:bg-claw-red-bright text-white text-[13px] h-9 px-5"
+              className="gap-1.5 bg-claw-red hover:bg-claw-red-bright text-white text-[13px] h-9 px-5 shadow-sm hover:shadow-md"
             >
               <Link to="/sign-in">
                 Get started
@@ -320,7 +320,7 @@ function SiteFooter() {
               size="sm"
               variant="outline"
               asChild
-              className="text-[13px] h-9 px-4"
+              className="text-[13px] h-9 px-4 backdrop-blur-sm"
             >
               <Link to="/pricing">View pricing</Link>
             </Button>
@@ -336,7 +336,7 @@ function SiteFooter() {
               <span className="text-base font-black text-gradient-red">
                 Clawed
               </span>
-              <span className="ml-1.5 text-[9px] px-1.5 py-0.5 border border-claw-red/20 text-claw-red/70 font-bold uppercase tracking-widest">
+              <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded-full border border-claw-red/20 bg-claw-red/5 text-claw-red/70 font-bold uppercase tracking-widest backdrop-blur-sm">
                 Beta
               </span>
             </div>
@@ -351,7 +351,7 @@ function SiteFooter() {
                 href="https://github.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center border border-border bg-background text-muted-foreground transition-all duration-200 hover:border-foreground hover:text-foreground hover:bg-muted active:translate-y-px"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-card/50 backdrop-blur-sm text-muted-foreground transition-all duration-200 hover:border-foreground/30 hover:text-foreground hover:bg-muted/60 hover:shadow-sm active:translate-y-px"
               >
                 <Github className="h-3.5 w-3.5" />
               </a>
@@ -359,13 +359,13 @@ function SiteFooter() {
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center border border-border bg-background text-muted-foreground transition-all duration-200 hover:border-foreground hover:text-foreground hover:bg-muted active:translate-y-px"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-card/50 backdrop-blur-sm text-muted-foreground transition-all duration-200 hover:border-foreground/30 hover:text-foreground hover:bg-muted/60 hover:shadow-sm active:translate-y-px"
               >
                 <Twitter className="h-3.5 w-3.5" />
               </a>
               <a
                 href="mailto:hello@clawed.chat"
-                className="flex h-8 w-8 items-center justify-center border border-border bg-background text-muted-foreground transition-all duration-200 hover:border-foreground hover:text-foreground hover:bg-muted active:translate-y-px"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/60 bg-card/50 backdrop-blur-sm text-muted-foreground transition-all duration-200 hover:border-foreground/30 hover:text-foreground hover:bg-muted/60 hover:shadow-sm active:translate-y-px"
               >
                 <Mail className="h-3.5 w-3.5" />
               </a>
@@ -447,10 +447,38 @@ function SiteFooter() {
 }
 
 export default function SiteLayout() {
+  const { theme } = useAppStore();
+
+  // Apply theme to document root (mirrors AppLayout behavior)
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove("dark", "light");
+
+    if (theme === "dark") {
+      root.classList.add("dark");
+      root.style.colorScheme = "dark";
+    } else if (theme === "light") {
+      root.classList.add("light");
+      root.style.colorScheme = "light";
+    } else {
+      // system
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+      const apply = (isDark: boolean) => {
+        root.classList.toggle("dark", isDark);
+        root.classList.toggle("light", !isDark);
+        root.style.colorScheme = isDark ? "dark" : "light";
+      };
+      apply(prefersDark.matches);
+      const handler = (e: MediaQueryListEvent) => apply(e.matches);
+      prefersDark.addEventListener("change", handler);
+      return () => prefersDark.removeEventListener("change", handler);
+    }
+  }, [theme]);
+
   return (
     <div className="flex min-h-screen flex-col bg-background transition-theme">
       <SiteHeader />
-      <main className="flex-1 relative">
+      <main className="flex-1 relative pt-14">
         <Outlet />
       </main>
       <SiteFooter />
