@@ -97,10 +97,14 @@ async function sendMessage(c: Context) {
   // ─── Dispatch to OpenClaw via Gateway RPC ────────────────────────────
   // The agent's response will arrive asynchronously via:
   //   channel plugin sendText → POST /api/openclaw/outbound → Convex → frontend
-  if (instance.ip && (instance.status === "running" || instance.status === "starting")) {
+  // Fall back to OPENCLAW_GATEWAY_URL env var for demo/dev (when instance has no IP yet)
+  const gatewayEnvUrl = process.env.OPENCLAW_GATEWAY_URL
+  const gatewayIp = instance.ip || (gatewayEnvUrl ? new URL(gatewayEnvUrl).hostname : null)
+
+  if (gatewayIp && (instance.status === "running" || instance.status === "starting" || gatewayEnvUrl)) {
     try {
       const result = await openclawService.sendMessage({
-        ip: instance.ip,
+        ip: gatewayIp,
         token: process.env.OPENCLAW_GATEWAY_TOKEN || "clawed-default",
         text: message,
         userId: auth.userId,

@@ -140,6 +140,27 @@ export const remove = mutation({
   },
 });
 
+/**
+ * Claim a seeded instance for a real user.
+ * Used during first login — assigns the pre-seeded "seed" instance
+ * to the authenticated user's Clerk ID.
+ */
+export const claimForUser = mutation({
+  args: {
+    id: v.id("instances"),
+    user_id: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const instance = await ctx.db.get(args.id);
+    if (!instance) throw new Error("Instance not found");
+    // Only allow claiming unclaimed (seed) instances or instances already owned by this user
+    if (instance.user_id !== "seed" && instance.user_id !== args.user_id) {
+      throw new Error("Instance already claimed by another user");
+    }
+    await ctx.db.patch(args.id, { user_id: args.user_id });
+  },
+});
+
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
 /**

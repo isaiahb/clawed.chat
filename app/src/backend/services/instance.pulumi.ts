@@ -33,8 +33,8 @@ const CLOUDFLARE_ZONE_ID = process.env.CLOUDFLARE_ZONE_ID || ""
 const BROWSER_USE_API_KEY = process.env.BROWSER_USE_API_KEY || ""
 const PUBLIC_URL = process.env.PUBLIC_URL || "https://clawed.chat"
 
-/** Pre-baked GCP image family — always gets the latest image in the family */
-const VM_IMAGE_FAMILY = "openclaw-base"
+/** VM image — plain Ubuntu 24.04 LTS (full-install startup script handles OpenClaw setup) */
+const VM_IMAGE = "ubuntu-os-cloud/ubuntu-2404-lts-amd64"
 
 /** Machine type — e2-small is $15/mo always-on, ~$3-5/mo with sleep/wake */
 const MACHINE_TYPE = "e2-small"
@@ -71,17 +71,17 @@ export interface PulumiDeployResult {
 // ─── Startup Script ──────────────────────────────────────────────────────────
 
 /**
- * Reads the startup script template from scripts/bake-image/startup-script.sh.
+ * Reads the full-install startup script from scripts/bake-image/startup-script-full.sh.
  *
- * The template is injected as GCP instance metadata. It reads per-instance
- * config from GCP metadata attributes at boot time and writes openclaw.json.
+ * This script installs everything from scratch on a plain Ubuntu 24.04 VM:
+ * Node.js, Bun, OpenClaw, our channel plugin, systemd service, and per-user config.
+ * First boot takes ~6-10 min. Subsequent boots (stop/start) take ~15 seconds.
  */
 function loadStartupScript(): string {
-  // Try to load from the repo — works in dev and when deployed alongside the repo
   const paths = [
-    "scripts/bake-image/startup-script.sh",
-    "../../../scripts/bake-image/startup-script.sh",
-    `${process.cwd()}/scripts/bake-image/startup-script.sh`,
+    "scripts/bake-image/startup-script-full.sh",
+    "../../../scripts/bake-image/startup-script-full.sh",
+    `${process.cwd()}/scripts/bake-image/startup-script-full.sh`,
   ]
 
   for (const p of paths) {
@@ -92,29 +92,7 @@ function loadStartupScript(): string {
     }
   }
 
-  // Fallback: minimal inline startup script
-  console.warn("[pulumi] Could not find startup-script.sh, using minimal fallback")
-  return `#!/bin/bash
-set -euo pipefail
-echo "[startup] WARNING: Using fallback startup script"
-METADATA_URL="http://metadata.google.internal/computeMetadata/v1/instance/attributes"
-METADATA_HEADER="Metadata-Flavor: Google"
-fetch_meta() { curl -sf "\${METADATA_URL}/\$1" -H "\$METADATA_HEADER" 2>/dev/null || echo ""; }
-GATEWAY_TOKEN=$(fetch_meta "gateway-token")
-LLM_API_KEY=$(fetch_meta "llm-api-key")
-LLM_PROVIDER=$(fetch_meta "llm-provider")
-cat > /home/openclaw/.openclaw/openclaw.json << EOF
-{
-  "gateway": {"port": 18789, "mode": "local", "bind": "lan", "auth": {"mode": "token", "token": "\${GATEWAY_TOKEN}"}},
-  "agents": {"defaults": {"model": {"primary": "\${LLM_PROVIDER}/claude-sonnet-4-5"}}},
-  "models": {"providers": {"\${LLM_PROVIDER}": {"apiKey": "\${LLM_API_KEY}"}}},
-  "plugins": {"enabled": true, "allow": ["clawed"]}
-}
-EOF
-chown openclaw:openclaw /home/openclaw/.openclaw/openclaw.json
-chmod 600 /home/openclaw/.openclaw/openclaw.json
-systemctl restart openclaw
-`
+  throw new Error("[pulumi] Could not find startup-script-full.sh — cannot provision VM without it")
 }
 
 // ─── Token Generation ────────────────────────────────────────────────────────
@@ -150,7 +128,7 @@ function createProgram(
       tags: {items: ["openclaw-instance"]},
       bootDisk: {
         initializeParams: {
-          image: `projects/${GCP_PROJECT}/global/images/family/${VM_IMAGE_FAMILY}`,
+          image: VM_IMAGE,
           size: DISK_SIZE_GB,
         },
       },

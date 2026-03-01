@@ -3,6 +3,10 @@
  *
  * GET /    → returns current authenticated user profile
  *
+ * Also handles auto-claiming seeded instances on first login.
+ * When a user logs in for the first time, any instance with
+ * user_id="seed" gets reassigned to their real Clerk ID.
+ *
  * Reference: Design Doc 01
  */
 
@@ -11,6 +15,9 @@ import type {Context} from "hono"
 import {getAuth} from "@hono/clerk-auth"
 import {ConvexHttpClient} from "convex/browser"
 import {api} from "../../../../convex/_generated/api"
+
+/** Seeded instance ID — pre-created for the demo before any user logs in */
+const SEED_INSTANCE_ID = process.env.SEED_INSTANCE_ID || ""
 
 const app = new Hono()
 
@@ -49,6 +56,23 @@ async function getCurrentUser(c: Context) {
   try {
     const db = getConvex()
     const user = await db.query(api.users.getByClerkId, {clerk_id: auth.userId})
+
+    // Auto-claim seeded instances on first login
+    // This assigns the pre-created demo instance to the first real user
+    if (SEED_INSTANCE_ID) {
+      try {
+        await db.mutation(api.instances.claimForUser, {
+          id: SEED_INSTANCE_ID as any,
+          user_id: auth.userId,
+        })
+        console.log(`[me] auto-claimed seeded instance ${SEED_INSTANCE_ID} for user ${auth.userId}`)
+      } catch (claimErr: any) {
+        // Already claimed or doesn't exist — that's fine
+        if (!claimErr.message?.includes("already claimed")) {
+          console.warn(`[me] seed instance claim failed (non-fatal): ${claimErr.message}`)
+        }
+      }
+    }
 
     if (!user) {
       // User hasn't been synced to Convex yet — return what we know from Clerk
