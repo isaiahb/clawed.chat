@@ -234,11 +234,35 @@ function Hero() {
               </span>
               <span className="flex items-center gap-1.5 rounded-full bg-card/50 border border-border/40 px-3 py-1 backdrop-blur-sm">
                 <Check className="h-3 w-3 text-claw-red" />
-                Smart glasses included
+                Smart glasses ready
               </span>
               <span className="hidden sm:flex items-center gap-1.5 rounded-full bg-card/50 border border-border/40 px-3 py-1 backdrop-blur-sm">
                 <Check className="h-3 w-3 text-claw-red" />
                 No DevOps required
+              </span>
+            </div>
+
+            {/* Hackathon attribution */}
+            <div className="mt-5 animate-fade-in [animation-delay:800ms]">
+              <span className="inline-flex items-center gap-2 text-[11px] text-muted-foreground/70">
+                Built with
+                <a
+                  href="https://browser-use.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-semibold text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 decoration-dotted decoration-muted-foreground/30 hover:decoration-foreground/40"
+                >
+                  Browser Use
+                </a>
+                ·
+                <a
+                  href="https://mentra.glass"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-semibold text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 decoration-dotted decoration-muted-foreground/30 hover:decoration-foreground/40"
+                >
+                  MentraOS
+                </a>
               </span>
             </div>
           </div>
@@ -262,6 +286,94 @@ function Hero() {
 
 // ──────────────────────────────────────────────
 // 2 · The Problem / Solution
+// ──────────────────────────────────────────────
+
+// ──────────────────────────────────────────────
+// 2.5 · How It Works — 3-step flow
+// ──────────────────────────────────────────────
+
+function HowItWorks() {
+  const { ref: titleRef, isRevealed: titleRevealed } = useScrollReveal();
+  const { containerRef, revealedSet } = useStaggerReveal(3, {
+    staggerMs: 200,
+    threshold: 0.15,
+  });
+
+  const steps: { number: string; title: string; description: string; icon: typeof Zap }[] = [
+    {
+      number: "01",
+      title: "Deploy",
+      description:
+        "Pick a provider, paste your API key (or use ours), click deploy. Your OpenClaw agent is live on a dedicated VM in under 30 seconds.",
+      icon: Cloud,
+    },
+    {
+      number: "02",
+      title: "Chat",
+      description:
+        "Send tasks from your dashboard or smart glasses. Your agent browses the web, manages files, sends emails — whatever you need.",
+      icon: Terminal,
+    },
+    {
+      number: "03",
+      title: "Watch",
+      description:
+        "See your agent's browser in real-time via Browser Use. Watch it click, scroll, and complete tasks — live from your dashboard.",
+      icon: Eye,
+    },
+  ];
+
+  return (
+    <section className="relative py-24 sm:py-32">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <div
+          ref={titleRef}
+          className={`text-center max-w-2xl mx-auto mb-16 transition-all duration-700 ${titleRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+        >
+          <Tag icon={Sparkles}>How It Works</Tag>
+          <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
+            Three steps. <span className="text-gradient-red">That's it.</span>
+          </h2>
+        </div>
+
+        <div ref={containerRef} className="grid sm:grid-cols-3 gap-6">
+          {steps.map((step, i) => (
+            <div
+              key={step.number}
+              className={`group relative rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-8 transition-all duration-500 hover:border-claw-red/25 hover:shadow-[0_4px_24px_oklch(0_0_0/0.08)] hover:-translate-y-0.5 overflow-hidden ${revealedSet.has(i) ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-[0.97]"}`}
+            >
+              <CardGlow color="oklch(0.55 0.22 28)" opacity={0.03} />
+
+              {/* Step number */}
+              <div className="relative z-10 mb-5 flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-claw-red/8 border border-claw-red/15 text-claw-red font-black text-[14px] tracking-tight transition-colors group-hover:bg-claw-red/12">
+                  {step.number}
+                </span>
+                <step.icon className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-claw-red" />
+              </div>
+
+              {/* Content */}
+              <h3 className="relative z-10 text-lg font-bold text-foreground mb-2">
+                {step.title}
+              </h3>
+              <p className="relative z-10 text-[13px] text-muted-foreground leading-relaxed">
+                {step.description}
+              </p>
+
+              {/* Connector line (between cards on desktop) */}
+              {i < 2 && (
+                <div className="hidden sm:block absolute top-1/2 -right-3 w-6 h-px bg-border z-20" />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ──────────────────────────────────────────────
+// 3 · Problem / Solution
 // ──────────────────────────────────────────────
 
 function ProblemSolution() {
@@ -611,6 +723,9 @@ function Testimonials() {
           <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
             People are <span className="text-gradient-red">obsessed</span>.
           </h2>
+          <p className="mt-3 text-[13px] text-muted-foreground">
+            What the OpenClaw community is saying about the agent powering Clawed Chat.
+          </p>
         </div>
 
         <div ref={containerRef} className="grid sm:grid-cols-3 gap-4">
@@ -910,6 +1025,8 @@ export default function Home() {
     <div className="animate-page-enter bg-grid-full">
       <ScrollProgress />
       <Hero />
+      <SectionDivider />
+      <HowItWorks />
       <SectionDivider />
       <ProblemSolution />
       <DeploymentOptions />

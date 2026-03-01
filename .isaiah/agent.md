@@ -162,6 +162,7 @@ These are scaffolding only — route definitions + handler signatures with TODOs
 - [x] Wired ConnectionsPage frontend to real /api/connections (service catalog + live merge + OAuth flow)
 - [x] Implemented real Browser Use Cloud API in browseruse.service.ts (create/get/destroy/ensureSession)
 - [x] Wired Browser Use into instance deploy (creates session) + destroy (cleans up session) + start (refreshes expired session)
+- [x] Replaced all Composio service stubs with real @composio/core v0.6 SDK calls (link, waitForConnection, delete, list, refresh, getRawComposioTools)
 
 ---
 
@@ -173,7 +174,6 @@ For an agent picking up work, do it in this order:
 1. End-to-end chat test (blocked on Isaiah: OpenClaw on VM)          ← NEXT
 2. Landing page polish
 3. Settings page backend persistence
-4. Composio SDK calls (replace stubs with real SDK in composio.service.ts)
 ```
 
 ---
@@ -193,4 +193,4 @@ For an agent picking up work, do it in this order:
 
 ---
 
-*Last updated: 2026-03-01 (session 4 — wired all remaining APIs to Convex + services, added Keys UI, wired ConnectionsPage frontend, implemented real Browser Use integration)*
+*Last updated: 2026-03-01 (session 4 — wired all remaining APIs to Convex + services, added Keys UI, wired ConnectionsPage frontend, implemented real Browser Use + Composio SDK integration)*
