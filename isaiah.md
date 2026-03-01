@@ -83,27 +83,22 @@ CONVEX_URL=https://adorable-sturgeon-328.convex.cloud
 
 # 🌐 PART 2: Browser-Only Items (no CLI, you do these manually)
 
-## ❌ 3. Clerk (auth) — ~5 min
+## ✅ 3. Clerk (auth) — DONE
 
-**Why first in this section:** gates ALL authenticated features. Nothing works without it.
+Keys obtained. Using `@clerk/clerk-react` with `<ClerkProvider>` per current Clerk docs.
 
-1. Go to [clerk.com](https://clerk.com) → Sign up / Sign in
-2. Create a new application called **"clawed.chat"**
-3. Enable **Google OAuth** as the sign-in method (Google only for hackathon)
-4. In the Clerk dashboard → **API Keys** → Copy:
-   - `CLERK_PUBLISHABLE_KEY` (starts with `pk_`)
-   - `CLERK_SECRET_KEY` (starts with `sk_`)
-5. Go to **Domains** → Add `localhost:3000` as allowed origin
-6. **Webhooks** → Create endpoint:
-   - URL: `https://<your-ngrok-url>/api/webhooks/clerk`
-   - Events: `user.created`
-   - Copy the **Signing Secret** (starts with `whsec_`)
-7. Save for `.env`:
-   ```
-   CLERK_PUBLISHABLE_KEY=pk_...
-   CLERK_SECRET_KEY=sk_...
-   CLERK_WEBHOOK_SECRET=whsec_...
-   ```
+- **Publishable Key:** `pk_test_cmVsYXhpbmctZ29sZGZpc2gtNjAuY2xlcmsuYWNjb3VudHMuZGV2JA`
+- **Secret Key:** `sk_test_Nss5IVOvNuEC2ic77XlyxuWyKZ130O5JENChPHGZDO`
+- **Frontend SDK:** `@clerk/clerk-react@5.61.3` installed in `app/`
+- **Frontend env var:** `BUN_PUBLIC_CLERK_PUBLISHABLE_KEY` (Bun's equivalent of `VITE_`)
+- **Backend SDK:** `@clerk/backend` for JWT verification + webhooks
+
+**Integration approach (per current Clerk docs):**
+- Frontend: `<ClerkProvider publishableKey={...}>` wraps the React app
+- Use `<SignedIn>`, `<SignedOut>`, `<SignInButton>`, `<UserButton>` components
+- Backend: `@clerk/backend` for server-side JWT validation in Hono middleware
+
+⏳ **Still need:** Webhook endpoint + signing secret (set up after ngrok URL is configured)
 
 ---
 
@@ -367,7 +362,9 @@ KEY_ENCRYPTION_SECRET=            # openssl rand -hex 32
 - [x] SA key moved to `~/.config/gcloud/`
 - [x] `pulumi whoami` → `isaiahb`
 - [x] `bunx convex dev` → project `clawed-chat` created, schema pushed, functions deployed
-- [ ] Clerk app created with Google OAuth + webhook
+- [x] Clerk keys obtained (`pk_test_...`, `sk_test_...`)
+- [x] `@clerk/clerk-react@5.61.3` installed
+- [ ] Clerk webhook endpoint configured (needs ngrok URL)
 - [ ] Browser Use API key obtained + tested
 - [ ] Cloudflare zone ID + API token
 - [ ] Composio API key + 3 auth configs (Gmail, Calendar, GitHub)
