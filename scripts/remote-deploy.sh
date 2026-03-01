@@ -62,7 +62,9 @@ fi
 
 log "Installing dependencies..."
 cd "$NEW_DIR"
-bun install --production 2>&1 | tail -3
+# Note: We install ALL deps (not --production) because Bun's serve-time bundler
+# needs devDependencies like tailwindcss and bun-plugin-tailwind to compile the frontend.
+bun install 2>&1 | tail -3
 
 # ─── Step 4: Fix GOOGLE_APPLICATION_CREDENTIALS path ─────────────────────────
 
