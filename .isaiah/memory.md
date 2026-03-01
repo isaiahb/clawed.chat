@@ -300,18 +300,19 @@ Independent: 05 Desktop, 07 Landing Page
 - ✅ ConnectionsPage frontend — wired to real `/api/connections` with service catalog merge, OAuth flow, loading states
 - ✅ Browser Use integration — real API calls in `browseruse.service.ts` (create/get/destroy/ensureSession), wired into deploy/start/destroy flows
 - ✅ Browser Use session stored in Convex (`browser_use_session_id` + `browser_use_live_url`) — ChatPage BrowserView reads `live_url`
+- ✅ Composio SDK — real `@composio/core` v0.6 calls (link, waitForConnection, delete, list, refresh, getRawComposioTools)
+- ✅ Landing page polish — "How It Works" 3-step section, Browser Use + MentraOS hackathon attribution, fixed testimonials
+- ✅ Settings page — Clerk `useUser()` for name/email/avatar, `clerkUser.update()` for name saves, removed hardcoded "Parth", zustand cleanup
 
-### What's still mocked/stubbed:
-- ❌ SettingsPage account/appearance/safety — local zustand state, no backend persistence
-- ❌ Composio SDK calls — `composio.service.ts` has real structure but SDK calls are still TODOs (needs real testing)
+### What's still blocked/untested:
 - ❌ End-to-end chat — blocked on OpenClaw running on VM
 - ❌ Browser Use live test — service is wired but needs a real deploy to confirm `live_url` renders in iframe
+- ❌ Composio OAuth live test — SDK is wired but needs real callback URL to test end-to-end
 
 ### Agent should work on next:
 1. **End-to-end chat test** — blocked on Isaiah: OpenClaw on VM
-2. **Landing page polish** — Home.tsx is big but could use refinements
-3. **Settings page backend persistence** — save account/preferences to Convex
-4. **Composio SDK calls** — replace stubs with real SDK in `composio.service.ts`
+2. **Bake GCP image** — blocked on Isaiah: run `bake.sh`
+3. **Test Browser Use + Composio live flows** — blocked on deploy
 
 ---
 

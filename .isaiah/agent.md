@@ -103,7 +103,7 @@ These are scaffolding only — route definitions + handler signatures with TODOs
 - [x] **Deploy flow end-to-end** — GitHub Actions CI/CD to GCP VM is fully operational (1m35s deploys)
 - [x] **Connections page** — wired to real `/api/connections` endpoints with service catalog merge, OAuth initiate/callback handling, loading states
 - [x] **Keys page** — API Keys section added to SettingsPage with list/add/delete wired to `/api/keys`
-- [ ] **Settings page** — account/appearance/safety sections still local zustand state, no backend persistence
+- [x] **Settings page** — account info from Clerk `useUser()`, name saves via `clerkUser.update()`, email read-only (Google OAuth), avatar shown, removed hardcoded "Parth"
 
 ## Ready — Service Wiring
 
@@ -131,7 +131,8 @@ These are scaffolding only — route definitions + handler signatures with TODOs
 
 - [ ] **Bake actual GCP image** — need to run `./scripts/bake-image/bake.sh` (all keys ready, just needs to be executed)
 - [ ] **End-to-end chat test** — blocked on local OpenClaw install (`bun i -g openclaw`)
-- [ ] **Test Browser Use session creation** — API key is set, service is wired, just needs a live deploy to verify live_url works
+- [ ] **Test Browser Use session creation** — API key is set, service is wired, just needs a live deploy to verify live_url renders in iframe
+- [ ] **Test Composio OAuth flow** — SDK is wired, needs real callback URL to test end-to-end
 
 ---
 
@@ -163,6 +164,8 @@ These are scaffolding only — route definitions + handler signatures with TODOs
 - [x] Implemented real Browser Use Cloud API in browseruse.service.ts (create/get/destroy/ensureSession)
 - [x] Wired Browser Use into instance deploy (creates session) + destroy (cleans up session) + start (refreshes expired session)
 - [x] Replaced all Composio service stubs with real @composio/core v0.6 SDK calls (link, waitForConnection, delete, list, refresh, getRawComposioTools)
+- [x] Landing page polish: "How It Works" 3-step section, Browser Use + MentraOS hackathon attribution, fixed testimonials
+- [x] Settings page: Clerk user profile (name/email/avatar), removed hardcoded "Parth", zustand store cleanup
 
 ---
 
@@ -172,8 +175,8 @@ For an agent picking up work, do it in this order:
 
 ```
 1. End-to-end chat test (blocked on Isaiah: OpenClaw on VM)          ← NEXT
-2. Landing page polish
-3. Settings page backend persistence
+2. Bake GCP image (blocked on Isaiah: run bake.sh)
+3. Test Browser Use + Composio live flows (blocked on deploy)
 ```
 
 ---
@@ -193,4 +196,4 @@ For an agent picking up work, do it in this order:
 
 ---
 
-*Last updated: 2026-03-01 (session 4 — wired all remaining APIs to Convex + services, added Keys UI, wired ConnectionsPage frontend, implemented real Browser Use + Composio SDK integration)*
+*Last updated: 2026-03-01 (session 4 — wired all APIs to Convex + services, Keys UI, ConnectionsPage frontend, Browser Use + Composio SDK, landing page polish, Settings → Clerk profile, zustand cleanup)*
