@@ -64,11 +64,11 @@ const publicPath = `${process.cwd()}/src/public/assets`
 Bun.serve({
   port: PORT,
   idleTimeout: 120, // 2 minutes for SSE connections
-  // Bun's HTML routes require the development bundling pipeline to serve compiled assets.
-  // HMR is only enabled in actual development mode.
+  // development: false → production build (minified, no HMR, no React dev mode)
+  // development: { hmr: true } → local dev with hot reload
   development: isDevelopment
     ? { hmr: true, console: true }
-    : true,
+    : false,
   routes: {
     // Static assets — checked before the catch-all HTML route
     "/assets/*": (request: Request) => {
