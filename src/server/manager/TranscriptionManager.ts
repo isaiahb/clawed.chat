@@ -8,6 +8,9 @@ interface SSEWriter {
   close: () => void;
 }
 
+const WAKE_START_SOUND = process.env.WAKE_START_SOUND || "";
+const WAKE_QUERY_SOUND = process.env.WAKE_QUERY_SOUND || "";
+
 /**
  * TranscriptionManager — handles speech-to-text and SSE broadcasting for a single user.
  */
@@ -18,10 +21,20 @@ export class TranscriptionManager {
 
   constructor(private user: User) {
     this.wakeWord = new WakeWordDetector({
+      onWakeDetected: () => {
+        // Play query sound on the glasses when wake word is heard (confirms activation)
+        if (WAKE_QUERY_SOUND) {
+          this.user.audio.playAudio(WAKE_QUERY_SOUND, { trackId: 1 });
+        }
+      },
       onQueryReady: (query) => {
         console.log(
           `🔊 [${this.user.userId}] Voice query ready: "${query}"`,
         );
+        // Play start sound on the glasses when query is finalized (confirms submission)
+        if (WAKE_START_SOUND) {
+          this.user.audio.playAudio(WAKE_START_SOUND, { trackId: 1 });
+        }
         this.broadcastVoiceQuery(query);
       },
       silenceTimeoutMs: 2000,

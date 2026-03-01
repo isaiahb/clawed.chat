@@ -13,6 +13,25 @@ export class AudioManager {
     await session.audio.speak(text);
   }
 
+  /** Play an audio file from a URL on the glasses (fire-and-forget friendly) */
+  async playAudio(audioUrl: string, opts?: { volume?: number; trackId?: number }): Promise<void> {
+    const session = this.user.appSession;
+    if (!session) {
+      console.warn(`[AudioManager] No glasses session — skipping playAudio for ${audioUrl}`);
+      return;
+    }
+    try {
+      await session.audio.playAudio({
+        audioUrl,
+        volume: opts?.volume ?? 1.0,
+        trackId: opts?.trackId ?? 1, // app_audio track — won't interrupt TTS
+        stopOtherAudio: false,
+      });
+    } catch (err) {
+      console.warn(`[AudioManager] playAudio failed:`, err);
+    }
+  }
+
   /** Stop any currently playing audio */
   async stopAudio(): Promise<void> {
     const session = this.user.appSession;

@@ -40,6 +40,7 @@ function buildActivationRegex(): RegExp {
 const ACTIVATION_REGEX = buildActivationRegex();
 
 type QueryCallback = (query: string) => void;
+type VoidCallback = () => void;
 
 export class WakeWordDetector {
   private active = false;
@@ -47,10 +48,16 @@ export class WakeWordDetector {
   private silenceTimer: ReturnType<typeof setTimeout> | null = null;
   private processing = false;
   private onQueryReady: QueryCallback;
+  private onWakeDetected: VoidCallback | undefined;
   private silenceTimeoutMs: number;
 
-  constructor(opts: { onQueryReady: QueryCallback; silenceTimeoutMs?: number }) {
+  constructor(opts: {
+    onQueryReady: QueryCallback;
+    onWakeDetected?: VoidCallback;
+    silenceTimeoutMs?: number;
+  }) {
     this.onQueryReady = opts.onQueryReady;
+    this.onWakeDetected = opts.onWakeDetected;
     this.silenceTimeoutMs = opts.silenceTimeoutMs ?? 2000;
   }
 
@@ -79,6 +86,7 @@ export class WakeWordDetector {
       const afterPhrase = (match[1] ?? "").replace(/^[\s,.:;!?]+/, "").trim();
       this.active = true;
       console.log(`🎙️  Wake word detected in transcription: "${cleaned}"`);
+      this.onWakeDetected?.();
 
       if (afterPhrase) {
         this.queryParts.push(afterPhrase);
