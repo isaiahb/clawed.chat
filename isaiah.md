@@ -1,52 +1,286 @@
 # Isaiah's Setup Checklist
 
-> Things only you can do — API keys, accounts, third-party config.
-> Check each off as you go. Order matters for some (marked with ⚠️).
+> Priority order: **CLI-authable items first** (auth it → agent takes over) then browser-only items.
 >
 > ✅ = done, ⏳ = in progress, ❌ = not started
 
 ---
 
-## CLI Tools to Install
+## How This List Works
 
-Claude can help with anything that has a CLI. Install these so agents can do the heavy lifting:
+Items are ordered by **how much they unblock agents**:
+
+1. 🔑 **CLI auth items** — you auth once, then agents do the rest. DO THESE FIRST.
+2. 🌐 **Browser-only items** — no CLI, you have to do it manually. Quick though.
+3. 🎯 **Nice-to-have** — do while agents are working on code.
+
+---
+
+## CLI Tools Status
+
+All installed. Just need auth on a few:
 
 ```bash
-# Already installed ✅
-# - bun
-# - ngrok 3.35.0 (authed)
-# - mentra CLI 1.0.3 (authed)
-# - gcloud 558.0.0 (installed, needs auth)
-# - pulumi 3.224.0 (installed, needs auth)
-# - convex 1.32.0 (installed, needs auth)
+# ✅ Installed + authed
+# - bun 1.2+
+# - ngrok 3.35.0
+# - mentra CLI 1.0.3
+# - gcloud 558.0.0 (authed, project created)
 
-# Just auth these — they're already installed:
-gcloud auth login
-gcloud config set project <YOUR_PROJECT_ID>
+# ⏳ Installed, need YOUR auth (interactive browser login):
+pulumi login           # → browser opens → sign in → done
+bunx convex dev        # → browser opens → create project "clawed-chat" → keep running
+```
+
+**After you auth these two, agents can create Pulumi stacks, push Convex schema, and test functions.**
+
+---
+
+# 🔑 PART 1: CLI Auth Items (do these first, 5 min total)
+
+## ⏳ 1. Pulumi Auth — ~2 min
+
+Agents need this to create stacks, preview infra, and deploy.
+
+```bash
 pulumi login
-
-# Optional:
-brew install cloudflare/cloudflare/cloudflared  # wrangler alternative for tunnels
+# Browser opens → app.pulumi.com → sign in (GitHub OAuth easiest)
+# Done. Verify:
+pulumi whoami
 ```
 
-Once these are authed, spin up agents and they can handle most of the infra setup for you.
+Then grab your access token for `.env`:
+1. Go to [app.pulumi.com/account/tokens](https://app.pulumi.com/account/tokens)
+2. Create a token
+3. Save:
+   ```
+   PULUMI_ACCESS_TOKEN=pul-...
+   ```
+
+**After this, agents can:** create stacks, set config, run `pulumi preview`, deploy infra.
 
 ---
 
-## ✅ 1. Bun (local toolchain)
+## ⏳ 2. Convex Auth — ~3 min
 
-Already installed.
+Agents need this to push schema, test queries/mutations, and wire up the database.
 
 ```bash
-bun upgrade
-bun --version  # should be 1.2+
+# From the REPO ROOT (where convex/ folder lives):
+cd /Users/isaiah/Documents/BallahTech2/clawed.chat
+bunx convex dev
+# Browser opens → sign in → create project "clawed-chat"
+# It will push the schema from convex/schema.ts
+# KEEP THIS TERMINAL RUNNING — it live-syncs schema changes
+```
+
+Copy the URL it gives you:
+```
+CONVEX_URL=https://your-project-123.convex.cloud
+```
+
+**After this, agents can:** push schema changes, write server functions, test queries.
+
+---
+
+# 🌐 PART 2: Browser-Only Items (no CLI, you do these manually)
+
+## ❌ 3. Clerk (auth) — ~5 min
+
+**Why first in this section:** gates ALL authenticated features. Nothing works without it.
+
+1. Go to [clerk.com](https://clerk.com) → Sign up / Sign in
+2. Create a new application called **"clawed.chat"**
+3. Enable **Google OAuth** as the sign-in method (Google only for hackathon)
+4. In the Clerk dashboard → **API Keys** → Copy:
+   - `CLERK_PUBLISHABLE_KEY` (starts with `pk_`)
+   - `CLERK_SECRET_KEY` (starts with `sk_`)
+5. Go to **Domains** → Add `localhost:3000` as allowed origin
+6. **Webhooks** → Create endpoint:
+   - URL: `https://<your-ngrok-url>/api/webhooks/clerk`
+   - Events: `user.created`
+   - Copy the **Signing Secret** (starts with `whsec_`)
+7. Save for `.env`:
+   ```
+   CLERK_PUBLISHABLE_KEY=pk_...
+   CLERK_SECRET_KEY=sk_...
+   CLERK_WEBHOOK_SECRET=whsec_...
+   ```
+
+---
+
+## ❌ 4. Browser Use (hackathon host — MUST) — ~5 min
+
+1. Go to [browser-use.com](https://browser-use.com) → Sign up
+2. **Claim hackathon credits:** Fill out the form linked from the hackathon page ($100 free)
+3. Go to API Keys → Create a new key
+4. Save for `.env`:
+   ```
+   BROWSER_USE_API_KEY=bu_...
+   ```
+5. Test it:
+   ```bash
+   curl -X POST https://api.browser-use.com/api/v1/browsers \
+     -H "Authorization: Bearer bu_..." \
+     -H "Content-Type: application/json" \
+     -d '{"proxy_country_code": "us"}'
+   ```
+
+---
+
+## ❌ 5. Cloudflare (DNS) — ~5 min
+
+1. Go to [dash.cloudflare.com](https://dash.cloudflare.com)
+2. Make sure `clawed.chat` is added as a zone
+3. Zone → **Overview** → copy **Zone ID** (right sidebar)
+4. **My Profile → API Tokens → Create Token**
+   - Template: **"Edit zone DNS"**
+   - Zone: Specific zone → `clawed.chat`
+   - Permissions: Zone / DNS / Edit
+5. Copy the token
+6. Save for `.env`:
+   ```
+   CLOUDFLARE_ZONE_ID=<zone_id>
+   CLOUDFLARE_API_TOKEN=<token>
+   ```
+7. Verify wildcard A record exists (or create it):
+   - Type: `A`, Name: `*`, Content: `1.2.3.4` (placeholder), Proxy: OFF (grey cloud)
+
+---
+
+## ❌ 6. Composio (integrations — Gmail, GitHub, Calendar) — ~10 min
+
+Composio lets agents use Gmail/GitHub/Calendar via fast API instead of slow browser automation. See Design Doc 04.
+
+### 6a. Account + API key
+
+1. Go to [composio.dev](https://composio.dev) → Sign up
+2. Dashboard → **API Keys** → Copy your key
+3. Save for `.env`:
+   ```
+   COMPOSIO_API_KEY=...
+   ```
+
+### 6b. Create Auth Configs (one-time setup)
+
+In the Composio dashboard, create auth configs for each service:
+
+1. **Gmail** → OAuth2 → Scopes: `gmail.readonly`, `gmail.send`, `gmail.compose`
+   - Copy the auth config ID → `COMPOSIO_GMAIL_AUTH_CONFIG=ac_...`
+2. **Google Calendar** → OAuth2 → Scopes: `calendar.readonly`, `calendar.events`
+   - Copy → `COMPOSIO_GCAL_AUTH_CONFIG=ac_...`
+3. **GitHub** → OAuth2 → Scopes: `repo`, `read:user`
+   - Copy → `COMPOSIO_GITHUB_AUTH_CONFIG=ac_...`
+
+4. **Set callback URL** in each auth config: `https://<your-ngrok-url>/api/connections/callback`
+
+5. Save all for `.env`:
+   ```
+   COMPOSIO_API_KEY=...
+   COMPOSIO_GMAIL_AUTH_CONFIG=ac_...
+   COMPOSIO_GCAL_AUTH_CONFIG=ac_...
+   COMPOSIO_GITHUB_AUTH_CONFIG=ac_...
+   ```
+
+For hackathon: Composio's default developer OAuth app works fine (shows "Composio" in consent screen).
+
+---
+
+## ❌ 7. Generate Encryption Secret — ~30 sec
+
+Used to encrypt LLM API keys at rest in Convex (AES-256-GCM). See Design Doc 08.
+
+```bash
+openssl rand -hex 32
+```
+
+Save for `.env`:
+```
+KEY_ENCRYPTION_SECRET=<the-hex-string>
+```
+
+Also generate the cookie secret while you're at it:
+```bash
+openssl rand -hex 32
+```
+```
+COOKIE_SECRET=<another-hex-string>
 ```
 
 ---
 
-## ✅ 2. MentraOS Developer Account + App Registration
+## ❌ 8. ElevenLabs (TTS for glasses) — ~5 min, optional
 
-**DONE — created via `mentra` CLI.**
+Needed for glasses voice responses. Without it, glasses can transcribe but not speak back.
+
+1. Go to [elevenlabs.io](https://elevenlabs.io) → Sign up (free tier: 10k chars/month)
+2. Profile → **API Keys** → Copy
+3. Save for `.env`:
+   ```
+   ELEVENLABS_API_KEY=...
+   ```
+
+---
+
+## ❌ 9. ngrok Static URL + Mentra App Update — ~2 min
+
+1. Check [dashboard.ngrok.com](https://dashboard.ngrok.com/) for your static domain
+2. Update the Mentra app:
+   ```bash
+   mentra app update com.isaiah.clawed --public-url "https://<your-static-url>"
+   ```
+3. Save for `.env`:
+   ```
+   PUBLIC_URL=https://<your-static-url>.ngrok-free.app
+   ```
+4. When developing, run in a separate terminal:
+   ```bash
+   ngrok http --url=<your-static-url> 3000
+   ```
+
+---
+
+# 🎯 PART 3: Nice-to-Have (do while agents work)
+
+## ❌ 10. Anthropic API Key (for demo) — ~2 min
+
+You'll paste this in the dashboard during the demo (BYOK model).
+
+1. Go to [console.anthropic.com](https://console.anthropic.com)
+2. Create an API key
+3. Have it handy for demo day — does NOT go in `.env`
+
+---
+
+## ❌ 11. Sponsor Credits to Claim — ~15 min
+
+Check the boxes for judges. Sign up even if we don't integrate all of them:
+
+| Sponsor | URL | Credits | Priority |
+|---------|-----|---------|----------|
+| Browser Use | browser-use.com (hackathon form) | $100 | **Done in step 4** |
+| Composio | composio.dev | Free | **Done in step 6** |
+| Laminar | laminar.run | $150 | SHOULD — agent observability |
+| AgentMail | agentmail.dev | Free dev plan | SHOULD |
+| Supermemory | supermemory.com | $100 | SHOULD |
+| Google DeepMind | (hackathon form) | $20 | NICE |
+| OpenAI | (hackathon form) | Credits | NICE |
+| Minimax | (hackathon form) | $30 | NICE |
+| HUD | hud.ai | $200 | NICE |
+
+---
+
+# ✅ Already Done
+
+## ✅ Bun (local toolchain)
+
+Installed and working.
+
+---
+
+## ✅ MentraOS App
+
+Created via `mentra` CLI:
 
 - **Package name:** `com.isaiah.clawed`
 - **App name:** Clawed Chat
@@ -55,273 +289,104 @@ bun --version  # should be 1.2+
 - **Public URL:** https://clawed.chat (update to ngrok URL for dev)
 - **API Key:** `a6ed85a71b0d442b4d96396f86e8bb58843725d6c6dd3c2b0716f1abf943b1dd`
 
-Save these values in `.env`:
-```
-PACKAGE_NAME=com.isaiah.clawed
-MENTRAOS_API_KEY=a6ed85a71b0d442b4d96396f86e8bb58843725d6c6dd3c2b0716f1abf943b1dd
-```
+---
 
-To update the public URL to ngrok later:
-```bash
-mentra app update com.isaiah.clawed --public-url "https://<your-ngrok-url>"
-```
+## ✅ ngrok
+
+Installed and authed. Config at `~/Library/Application Support/ngrok/ngrok.yml`.
 
 ---
 
-## ✅ 3. ngrok (expose local dev to MentraOS + Clerk)
+## ✅ GCP (VM provisioning)
 
-**DONE — ngrok installed and authed.**
-
-Already configured at `~/Library/Application Support/ngrok/ngrok.yml`.
-
-⏳ **Still need:** your static domain URL. Check [dashboard.ngrok.com](https://dashboard.ngrok.com/) for your static domain, then:
-
-```bash
-# When developing, run in a separate terminal:
-ngrok http --url=<your-static-url> 3000
-
-# Then update the Mentra app's public URL:
-mentra app update com.isaiah.clawed --public-url "https://<your-static-url>"
-```
-
-Save for `.env`:
-```
-PUBLIC_URL=https://<your-static-url>.ngrok-free.app
-```
-
----
-
-## ❌ 4. Clerk (auth) — ~5 min
-
-1. Go to [clerk.com](https://clerk.com) → Sign up / Sign in
-2. Create a new application called **"clawed.chat"**
-3. Enable **Google OAuth** as a sign-in method (this is the primary auth for the hackathon)
-4. In the Clerk dashboard, go to **API Keys**
-5. Copy:
-   - `CLERK_PUBLISHABLE_KEY` (starts with `pk_`)
-   - `CLERK_SECRET_KEY` (starts with `sk_`)
-6. Go to **Domains** → Add `clawed.chat` and `localhost:3000` as allowed origins
-7. Save for `.env`:
-   ```
-   CLERK_PUBLISHABLE_KEY=pk_...
-   CLERK_SECRET_KEY=sk_...
-   ```
-
----
-
-## ❌ 5. Convex (database) — ~5 min
-
-⚠️ Do this before running `bun run dev` — the app needs `CONVEX_URL`.
-
-1. Go to [convex.dev](https://convex.dev) → Sign up / Sign in
-2. Install the CLI:
-   ```bash
-   bun add -g convex
-   ```
-3. From the **project root** (not `app/`), run:
-   ```bash
-   bunx convex dev
-   ```
-   - This will prompt you to create a new project — name it **"clawed-chat"**
-   - It will generate `convex/_generated/` (gitignored)
-   - It will give you a deployment URL
-4. Copy the URL for `.env`:
-   ```
-   CONVEX_URL=https://your-project-123.convex.cloud
-   ```
-5. Keep `bunx convex dev` running in a separate terminal during development — it syncs schema changes live
-
-✅ **Convex CLI installed** (v1.32.0). Just needs first run to create the project.
-
----
-
-## ❌ 6. Browser Use (hackathon host — MUST integrate) — ~5 min
-
-1. Go to [browser-use.com](https://browser-use.com) → Sign up
-2. **Claim hackathon credits:** Fill out the form linked from the hackathon page ($100 free credits)
-3. Go to API Keys → Create a new key
-4. Save for `.env`:
-   ```
-   BROWSER_USE_API_KEY=bu_...
-   ```
-5. Test it works:
-   ```bash
-   curl -X POST https://api.browser-use.com/api/v1/browsers \
-     -H "Authorization: Bearer bu_..." \
-     -H "Content-Type: application/json" \
-     -d '{"proxy_country_code": "us"}'
-   ```
-   You should get back `{ "browser_id": "...", "cdp_url": "wss://...", "live_url": "https://..." }`
-
----
-
-## ✅ 7. GCP (VM provisioning) — DONE
-
-**All set up via `gcloud` CLI.**
+All set up via `gcloud` CLI:
 
 - **Project ID:** `clawed-chat`
 - **Project Number:** `917234576075`
-- **Billing:** linked to `016120-888B2D-47F90B` (My Billing Account 4)
+- **Billing:** linked to `016120-888B2D-47F90B`
 - **APIs Enabled:** Compute Engine, Cloud Resource Manager
 - **Service Account:** `pulumi-provisioner@clawed-chat.iam.gserviceaccount.com`
   - Roles: `roles/compute.admin`, `roles/iam.serviceAccountUser`
-  - Key: `/tmp/clawed-chat-sa-key.json` ⚠️ **move this somewhere safe!**
-    ```bash
-    mkdir -p ~/.config/gcloud
-    mv /tmp/clawed-chat-sa-key.json ~/.config/gcloud/clawed-chat-sa-key.json
-    ```
+  - Key: `~/.config/gcloud/clawed-chat-sa-key.json`
 - **Firewall Rule:** `allow-openclaw` → tcp:18789,80,443 → tag `openclaw-instance`
 
-Save for `.env`:
-```
-GCP_PROJECT=clawed-chat
-GCP_ZONE=us-west1-a
-GOOGLE_APPLICATION_CREDENTIALS=/Users/isaiah/.config/gcloud/clawed-chat-sa-key.json
-```
+### Pre-baked VM image — ❌ not done yet
 
-### 7d. Pre-baked VM image (hackathon day task) — ❌ not done yet
-
-This is the image every user VM boots from. Script will be in `scripts/bake-image/`. An agent can build this now that GCP is set up.
+An agent can build this now that GCP is set up. See `scripts/bake-image/README.md`.
+Image should use **Ubuntu 24.04 LTS** + **Docker** + OpenClaw container (not native install).
 
 ---
 
-## ⏳ 8. Cloudflare (DNS for *.clawed.chat) — ~5 min
-
-1. Go to [dash.cloudflare.com](https://dash.cloudflare.com)
-2. Make sure `clawed.chat` is added as a zone (you probably already have this)
-3. Go to the zone → **Overview** → note your **Zone ID** (right sidebar)
-4. Go to **My Profile → API Tokens → Create Token**
-5. Use the **"Edit zone DNS"** template:
-   - Zone Resources: Include → Specific zone → `clawed.chat`
-   - Permissions: Zone / DNS / Edit
-6. Copy the token
-7. Save for `.env`:
-   ```
-   CLOUDFLARE_ZONE_ID=<zone_id>
-   CLOUDFLARE_API_TOKEN=<token>
-   ```
-8. Verify the wildcard record exists (or create it):
-   - Type: `A`
-   - Name: `*`
-   - Content: `1.2.3.4` (placeholder — Pulumi will create per-user records that override this)
-   - Proxy: OFF (DNS only — grey cloud). OpenClaw uses WebSockets, Cloudflare proxy can interfere.
-
----
-
-## ⏳ 9. Pulumi (infrastructure as code) — ~5 min
-
-⚠️ Do this after GCP is set up.
-✅ **Pulumi CLI installed** (v3.224.0). Just need to auth:
-
-1. Go to [app.pulumi.com](https://app.pulumi.com) → Sign up (GitHub OAuth is easiest)
-2. Create an organization or use your personal account
-3. ~~Install the CLI~~ ✅ already installed
-4. Login:
-   ```bash
-   pulumi login
-   ```
-5. Get your access token from [app.pulumi.com/account/tokens](https://app.pulumi.com/account/tokens)
-6. Save for `.env`:
-   ```
-   PULUMI_ACCESS_TOKEN=pul-...
-   ```
-7. You do NOT need to run `pulumi new` — the Automation API in our code creates stacks programmatically
-
-**Once the CLI is authed, agents can create stacks, set config, and run `pulumi preview`.**
-
----
-
-## ❌ 10. Anthropic API Key (for demo) — ~2 min
-
-You'll need at least one LLM key to demo OpenClaw. Anthropic (Claude) is the recommended model.
-
-1. Go to [console.anthropic.com](https://console.anthropic.com)
-2. Create an API key
-3. This is a **user-provided key** (BYOK model) — you'll paste it in the dashboard during the demo
-4. Have it handy, but it does NOT go in `.env` (users bring their own)
-
----
-
-## ❌ 11. Sponsor Credits to Claim — ~15 min (do while agents work)
-
-These are optional but check the boxes for judges:
-
-| Sponsor | URL | Credits | Priority |
-|---------|-----|---------|----------|
-| Browser Use | browser-use.com (hackathon form) | $100 | **Done above** |
-| Laminar | laminar.run | $150 | SHOULD — claim now, integrate later |
-| AgentMail | agentmail.dev | Free dev plan | SHOULD |
-| Supermemory | supermemory.com | $100 | SHOULD |
-| Google DeepMind | (hackathon form) | $20 | NICE |
-| OpenAI | (hackathon form) | Credits | NICE |
-| Minimax | (hackathon form) | $30 | NICE |
-| HUD | hud.ai | $200 | NICE |
-
-Sign up for all of them now even if we don't integrate them all. Having accounts ready = zero friction later.
-
----
-
-## 12. Final `.env` File
+# Complete `.env` File
 
 After all the above, your `app/.env` should look like:
 
 ```bash
-# MentraOS
+# ─── MentraOS ────────────────────────────────────────────────────────────────
 PACKAGE_NAME=com.isaiah.clawed
 MENTRAOS_API_KEY=a6ed85a71b0d442b4d96396f86e8bb58843725d6c6dd3c2b0716f1abf943b1dd
 
-# Server
+# ─── Server ──────────────────────────────────────────────────────────────────
 PORT=3000
 PUBLIC_URL=https://your-url.ngrok-free.app
-COOKIE_SECRET=  # generate: openssl rand -hex 32
+COOKIE_SECRET=                    # openssl rand -hex 32
 
-# Clerk
+# ─── Auth (Clerk) ────────────────────────────────────────────────────────────
 CLERK_PUBLISHABLE_KEY=pk_
 CLERK_SECRET_KEY=sk_
+CLERK_WEBHOOK_SECRET=whsec_
 
-# Convex
+# ─── Database (Convex) ───────────────────────────────────────────────────────
 CONVEX_URL=https://your-project.convex.cloud
 
-# Browser Use
+# ─── Browser Use ─────────────────────────────────────────────────────────────
 BROWSER_USE_API_KEY=bu_
 
-# GCP
+# ─── GCP ─────────────────────────────────────────────────────────────────────
 GCP_PROJECT=clawed-chat
 GCP_ZONE=us-west1-a
 GOOGLE_APPLICATION_CREDENTIALS=/Users/isaiah/.config/gcloud/clawed-chat-sa-key.json
 
-# Cloudflare
+# ─── Cloudflare ──────────────────────────────────────────────────────────────
 CLOUDFLARE_ZONE_ID=
 CLOUDFLARE_API_TOKEN=
 
-# Pulumi
+# ─── Pulumi ──────────────────────────────────────────────────────────────────
 PULUMI_ACCESS_TOKEN=pul-
-```
 
-Generate your cookie secret:
-```bash
-openssl rand -hex 32
+# ─── Composio (integrations) ─────────────────────────────────────────────────
+COMPOSIO_API_KEY=
+COMPOSIO_GMAIL_AUTH_CONFIG=ac_
+COMPOSIO_GCAL_AUTH_CONFIG=ac_
+COMPOSIO_GITHUB_AUTH_CONFIG=ac_
+
+# ─── Encryption ──────────────────────────────────────────────────────────────
+KEY_ENCRYPTION_SECRET=            # openssl rand -hex 32
+
+# ─── TTS (glasses voice responses) ───────────────────────────────────────────
+ELEVENLABS_API_KEY=               # optional, needed for glasses TTS
 ```
 
 ---
 
-## Quick Status Check
-
-Once everything is set up, you should be able to:
+# Quick Status Check
 
 - [x] `bun --version` → 1.2+
 - [x] MentraOS app created: `com.isaiah.clawed` (MICROPHONE + CAMERA)
 - [x] ngrok installed and authed
-- [x] `gcloud version` → 558.0.0 installed
-- [x] `pulumi version` → 3.224.0 installed
-- [x] `convex --version` → 1.32.0 installed
-- [x] GCP project `clawed-chat` created, billing linked, APIs enabled
-- [x] GCP service account + key + firewall rule created
-- [ ] ⚠️ Move SA key: `mv /tmp/clawed-chat-sa-key.json ~/.config/gcloud/`
-- [ ] ngrok static URL set + Mentra app public URL updated
-- [ ] Clerk dashboard shows app with Google OAuth enabled
-- [ ] `bunx convex dev` → connects to your Convex project
-- [ ] `curl` to Browser Use API → returns a browser session
-- [ ] Cloudflare zone has `clawed.chat` with Zone ID noted
-- [ ] `pulumi login` → `pulumi whoami` shows your account
+- [x] gcloud installed, authed, project `clawed-chat` created
+- [x] GCP: billing, APIs, service account, key, firewall rule — all done
+- [x] pulumi CLI installed (v3.224.0)
+- [x] convex CLI installed (v1.32.0)
+- [x] SA key moved to `~/.config/gcloud/`
+- [ ] `pulumi login` → `pulumi whoami` works
+- [ ] `bunx convex dev` → project created, schema pushed
+- [ ] Clerk app created with Google OAuth + webhook
+- [ ] Browser Use API key obtained + tested
+- [ ] Cloudflare zone ID + API token
+- [ ] Composio API key + 3 auth configs (Gmail, Calendar, GitHub)
+- [ ] `KEY_ENCRYPTION_SECRET` generated
+- [ ] `COOKIE_SECRET` generated
+- [ ] ngrok static URL set + Mentra app updated
+- [ ] ElevenLabs API key (optional)
 - [ ] Anthropic API key ready for demo day
