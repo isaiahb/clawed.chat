@@ -39,6 +39,10 @@ const INTRO_KEY = "clawed-intro-played"
 
 function shouldShowIntro(): boolean {
   try {
+    // ?intro=1 forces the intro to play (useful for demos)
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("intro") === "1") return true
+
     return !sessionStorage.getItem(INTRO_KEY)
   } catch {
     return false
