@@ -12,7 +12,11 @@
  * Reference: Design Doc 04
  */
 
-import {Composio} from "@composio/core"
+// @composio/core is loaded lazily — the server can start even if the package
+// isn't installed (e.g. on a VM where it failed to install).
+// All usage goes through getClient() which does the dynamic import.
+
+type ComposioClient = any
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -36,15 +40,23 @@ const SERVICE_MAP: Record<string, {toolkit: string; authConfigEnv: string}> = {
 
 // ─── Singleton Client ────────────────────────────────────────────────────────
 
-let _client: Composio | null = null
+let _client: ComposioClient | null = null
 
-function getClient(): Composio {
+async function getClient(): Promise<ComposioClient> {
   if (!_client) {
     assertConfigured()
-    _client = new Composio({
-      apiKey: COMPOSIO_API_KEY!,
-      allowTracking: false,
-    })
+    try {
+      const { Composio } = await import("@composio/core")
+      _client = new Composio({
+        apiKey: COMPOSIO_API_KEY!,
+        allowTracking: false,
+      })
+    } catch (err: any) {
+      throw new Error(
+        `[composio] Failed to load @composio/core: ${err.message}. ` +
+        `Run 'bun add @composio/core' to install it.`
+      )
+    }
   }
   return _client
 }
@@ -97,7 +109,7 @@ export async function createConnection(userId: string, service: string): Promise
 
   const callbackUrl = `${process.env.PUBLIC_URL || "https://clawed.chat"}/api/connections/callback`
 
-  const client = getClient()
+  const client = await getClient()
 
   console.log(
     `[composio] creating connection: user=${userId} service=${service} authConfig=${authConfigId}`,
@@ -144,7 +156,7 @@ export async function verifySession(
   sessionId: string,
   timeoutMs: number = 30_000,
 ): Promise<VerifiedConnection> {
-  const client = getClient()
+  const client = await getClient()
 
   console.log(`[composio] verifying session: sessionId=${sessionId}`)
 
@@ -210,7 +222,7 @@ export async function verifySession(
  * @param connectionId - The Composio connected account ID to revoke
  */
 export async function revokeConnection(connectionId: string): Promise<void> {
-  const client = getClient()
+  const client = await getClient()
 
   console.log(`[composio] revoking connection: connectionId=${connectionId}`)
 
@@ -226,7 +238,7 @@ export async function revokeConnection(connectionId: string): Promise<void> {
  * @returns Array of user connections with status
  */
 export async function listUserConnections(userId: string): Promise<UserConnection[]> {
-  const client = getClient()
+  const client = await getClient()
 
   const response = await client.connectedAccounts.list({
     userIds: [userId],
@@ -255,7 +267,7 @@ export async function listUserConnections(userId: string): Promise<UserConnectio
  * @param connectionId - The Composio connected account ID
  */
 export async function getConnection(connectionId: string): Promise<VerifiedConnection | null> {
-  const client = getClient()
+  const client = await getClient()
 
   try {
     const account = await client.connectedAccounts.get(connectionId)
@@ -294,7 +306,7 @@ export async function listActions(userId: string, service: string): Promise<stri
     return []
   }
 
-  const client = getClient()
+  const client = await getClient()
 
   try {
     const tools = await client.tools.getRawComposioTools({
@@ -316,7 +328,7 @@ export async function listActions(userId: string, service: string): Promise<stri
  * @param connectionId - The Composio connected account ID
  */
 export async function refreshConnection(connectionId: string): Promise<boolean> {
-  const client = getClient()
+  const client = await getClient()
 
   try {
     await client.connectedAccounts.refresh(connectionId)
