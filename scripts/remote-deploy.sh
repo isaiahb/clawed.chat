@@ -25,6 +25,11 @@ log() {
   echo "[deploy] $(date '+%H:%M:%S') $*"
 }
 
+# ─── Step 0: Ensure prerequisites ────────────────────────────────────────────
+
+log "Installing prerequisites..."
+apt-get update -qq && apt-get install -y -qq unzip jq curl git 2>&1 | tail -1
+
 # ─── Step 1: Install Bun ─────────────────────────────────────────────────────
 
 log "Checking Bun installation..."
