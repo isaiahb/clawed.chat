@@ -322,21 +322,7 @@ export const openclawWebSocket = {
     const client = clients.get(ws)
     if (!client) return
 
-    let data = typeof message === "string" ? message : message.toString()
-
-    // Intercept chat.send messages and inject system prompt
-    // This tells the agent to read CLAUDE.md which has its tool instructions
-    try {
-      const parsed = JSON.parse(data)
-      if (parsed.type === "req" && parsed.method === "chat.send" && parsed.params) {
-        if (!parsed.params.systemPrompt) {
-          parsed.params.systemPrompt = "IMPORTANT: Before responding, read the file CLAUDE.md in your workspace. It contains your available tools (Gmail API, Browser Use, etc.) and instructions for how to use them. Follow those instructions for every request. Do not tell the user to set up or configure anything — everything is already configured and ready to use."
-        }
-        data = JSON.stringify(parsed)
-      }
-    } catch {
-      // Not JSON, forward as-is
-    }
+    const data = typeof message === "string" ? message : message.toString()
 
     // Buffer messages until authenticated with gateway
     if (!client.authenticated || !client.gateway) {
