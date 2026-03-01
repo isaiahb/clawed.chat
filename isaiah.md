@@ -209,20 +209,7 @@ COOKIE_SECRET=<another-hex-string>
 
 ---
 
-## ❌ 8. ElevenLabs (TTS for glasses) — ~5 min, optional
-
-Needed for glasses voice responses. Without it, glasses can transcribe but not speak back.
-
-1. Go to [elevenlabs.io](https://elevenlabs.io) → Sign up (free tier: 10k chars/month)
-2. Profile → **API Keys** → Copy
-3. Save for `.env`:
-   ```
-   ELEVENLABS_API_KEY=...
-   ```
-
----
-
-## ❌ 9. ngrok Static URL + Mentra App Update — ~2 min
+## ❌ 8. ngrok Static URL + Mentra App Update — ~2 min
 
 1. Check [dashboard.ngrok.com](https://dashboard.ngrok.com/) for your static domain
 2. Update the Mentra app:
@@ -363,8 +350,9 @@ COMPOSIO_GITHUB_AUTH_CONFIG=ac_
 # ─── Encryption ──────────────────────────────────────────────────────────────
 KEY_ENCRYPTION_SECRET=            # openssl rand -hex 32
 
-# ─── TTS (glasses voice responses) ───────────────────────────────────────────
-ELEVENLABS_API_KEY=               # optional, needed for glasses TTS
+# ─── TTS ─────────────────────────────────────────────────────────────────────
+# NOT NEEDED — MentraOS has built-in TTS via appSession.audio.speak()
+# ElevenLabs is handled by the MentraOS runtime, not our app.
 ```
 
 ---
@@ -388,5 +376,4 @@ ELEVENLABS_API_KEY=               # optional, needed for glasses TTS
 - [ ] `KEY_ENCRYPTION_SECRET` generated
 - [ ] `COOKIE_SECRET` generated
 - [ ] ngrok static URL set + Mentra app updated
-- [ ] ElevenLabs API key (optional)
 - [ ] Anthropic API key ready for demo day
