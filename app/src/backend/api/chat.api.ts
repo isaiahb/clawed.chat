@@ -16,8 +16,23 @@
 import {Hono} from "hono"
 import type {Context} from "hono"
 import {getAuth} from "@hono/clerk-auth"
+import {ConvexHttpClient} from "convex/browser"
+import {api} from "../../../../convex/_generated/api"
+import * as openclawService from "../services/openclaw.service"
 
 const app = new Hono()
+
+// ─── Convex Client ───────────────────────────────────────────────────────────
+
+const CONVEX_URL = process.env.CONVEX_URL || ""
+const convex = CONVEX_URL ? new ConvexHttpClient(CONVEX_URL) : null
+
+function getConvex(): ConvexHttpClient {
+  if (!convex) {
+    throw new Error("[chat] CONVEX_URL not configured")
+  }
+  return convex
+}
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
@@ -44,54 +59,76 @@ async function sendMessage(c: Context) {
     return c.json({error: `source must be one of: ${validSources.join(", ")}`}, 400)
   }
 
-  // TODO: Verify user owns this instance
-  // const instance = await convex.query("instances:get", {id: instanceId})
-  // if (!instance || instance.user_id !== auth.userId) {
-  //   return c.json({error: "Instance not found"}, 404)
-  // }
+  const db = getConvex()
 
-  // TODO: If instance is sleeping, wake it first
-  // if (instance.status === "stopped") {
-  //   await instanceService.start(instanceId)
-  //   await openclawService.waitForGateway(instance.ip)
-  // }
+  // ─── Verify user owns this instance ──────────────────────────────────
+  let instance
+  try {
+    instance = await db.query(api.instances.get, {id: instanceId as any})
+  } catch (err) {
+    console.error("[chat] failed to fetch instance:", err)
+    return c.json({error: "Instance not found"}, 404)
+  }
 
-  // TODO: Write user's message to Convex `chat_messages` immediately
-  // await convex.mutation("chatMessages:insert", {
-  //   user_id: auth.userId,
-  //   instance_id: instanceId,
-  //   role: "user",
-  //   source,
-  //   content: message,
-  //   timestamp: Date.now(),
-  // })
+  if (!instance) {
+    return c.json({error: "Instance not found"}, 404)
+  }
 
-  // TODO: Dispatch to OpenClaw via Gateway RPC
+  if (instance.user_id !== auth.userId) {
+    return c.json({error: "Instance not found"}, 404)
+  }
+
+  // ─── Write user's message to Convex immediately ──────────────────────
+  // This shows up in the frontend chat panel in real-time via subscription
+  try {
+    await db.mutation(api.chatMessages.insert, {
+      user_id: auth.userId,
+      instance_id: instanceId,
+      role: "user",
+      source: source as "web" | "glasses" | "desktop",
+      content: message,
+      timestamp: Date.now(),
+    })
+  } catch (err) {
+    console.error("[chat] failed to write message to Convex:", err)
+    return c.json({error: "Failed to save message"}, 500)
+  }
+
+  // ─── Dispatch to OpenClaw via Gateway RPC ────────────────────────────
   // The agent's response will arrive asynchronously via:
   //   channel plugin sendText → POST /api/openclaw/outbound → Convex → frontend
-  //
-  // import {sendMessage as openclawSend} from "../services/openclaw.service"
-  //
-  // try {
-  //   const result = await openclawSend({
-  //     ip: instance.ip,
-  //     token: instance.gateway_token,
-  //     text: message,
-  //     userId: auth.userId,
-  //     source,
-  //   })
-  //   console.log(`[chat] dispatched to OpenClaw: session=${result.sessionKey}`)
-  // } catch (err) {
-  //   console.error(`[chat] failed to dispatch to OpenClaw:`, err)
-  //   return c.json({error: "Failed to send message to agent"}, 502)
-  // }
+  if (instance.ip && (instance.status === "running" || instance.status === "starting")) {
+    try {
+      const result = await openclawService.sendMessage({
+        ip: instance.ip,
+        token: process.env.OPENCLAW_GATEWAY_TOKEN || "clawed-default",
+        text: message,
+        userId: auth.userId,
+        source: source as "web" | "glasses" | "desktop",
+      })
+      console.log(`[chat] dispatched to OpenClaw: session=${result.sessionKey} dispatched=${result.dispatched}`)
+    } catch (err: any) {
+      // Don't fail the request — the message is already saved in Convex.
+      // The user sees their message, and we log the dispatch failure.
+      // They can retry or the agent may still respond if the gateway recovers.
+      console.error(`[chat] failed to dispatch to OpenClaw (message saved, agent may not respond):`, err.message)
+    }
+  } else {
+    console.warn(`[chat] instance ${instanceId} is not running (status=${instance.status}, ip=${instance.ip}) — message saved but not dispatched`)
+  }
 
-  // TODO: Touch last_active_at
-  // await convex.mutation("instances:touch", {id: instanceId})
+  // ─── Touch last_active_at ────────────────────────────────────────────
+  try {
+    await db.mutation(api.instances.touch, {id: instanceId as any})
+  } catch (err) {
+    // Non-critical — just log it
+    console.warn("[chat] failed to touch last_active_at:", err)
+  }
 
   return c.json({
     success: true,
-    message: "Message sent to agent",
+    message: "Message sent",
+    dispatched: !!(instance.ip && instance.status === "running"),
   })
 }
 

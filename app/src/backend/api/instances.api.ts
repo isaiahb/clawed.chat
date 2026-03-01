@@ -11,7 +11,21 @@
 import {Hono} from "hono"
 import type {Context} from "hono"
 import {getAuth} from "@hono/clerk-auth"
+import {ConvexHttpClient} from "convex/browser"
+import {api} from "../../../../convex/_generated/api"
 import * as instanceService from "../services/instance.service"
+
+// ─── Convex Client ───────────────────────────────────────────────────────────
+
+const CONVEX_URL = process.env.CONVEX_URL || ""
+const convex = CONVEX_URL ? new ConvexHttpClient(CONVEX_URL) : null
+
+function getConvex(): ConvexHttpClient {
+  if (!convex) {
+    throw new Error("[instances] CONVEX_URL not configured")
+  }
+  return convex
+}
 
 const app = new Hono()
 
@@ -74,17 +88,34 @@ async function getInstance(c: Context) {
   }
 
   const id = c.req.param("id")
+  const db = getConvex()
 
-  // TODO: fetch from Convex + verify ownership
-  // For now, return the id so the frontend doesn't break
-  return c.json({
-    id,
-    status: "unknown",
-    subdomain: "",
-    ip: null,
-    browser_use_live_url: null,
-    last_active_at: null,
-  })
+  try {
+    const instance = await db.query(api.instances.get, {id: id as any})
+
+    if (!instance) {
+      return c.json({error: "Instance not found"}, 404)
+    }
+
+    if (instance.user_id !== auth.userId) {
+      return c.json({error: "Instance not found"}, 404)
+    }
+
+    return c.json({
+      id: instance._id,
+      status: instance.status,
+      type: instance.type,
+      subdomain: instance.subdomain,
+      ip: instance.ip ?? null,
+      llm_provider: instance.llm_provider,
+      gcp_vm_name: instance.gcp_vm_name ?? null,
+      browser_use_live_url: instance.browser_use_live_url ?? null,
+      last_active_at: instance.last_active_at ?? null,
+    })
+  } catch (err: any) {
+    console.error("[instances] get failed:", err.message)
+    return c.json({error: "Failed to fetch instance"}, 500)
+  }
 }
 
 /** POST /:id/stop — sleep an instance (VM stops, $0 compute) */
