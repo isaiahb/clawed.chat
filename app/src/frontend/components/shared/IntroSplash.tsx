@@ -300,23 +300,28 @@ export function IntroSplash({
     }, 600);
   }, [onComplete]);
 
-  // Gentle swim animation for fish using requestAnimationFrame
+  // Gentle swim animation for fish — throttled to ~15fps to avoid excessive re-renders
   useEffect(() => {
     let startTime = performance.now();
+    let lastUpdate = 0;
+    const FRAME_INTERVAL = 66; // ~15fps — smooth enough for gentle swimming
     const animate = (time: number) => {
-      const elapsed = (time - startTime) / 1000;
-      setSwimTick(elapsed);
+      if (time - lastUpdate >= FRAME_INTERVAL) {
+        const elapsed = (time - startTime) / 1000;
+        setSwimTick(elapsed);
+        lastUpdate = time;
+      }
       animFrameRef.current = requestAnimationFrame(animate);
     };
     animFrameRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animFrameRef.current);
   }, []);
 
-  // Get swim offset for a fish
+  // Get swim offset for a fish — gentler movement
   const getSwimOffset = (index: number) => {
-    const speed = 0.4 + (index % 3) * 0.15;
-    const ampX = 12 + (index % 4) * 4;
-    const ampY = 5 + (index % 3) * 3;
+    const speed = 0.25 + (index % 3) * 0.1;
+    const ampX = 8 + (index % 4) * 3;
+    const ampY = 4 + (index % 3) * 2;
     const phaseOffset = index * 0.8;
     return {
       x: Math.sin(swimTick * speed + phaseOffset) * ampX,
@@ -328,28 +333,28 @@ export function IntroSplash({
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
 
-    // Phase 2: Claw enters from left (t=400ms)
+    // Phase 2: Claw enters from left (t=600ms)
     timers.push(
       setTimeout(() => {
         setPhase("chomping");
         setClawPos({ x: 100, y: 220 });
-      }, 400),
+      }, 600),
     );
 
-    // Claw eats fish sequentially — faster intervals
+    // Claw eats fish sequentially — relaxed pace so motion feels deliberate
     const fishOrder = [4, 0, 1, 3, 2, 5, 7, 6];
-    const startEating = 800;
-    const eatInterval = 280;
+    const startEating = 1200;
+    const eatInterval = 400;
 
     fishOrder.forEach((fishIdx, seqIdx) => {
       const eatTime = startEating + seqIdx * eatInterval;
       const fish = FISH_DATA[fishIdx];
 
-      // Move claw towards fish
+      // Move claw towards fish — arrive well before chomp so it feels smooth
       timers.push(
         setTimeout(() => {
           setClawPos({ x: fish.x - 60, y: fish.y - 10 });
-        }, eatTime - 120),
+        }, eatTime - 200),
       );
 
       // Chomp
@@ -359,17 +364,17 @@ export function IntroSplash({
         }, eatTime),
       );
 
-      // Eat
+      // Eat — hold the chomp a bit longer
       timers.push(
         setTimeout(() => {
           setEatenFish((prev) => new Set([...prev, fishIdx]));
           setChomping(false);
-        }, eatTime + 120),
+        }, eatTime + 150),
       );
     });
 
     // Phase 3: Satisfied — claw centers and text appears
-    const satisfiedTime = startEating + fishOrder.length * eatInterval + 200;
+    const satisfiedTime = startEating + fishOrder.length * eatInterval + 400;
     timers.push(
       setTimeout(() => {
         setPhase("satisfied");
@@ -528,7 +533,7 @@ export function IntroSplash({
           <g
             filter="url(#clawShadow)"
             style={{
-              transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
               transform: `translate(${clawPos.x}px, ${clawPos.y}px)`,
             }}
           >

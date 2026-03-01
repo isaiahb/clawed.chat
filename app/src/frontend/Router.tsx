@@ -87,13 +87,14 @@ export default function Router() {
         {!introComplete && (
           <IntroSplash
             onComplete={handleIntroComplete}
-            duration={4200}
+            duration={5500}
             skippable
           />
         )}
 
         {/* ─── Main Application ─── */}
         <div
+          className="min-h-screen flex flex-col bg-background"
           style={{
             opacity: introComplete ? 1 : 0,
             transition: "opacity 0.5s ease-in-out 0.1s",
