@@ -1,13 +1,41 @@
 # Isaiah's Setup Checklist
 
-> Things only you can do — API keys, accounts, third-party config. Claude can't do any of this.
+> Things only you can do — API keys, accounts, third-party config.
 > Check each off as you go. Order matters for some (marked with ⚠️).
+>
+> ✅ = done, ⏳ = in progress, ❌ = not started
 
 ---
 
-## 1. Bun (local toolchain)
+## CLI Tools to Install
 
-You probably have this already, but make sure you're on latest:
+Claude can help with anything that has a CLI. Install these so agents can do the heavy lifting:
+
+```bash
+# Already installed ✅
+# - bun
+# - ngrok (authed)
+# - mentra CLI (authed)
+
+# Install these so agents can help:
+brew install --cask google-cloud-sdk   # gcloud CLI — agents can create firewall rules, bake images, etc.
+brew install pulumi                     # pulumi CLI — agents can set up stacks, config
+brew install cloudflare/cloudflare/cloudflared  # wrangler alternative for tunnels (optional)
+bun add -g convex                       # convex CLI — agents can push schema, run functions
+
+# Auth each one after install:
+gcloud auth login
+gcloud config set project <YOUR_PROJECT_ID>
+pulumi login
+```
+
+Once these are authed, spin up agents and they can handle most of the infra setup for you.
+
+---
+
+## ✅ 1. Bun (local toolchain)
+
+Already installed.
 
 ```bash
 bun upgrade
@@ -16,52 +44,54 @@ bun --version  # should be 1.2+
 
 ---
 
-## 2. MentraOS Developer Account + App Registration
+## ✅ 2. MentraOS Developer Account + App Registration
 
-This is needed before the app can talk to glasses.
+**DONE — created via `mentra` CLI.**
 
-1. Go to [console.mentra.glass](https://console.mentra.glass/)
-2. Sign in with the same account you use on MentraOS
-3. Click **"Create App"**
-4. Set package name: `chat.clawed.app` (or whatever you want — just note it)
-5. For "Public URL", enter your ngrok static URL (see step 3 below) or leave blank for now
-6. **Add permissions:** microphone, camera (we need transcription + photos)
-7. Copy your **API Key** from the app detail page
-8. Save these values — they go in `.env`:
-   ```
-   PACKAGE_NAME=chat.clawed.app
-   MENTRAOS_API_KEY=<your_api_key>
-   ```
+- **Package name:** `com.isaiah.clawed`
+- **App name:** Clawed Chat
+- **Org:** Isaiah (`6837a2889e30d977f1b8cb35`)
+- **Permissions:** MICROPHONE, CAMERA
+- **Public URL:** https://clawed.chat (update to ngrok URL for dev)
+- **API Key:** `a6ed85a71b0d442b4d96396f86e8bb58843725d6c6dd3c2b0716f1abf943b1dd`
 
----
-
-## 3. ngrok (expose local dev to MentraOS + Clerk)
-
-MentraOS needs a public URL to reach your local server.
-
-```bash
-brew install ngrok
+Save these values in `.env`:
+```
+PACKAGE_NAME=com.isaiah.clawed
+MENTRAOS_API_KEY=a6ed85a71b0d442b4d96396f86e8bb58843725d6c6dd3c2b0716f1abf943b1dd
 ```
 
-1. Create an account at [ngrok.com](https://ngrok.com)
-2. Create a **static domain** at [dashboard.ngrok.com](https://dashboard.ngrok.com/) (free tier gets one)
-3. Auth your CLI:
-   ```bash
-   ngrok config add-authtoken <your_token>
-   ```
-4. When developing, run:
-   ```bash
-   ngrok http --url=<your-static-url> 3000
-   ```
-5. Go back to MentraOS console and set your app's Public URL to this ngrok URL
-6. Save for `.env`:
-   ```
-   PUBLIC_URL=https://<your-static-url>.ngrok-free.app
-   ```
+To update the public URL to ngrok later:
+```bash
+mentra app update com.isaiah.clawed --public-url "https://<your-ngrok-url>"
+```
 
 ---
 
-## 4. Clerk (auth)
+## ✅ 3. ngrok (expose local dev to MentraOS + Clerk)
+
+**DONE — ngrok installed and authed.**
+
+Already configured at `~/Library/Application Support/ngrok/ngrok.yml`.
+
+⏳ **Still need:** your static domain URL. Check [dashboard.ngrok.com](https://dashboard.ngrok.com/) for your static domain, then:
+
+```bash
+# When developing, run in a separate terminal:
+ngrok http --url=<your-static-url> 3000
+
+# Then update the Mentra app's public URL:
+mentra app update com.isaiah.clawed --public-url "https://<your-static-url>"
+```
+
+Save for `.env`:
+```
+PUBLIC_URL=https://<your-static-url>.ngrok-free.app
+```
+
+---
+
+## ❌ 4. Clerk (auth) — ~5 min
 
 1. Go to [clerk.com](https://clerk.com) → Sign up / Sign in
 2. Create a new application called **"clawed.chat"**
@@ -79,12 +109,12 @@ brew install ngrok
 
 ---
 
-## 5. Convex (database)
+## ❌ 5. Convex (database) — ~5 min
 
 ⚠️ Do this before running `bun run dev` — the app needs `CONVEX_URL`.
 
 1. Go to [convex.dev](https://convex.dev) → Sign up / Sign in
-2. Install the CLI (already in `package.json` devDeps, but just in case):
+2. Install the CLI:
    ```bash
    bun add -g convex
    ```
@@ -101,9 +131,11 @@ brew install ngrok
    ```
 5. Keep `bunx convex dev` running in a separate terminal during development — it syncs schema changes live
 
+**Once the CLI is authed, agents can push schema changes and test functions.**
+
 ---
 
-## 6. Browser Use (hackathon host — MUST integrate)
+## ❌ 6. Browser Use (hackathon host — MUST integrate) — ~5 min
 
 1. Go to [browser-use.com](https://browser-use.com) → Sign up
 2. **Claim hackathon credits:** Fill out the form linked from the hackathon page ($100 free credits)
@@ -123,9 +155,15 @@ brew install ngrok
 
 ---
 
-## 7. GCP (VM provisioning)
+## ❌ 7. GCP (VM provisioning) — ~30 min
 
 ⚠️ This is the most involved setup. Do it when you have 30+ minutes.
+⚠️ **Install the gcloud CLI first** so agents can help with firewall rules, image baking, etc:
+
+```bash
+brew install --cask google-cloud-sdk
+gcloud auth login
+```
 
 ### 7a. Project setup
 
@@ -196,7 +234,7 @@ I'll flesh out the full bake script in `scripts/bake-image/` — but you need th
 
 ---
 
-## 8. Cloudflare (DNS for *.clawed.chat)
+## ❌ 8. Cloudflare (DNS for *.clawed.chat) — ~5 min
 
 1. Go to [dash.cloudflare.com](https://dash.cloudflare.com)
 2. Make sure `clawed.chat` is added as a zone (you probably already have this)
@@ -219,7 +257,7 @@ I'll flesh out the full bake script in `scripts/bake-image/` — but you need th
 
 ---
 
-## 9. Pulumi (infrastructure as code)
+## ❌ 9. Pulumi (infrastructure as code) — ~5 min
 
 ⚠️ Do this after GCP is set up.
 
@@ -240,9 +278,11 @@ I'll flesh out the full bake script in `scripts/bake-image/` — but you need th
    ```
 7. You do NOT need to run `pulumi new` — the Automation API in our code creates stacks programmatically
 
+**Once the CLI is authed, agents can create stacks, set config, and run `pulumi preview`.**
+
 ---
 
-## 10. Anthropic API Key (for demo)
+## ❌ 10. Anthropic API Key (for demo) — ~2 min
 
 You'll need at least one LLM key to demo OpenClaw. Anthropic (Claude) is the recommended model.
 
@@ -253,7 +293,7 @@ You'll need at least one LLM key to demo OpenClaw. Anthropic (Claude) is the rec
 
 ---
 
-## 11. Sponsor Credits to Claim
+## ❌ 11. Sponsor Credits to Claim — ~15 min (do while agents work)
 
 These are optional but check the boxes for judges:
 
@@ -278,8 +318,8 @@ After all the above, your `app/.env` should look like:
 
 ```bash
 # MentraOS
-PACKAGE_NAME=chat.clawed.app
-MENTRAOS_API_KEY=
+PACKAGE_NAME=com.isaiah.clawed
+MENTRAOS_API_KEY=a6ed85a71b0d442b4d96396f86e8bb58843725d6c6dd3c2b0716f1abf943b1dd
 
 # Server
 PORT=3000
@@ -320,13 +360,15 @@ openssl rand -hex 32
 
 Once everything is set up, you should be able to:
 
-- [ ] `bun --version` → 1.2+
-- [ ] MentraOS console shows your app with API key
-- [ ] `ngrok http --url=<url> 3000` → tunnel works
+- [x] `bun --version` → 1.2+
+- [x] MentraOS app created: `com.isaiah.clawed` (MICROPHONE + CAMERA)
+- [x] ngrok installed and authed
+- [ ] ngrok static URL set + Mentra app public URL updated
 - [ ] Clerk dashboard shows app with Google OAuth enabled
 - [ ] `bunx convex dev` → connects to your Convex project
 - [ ] `curl` to Browser Use API → returns a browser session
+- [ ] `gcloud auth login` → authed (install gcloud first: `brew install --cask google-cloud-sdk`)
 - [ ] `gcloud compute instances list` → no errors (GCP project works)
 - [ ] Cloudflare zone has `clawed.chat` with Zone ID noted
-- [ ] `pulumi whoami` → shows your account
+- [ ] `pulumi whoami` → shows your account (install first: `brew install pulumi`)
 - [ ] Anthropic API key ready for demo day
