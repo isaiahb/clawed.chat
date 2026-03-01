@@ -4,7 +4,16 @@
  * This is the main coordinator. API routes call these functions,
  * and they in turn call the other services (Pulumi, DNS, Browser Use, Convex).
  *
- * Flow for deploy:
+ * HACKATHON MODE:
+ *   For the demo, deploy() assigns the pre-existing openclaw-agent VM
+ *   to the user instead of spinning up new infrastructure via Pulumi.
+ *   The VM is already running with the gateway + channel plugin + Anthropic key.
+ *   This gives instant "deploy" (~0 seconds) instead of ~8-10 min first boot.
+ *
+ *   Set HACKATHON_MODE=true in .env to enable this behavior.
+ *   When disabled, the normal Pulumi provisioning flow runs.
+ *
+ * Normal flow for deploy:
  *   1. Create instance record in Convex (status: "provisioning")
  *   2. Generate subdomain from user info
  *   3. Kick off Pulumi Automation API (VM + DNS) — async
@@ -35,6 +44,18 @@ import * as browseruse from "./browseruse.service"
 
 // Lazy-load Pulumi — uses node:v8 internally which Bun doesn't support at import time
 const getPulumi = () => import("./instance.pulumi")
+
+// ─── Hackathon Mode ──────────────────────────────────────────────────────────
+//
+// When HACKATHON_MODE=true, deploy() assigns the pre-existing openclaw-agent VM
+// instead of spinning up new infrastructure. Instant deploy for the demo.
+
+const HACKATHON_MODE = process.env.HACKATHON_MODE === "true"
+const HACKATHON_VM_IP = process.env.OPENCLAW_GATEWAY_URL
+  ? new URL(process.env.OPENCLAW_GATEWAY_URL).hostname
+  : "10.138.0.3"
+const HACKATHON_VM_NAME = "openclaw-agent"
+const HACKATHON_VM_ZONE = "us-west1-a"
 
 // ─── Convex Client ───────────────────────────────────────────────────────────
 
@@ -79,6 +100,13 @@ export async function deploy(config: DeployConfig): Promise<DeployResult> {
   const {userId, llmProvider, apiKey, managed} = config
   const db = getConvex()
 
+  // ── Hackathon Mode: assign existing VM instantly ─────────────────────
+  if (HACKATHON_MODE) {
+    return deployHackathon(config)
+  }
+
+  // ── Normal Mode: provision new VM via Pulumi ─────────────────────────
+
   // Generate a clean subdomain
   const subdomain = generateSubdomain(userId)
   const fullSubdomain = `${subdomain}.clawed.chat`
@@ -112,6 +140,63 @@ export async function deploy(config: DeployConfig): Promise<DeployResult> {
       console.error(`[instance] failed to update error status:`, convexErr)
     }
   })
+
+  return {
+    instanceId,
+    subdomain: fullSubdomain,
+    status: "provisioning",
+  }
+}
+
+// ─── Hackathon Deploy ────────────────────────────────────────────────────────
+
+/**
+ * Hackathon mode deploy — assigns the existing openclaw-agent VM to the user.
+ * No Pulumi, no new VM, no waiting. Instant "deploy".
+ *
+ * If the user already has an instance, returns it.
+ * If not, creates a new record pointing at the shared VM.
+ */
+async function deployHackathon(config: DeployConfig): Promise<DeployResult> {
+  const {userId, llmProvider, managed} = config
+  const db = getConvex()
+
+  // Check if user already has an instance
+  const existing = await db.query(api.instances.listByUser, {user_id: userId})
+  if (existing.length > 0) {
+    const inst = existing[0]
+    console.log(`[instance] hackathon: user already has instance ${inst._id}`)
+    return {
+      instanceId: inst._id,
+      subdomain: inst.subdomain,
+      status: "provisioning", // frontend expects this
+    }
+  }
+
+  const subdomain = `demo-${generateSubdomain(userId)}`
+  const fullSubdomain = `${subdomain}.clawed.chat`
+
+  // Create instance record pointing at the shared hackathon VM
+  const instanceId = await db.mutation(api.instances.create, {
+    user_id: userId,
+    type: "cloud",
+    subdomain: fullSubdomain,
+    llm_provider: managed ? "anthropic" : llmProvider,
+    status: "provisioning",
+  })
+
+  // Immediately set it to running with the shared VM details
+  await db.mutation(api.instances.updateDetails, {
+    id: instanceId,
+    ip: HACKATHON_VM_IP,
+    gcp_vm_name: HACKATHON_VM_NAME,
+    gcp_zone: HACKATHON_VM_ZONE,
+    status: "running",
+  })
+
+  await db.mutation(api.instances.touch, {id: instanceId})
+
+  console.log(`[instance] hackathon deploy: user=${userId} instance=${instanceId} → ${HACKATHON_VM_NAME} (${HACKATHON_VM_IP})`)
 
   return {
     instanceId,
