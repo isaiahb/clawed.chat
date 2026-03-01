@@ -1,0 +1,7 @@
+config:
+  clawed-chat-infra:gcp-project: clawed-chat
+  clawed-chat-infra:gcp-zone: us-west1-a
+  clawed-chat-infra:gcp-region: us-west1
+  clawed-chat-infra:cloudflare-zone-id: 48643b3eae9e58fb13d9fa9d0c37f556
+  clawed-chat-infra:domain: clawed.chat
+  gcp:project: clawed-chat
