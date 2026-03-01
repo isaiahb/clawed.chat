@@ -107,14 +107,17 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({behavior: "smooth"})
   }, [messages?.length, waitingForAgent, streamingContent])
 
-  // Clear "waiting for agent" when a new agent message arrives
+  // Clear streaming content ONLY when Convex confirms the new agent message arrived.
+  // This prevents the flash where streaming disappears but Convex hasn't pushed yet.
   useEffect(() => {
     if (!messages) return
     const agentMessages = messages.filter((m) => m.role === "agent")
     if (agentMessages.length > lastMessageCountRef.current) {
+      // Convex has the new message — safe to clear streaming now
       setWaitingForAgent(false)
       setStreamingContent("")
       streamRef.current = ""
+      setSending(false)
     }
     lastMessageCountRef.current = agentMessages.length
   }, [messages])
@@ -133,10 +136,13 @@ export default function ChatPage() {
 
       if (delta.state === "final") {
         const finalContent = delta.text || streamRef.current
-        streamRef.current = ""
-        setStreamingContent("")
-        setWaitingForAgent(false)
-        setSending(false)
+        // DON'T clear streamingContent here — keep it visible until
+        // the Convex subscription confirms the message arrived (see useEffect above).
+        // This prevents the flash of empty between streaming end and Convex push.
+        if (finalContent) {
+          streamRef.current = finalContent
+          setStreamingContent(finalContent)
+        }
 
         // Write the final response to Convex so it persists
         if (finalContent && instanceId && user?.id) {
@@ -144,7 +150,7 @@ export default function ChatPage() {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN || "REDACTED-ROTATE-ME"}`,
+              "Authorization": `Bearer REDACTED-ROTATE-ME`,
             },
             body: JSON.stringify({
               text: finalContent,
@@ -168,8 +174,14 @@ export default function ChatPage() {
       }
 
       if (delta.state === "aborted") {
-        streamRef.current = ""
-        setStreamingContent("")
+        // Keep partial content visible if any
+        const partial = streamRef.current
+        if (partial) {
+          setStreamingContent(partial)
+        } else {
+          setStreamingContent("")
+          streamRef.current = ""
+        }
         setWaitingForAgent(false)
         setSending(false)
         return
@@ -409,8 +421,12 @@ export default function ChatPage() {
             </div>
           ))}
 
-          {/* Streaming response — shows as the agent types */}
-          {streamingContent && (
+          {/* Streaming response — shows as the agent types.
+              Only show if there isn't already a matching Convex message
+              (prevents duplicate display after persist) */}
+          {streamingContent && !(messages?.some(m =>
+            m.role === "agent" && m.content === streamingContent
+          )) && (
             <div className="flex justify-start">
               <div className="max-w-[80%] bg-muted/60 text-foreground rounded-2xl rounded-bl-md border border-border/30 px-4 py-2.5">
                 <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">

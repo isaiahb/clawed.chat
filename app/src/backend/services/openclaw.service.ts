@@ -23,9 +23,6 @@
  * Reference: Design Doc 10, Design Doc 11
  */
 
-import {ConvexHttpClient} from "convex/browser"
-import {api} from "../../../../convex/_generated/api"
-
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 /** OpenClaw gateway port — default for all instances */
@@ -34,19 +31,11 @@ const GATEWAY_PORT = 18789
 /** How long to wait for the RPC ack before giving up */
 const RPC_TIMEOUT_MS = 15_000
 
-/** How long to wait for agent response before closing WS */
-const AGENT_RESPONSE_TIMEOUT_MS = 120_000
-
 /** How long to wait for gateway to become reachable after wake */
 const WAKE_POLL_TIMEOUT_MS = 90_000
 
 /** Interval between reachability checks during wake */
 const WAKE_POLL_INTERVAL_MS = 3_000
-
-// ─── Convex Client (for writing agent responses) ─────────────────────────────
-
-const CONVEX_URL = process.env.CONVEX_URL || ""
-const convex = CONVEX_URL ? new ConvexHttpClient(CONVEX_URL) : null
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -61,8 +50,6 @@ export interface SendMessageConfig {
   userId: string
   /** Where the message came from */
   source: "web" | "glasses" | "desktop"
-  /** Instance ID in Convex — used to write agent response back */
-  instanceId?: string
 }
 
 export interface SendMessageResult {
@@ -77,17 +64,14 @@ export interface SendMessageResult {
 /**
  * Send a message to an OpenClaw instance via Gateway RPC.
  *
- * Handles the full challenge-response auth flow:
- *   1. Open WS → receive connect.challenge with nonce
- *   2. Send connect RPC with nonce + token → wait for auth success
- *   3. Send chat.send RPC → wait for ack
+ * Fire-and-forget: authenticates, sends chat.send, waits for the ack,
+ * then closes the WebSocket. The agent's response is handled separately
+ * by the WebSocket proxy (/api/openclaw-ws → useOpenClaw hook on the frontend).
  *
- * The agent's response comes back asynchronously via HTTP POST to
- * /api/openclaw/outbound — this function only waits for the
- * initial RPC acknowledgment (not the full agent response).
+ * This function does NOT listen for the agent's response.
  */
 export async function sendMessage(config: SendMessageConfig): Promise<SendMessageResult> {
-  const {ip, token, text, userId, source, instanceId} = config
+  const {ip, token, text, userId, source} = config
   const wsUrl = `ws://${ip}:${GATEWAY_PORT}`
 
   // Session key ties the conversation to a specific user + channel
@@ -180,36 +164,10 @@ export async function sendMessage(config: SendMessageConfig): Promise<SendMessag
 
         console.log(`[openclaw] chat.send acked: runId=${chatResult?.runId}`)
 
-        // Don't close the WS yet — keep listening for the agent's response
-        // via the "chat" event. The RPC ack just means the agent started thinking.
+        // Fire-and-forget: close WS and resolve immediately.
+        // The agent's response is handled by the WebSocket proxy + useOpenClaw hook.
         clearTimeout(timeout)
-
-        // Set a longer timeout for the agent response
-        const agentTimeout = setTimeout(() => {
-          console.warn(`[openclaw] agent response timeout after ${AGENT_RESPONSE_TIMEOUT_MS}ms — closing WS`)
-          cleanup()
-          // Still resolve as dispatched — the message was sent, agent just took too long
-          resolve({dispatched: true, sessionKey})
-        }, AGENT_RESPONSE_TIMEOUT_MS)
-
-        // Override cleanup to also clear the agent timeout
-        const originalCleanup = cleanup
-        const cleanupWithAgentTimeout = () => {
-          clearTimeout(agentTimeout)
-          originalCleanup()
-        }
-
-        // Now we wait for "chat" events — see the message handler below
-        // The handler will write to Convex and close the WS when the final response arrives
-        // Store these for the event handler to use
-        ;(ws as any).__agentCleanup = cleanupWithAgentTimeout
-        ;(ws as any).__resolve = resolve
-        ;(ws as any).__instanceId = instanceId
-        ;(ws as any).__sessionKey = sessionKey
-        ;(ws as any).__dispatched = true
-
-        // Resolve immediately so the API can return to the user
-        // The WS stays open in the background to capture the agent response
+        cleanup()
         resolve({dispatched: true, sessionKey})
       } catch (err: any) {
         clearTimeout(timeout)
@@ -242,52 +200,8 @@ export async function sendMessage(config: SendMessageConfig): Promise<SendMessag
             return
           }
 
-          // Agent response — arrives as a "chat" event with message content
-          if (data.event === "chat" && data.payload?.message?.content) {
-            const payload = data.payload
-            const content = payload.message.content
-            const state = payload.state // "streaming" | "final"
-
-            // Extract text from content blocks
-            let agentText = ""
-            if (Array.isArray(content)) {
-              for (const block of content) {
-                if (block.type === "text" && block.text) {
-                  agentText += block.text
-                }
-              }
-            } else if (typeof content === "string") {
-              agentText = content
-            }
-
-            // Only write to Convex on "final" state (complete response)
-            if (state === "final" && agentText && convex && instanceId) {
-              console.log(`[openclaw] agent response (final): ${agentText.slice(0, 100)}...`)
-
-              // Write agent response to Convex
-              convex.mutation(api.chatMessages.insert, {
-                user_id: userId,
-                instance_id: instanceId,
-                role: "agent",
-                source: source,
-                content: agentText,
-                timestamp: Date.now(),
-              }).then(() => {
-                console.log(`[openclaw] agent response written to Convex`)
-              }).catch((err: any) => {
-                console.error(`[openclaw] failed to write agent response to Convex:`, err.message)
-              }).finally(() => {
-                // Close the WS — we're done
-                const agentCleanup = (ws as any).__agentCleanup
-                if (agentCleanup) agentCleanup()
-                else try { ws.close() } catch {}
-              })
-            }
-
-            return
-          }
-
-          // Ignore other events (tick, health, etc.)
+          // Ignore other events (tick, health, chat, etc.)
+          // Agent responses are handled by the WebSocket proxy, not here.
           return
         }
 
@@ -339,14 +253,12 @@ export async function sendMessage(config: SendMessageConfig): Promise<SendMessag
       clearTimeout(timeout)
       if (!settled) {
         settled = true
-        // Reject remaining pending RPCs
         for (const [, pending] of pendingRpcs) {
           pending.reject(new Error(`[openclaw] connection closed (code=${event.code})`))
         }
         pendingRpcs.clear()
 
-        // If we closed cleanly right after sending, treat as success
-        if (event.code === 1000 && authenticated) {
+        if (event.code === 1000) {
           resolve({dispatched: true, sessionKey})
         } else {
           reject(new Error(
