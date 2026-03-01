@@ -9,12 +9,12 @@
  * MentraAuth handles glasses hardware session linking.
  */
 
-import {StrictMode} from "react"
-import {createRoot} from "react-dom/client"
-import {ClerkProvider, useAuth} from "@clerk/clerk-react"
-import {ConvexProviderWithClerk} from "convex/react-clerk"
-import {ConvexReactClient} from "convex/react"
-import {MentraAuthProvider} from "@mentra/react"
+import { StrictMode } from "react"
+import { createRoot } from "react-dom/client"
+import { ClerkProvider, useAuth } from "@clerk/clerk-react"
+import { ConvexProviderWithClerk } from "convex/react-clerk"
+import { ConvexReactClient } from "convex/react"
+import { MentraAuthProvider } from "@mentra/react"
 
 import "./index.css"
 

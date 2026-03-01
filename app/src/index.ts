@@ -57,7 +57,7 @@ console.log(`clawed.chat running at http://localhost:${PORT}`)
 // Determine environment
 const isDevelopment = process.env.NODE_ENV === "development"
 
-// Serve static assets
+// Serve static assets — resolved once at startup
 const publicPath = `${process.cwd()}/src/public/assets`
 
 // Start Bun server with HTML route bundling
@@ -70,20 +70,16 @@ Bun.serve({
     ? { hmr: true, console: true }
     : true,
   routes: {
-    "/": indexHtml,
-    "/dashboard": indexHtml,
-    "/dashboard/*": indexHtml,
-  },
-  fetch(request) {
-    const url = new URL(request.url)
-
-    // Serve static assets from /assets/
-    if (url.pathname.startsWith("/assets/")) {
+    // Static assets — checked before the catch-all HTML route
+    "/assets/*": (request: Request) => {
+      const url = new URL(request.url)
       const filePath = `${publicPath}${url.pathname.replace("/assets", "")}`
       const file = Bun.file(filePath)
       return new Response(file)
-    }
-
+    },
+    "/*": indexHtml,
+  },
+  fetch(request) {
     // Handle all other requests through Hono app
     return app.fetch(request)
   },
