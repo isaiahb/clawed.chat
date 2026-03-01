@@ -1473,7 +1473,7 @@ export default function AskPage({ userId }: AskPageProps) {
         {activeConversation ? (
           <>
             <ScrollArea className="flex-1">
-              <div className="mx-auto max-w-3xl space-y-3 p-4 sm:p-6">
+              <div className="mx-auto max-w-3xl space-y-3 p-4 sm:p-6 max-h-[100px]">
                 {/* Conversation start marker */}
                 <div className="flex items-center justify-center gap-2 text-muted-foreground pb-2">
                   <Clock className="h-3 w-3" />
