@@ -1,0 +1,13 @@
+{
+  "name": "clawed-chat",
+  "private": true,
+  "type": "module",
+  "workspaces": ["app", "web", "desktop", "deploy"],
+  "scripts": {
+    "dev": "bun run --filter app dev",
+    "dev:web": "bun run --filter web dev",
+    "dev:desktop": "bun run --filter desktop dev",
+    "check": "tsc --noEmit",
+    "clean": "rm -rf node_modules app/node_modules web/node_modules desktop/node_modules deploy/node_modules"
+  }
+}
