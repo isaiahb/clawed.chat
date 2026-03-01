@@ -13,6 +13,12 @@
  *   Responses come back asynchronously via our channel plugin,
  *   which HTTP POSTs to /api/openclaw/outbound. See openclaw.api.ts.
  *
+ * Auth flow (challenge-response):
+ *   1. Client opens WebSocket → gateway sends `connect.challenge` event with a nonce
+ *   2. Client sends `connect` RPC request with the nonce + auth token
+ *   3. Gateway responds with `connect.ready` event (or RPC ok:true for connect)
+ *   4. Client can now send `chat.send` and other RPC calls
+ *
  * Reference: Design Doc 10, Design Doc 11
  */
 
@@ -57,11 +63,12 @@ export interface SendMessageResult {
 /**
  * Send a message to an OpenClaw instance via Gateway RPC.
  *
- * Uses the built-in `chat.send` method — the same one OpenClaw's
- * webchat UI uses. This triggers the auto-reply pipeline which
- * eventually calls our channel plugin's `sendText` with the response.
+ * Handles the full challenge-response auth flow:
+ *   1. Open WS → receive connect.challenge with nonce
+ *   2. Send connect RPC with nonce + token → wait for auth success
+ *   3. Send chat.send RPC → wait for ack
  *
- * The response comes back asynchronously via HTTP POST to
+ * The agent's response comes back asynchronously via HTTP POST to
  * /api/openclaw/outbound — this function only waits for the
  * initial RPC acknowledgment (not the full agent response).
  */
@@ -78,10 +85,23 @@ export async function sendMessage(config: SendMessageConfig): Promise<SendMessag
   return new Promise<SendMessageResult>((resolve, reject) => {
     const ws = new WebSocket(wsUrl)
     let settled = false
+    let authenticated = false
+    let rpcIdCounter = 1
+
+    // Track pending RPC requests by their ID
+    const pendingRpcs = new Map<number, {
+      resolve: (value: any) => void
+      reject: (error: Error) => void
+    }>()
 
     const cleanup = () => {
       if (!settled) {
         settled = true
+        // Reject all pending RPCs
+        for (const [, pending] of pendingRpcs) {
+          pending.reject(new Error("[openclaw] connection closed with pending RPCs"))
+        }
+        pendingRpcs.clear()
         try { ws.close() } catch {}
       }
     }
@@ -91,54 +111,120 @@ export async function sendMessage(config: SendMessageConfig): Promise<SendMessag
       reject(new Error(`[openclaw] RPC timeout after ${RPC_TIMEOUT_MS}ms`))
     }, RPC_TIMEOUT_MS)
 
-    ws.addEventListener("open", () => {
-      // Step 1: Authenticate with the gateway
-      ws.send(JSON.stringify({
-        method: "connect",
-        params: {
-          token,
+    /** Send a JSON-RPC request and return a promise for the response */
+    function sendRpc(method: string, params: Record<string, unknown>): Promise<any> {
+      const id = rpcIdCounter++
+      return new Promise((rpcResolve, rpcReject) => {
+        pendingRpcs.set(id, {resolve: rpcResolve, reject: rpcReject})
+        const frame = JSON.stringify({id, method, params})
+        ws.send(frame)
+      })
+    }
+
+    /** Handle the connect flow after receiving the challenge nonce */
+    async function handleConnect(nonce: string) {
+      try {
+        // Send the connect RPC with nonce + auth token
+        // This mirrors what the OpenClaw client SDK does in sendConnect()
+        const connectParams: Record<string, unknown> = {
+          nonce,
+          auth: {
+            token,
+          },
+          role: "operator",
+          scopes: ["operator.admin"],
+          signedAtMs: Date.now(),
           client: {
             id: userId,
             displayName: `${source}:${userId}`,
             type: "clawed-chat",
           },
-        },
-      }))
+          platform: "linux",
+          supportedEncodings: ["json"],
+        }
 
-      // Step 2: Send the message via chat.send
-      // This is the same RPC the webchat UI uses
-      ws.send(JSON.stringify({
-        method: "chat.send",
-        params: {
+        await sendRpc("connect", connectParams)
+        authenticated = true
+
+        // Now send the chat message
+        const chatResult = await sendRpc("chat.send", {
           sessionKey,
           message: text,
           idempotencyKey,
-        },
-      }))
+        })
+
+        clearTimeout(timeout)
+        cleanup()
+        resolve({
+          dispatched: true,
+          sessionKey,
+        })
+      } catch (err: any) {
+        clearTimeout(timeout)
+        cleanup()
+        reject(new Error(`[openclaw] RPC failed: ${err.message}`))
+      }
+    }
+
+    ws.addEventListener("open", () => {
+      // Don't send anything on open — wait for the connect.challenge event
+      // The gateway will send it automatically
     })
 
     ws.addEventListener("message", (event) => {
       try {
         const data = JSON.parse(String(event.data))
 
-        // Look for the chat.send acknowledgment
-        // OpenClaw responds with {ok: true, runId, status: "started"}
-        if (data.ok === true || data.result?.ok === true) {
-          clearTimeout(timeout)
-          cleanup()
-          resolve({
-            dispatched: true,
-            sessionKey,
-          })
+        // ── Handle events (type: "event") ──────────────────────────────
+        if (data.type === "event") {
+          // Challenge-response: gateway sends nonce, we respond with connect RPC
+          if (data.event === "connect.challenge") {
+            const nonce = data.payload?.nonce
+            if (!nonce) {
+              clearTimeout(timeout)
+              cleanup()
+              reject(new Error("[openclaw] connect.challenge missing nonce"))
+              return
+            }
+            handleConnect(nonce)
+            return
+          }
+
+          // Ignore other events (tick, chat:user-message, etc.)
           return
         }
 
-        // Handle explicit errors
+        // ── Handle RPC responses (have an id field) ────────────────────
+        if (typeof data.id === "number") {
+          const pending = pendingRpcs.get(data.id)
+          if (!pending) return
+
+          // Skip "accepted" intermediate status — wait for "final" or ok/error
+          if (data.payload?.status === "accepted") return
+
+          pendingRpcs.delete(data.id)
+
+          if (data.ok === true) {
+            pending.resolve(data.payload)
+          } else {
+            const errorMsg = data.error?.message ?? data.payload?.message ?? "unknown RPC error"
+            pending.reject(new Error(errorMsg))
+          }
+          return
+        }
+
+        // ── Handle legacy response format (no id) ─────────────────────
+        if (data.ok === true && !authenticated) {
+          // Might be a connect ack in some gateway versions
+          authenticated = true
+          return
+        }
+
         if (data.ok === false || data.error) {
           const errorMsg = data.error?.message ?? data.message ?? JSON.stringify(data)
           clearTimeout(timeout)
           cleanup()
-          reject(new Error(`[openclaw] RPC error: ${errorMsg}`))
+          reject(new Error(`[openclaw] gateway error: ${errorMsg}`))
           return
         }
       } catch {
@@ -156,13 +242,18 @@ export async function sendMessage(config: SendMessageConfig): Promise<SendMessag
       clearTimeout(timeout)
       if (!settled) {
         settled = true
+        // Reject remaining pending RPCs
+        for (const [, pending] of pendingRpcs) {
+          pending.reject(new Error(`[openclaw] connection closed (code=${event.code})`))
+        }
+        pendingRpcs.clear()
+
         // If we closed cleanly right after sending, treat as success
-        // (some gateways close after RPC response)
-        if (event.code === 1000) {
+        if (event.code === 1000 && authenticated) {
           resolve({dispatched: true, sessionKey})
         } else {
           reject(new Error(
-            `[openclaw] connection closed unexpectedly (code=${event.code}, reason=${event.reason})`,
+            `[openclaw] connection closed unexpectedly (code=${event.code}, reason=${event.reason || "none"})`,
           ))
         }
       }
@@ -176,16 +267,16 @@ export async function sendMessage(config: SendMessageConfig): Promise<SendMessag
  * Check if an OpenClaw gateway is reachable and responding.
  * Used after waking a VM to confirm the gateway is up before sending messages.
  *
- * Tries an HTTP request to the gateway's health endpoint.
- * 200 = healthy, 401/429 = server is up (just needs auth or is rate limited).
+ * Tries an HTTP request to the gateway root.
+ * 200 = healthy, 401 = up (needs auth), 404 = up (root returns 404), 429 = rate limited.
  */
 export async function isReachable(ip: string): Promise<boolean> {
   try {
-    const res = await fetch(`http://${ip}:${GATEWAY_PORT}/health`, {
+    const res = await fetch(`http://${ip}:${GATEWAY_PORT}/`, {
       signal: AbortSignal.timeout(5_000),
     })
-    // 200 = healthy, 401 = up but needs auth, 429 = up but rate limited
-    return res.status === 200 || res.status === 401 || res.status === 429
+    // 200 = healthy, 401 = up but needs auth, 404 = up (gateway root), 429 = rate limited
+    return res.status === 200 || res.status === 401 || res.status === 404 || res.status === 429
   } catch {
     return false
   }
