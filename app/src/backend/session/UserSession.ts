@@ -20,7 +20,7 @@
  */
 
 import type {AppSession} from "@mentra/sdk"
-import {VoiceManager} from "./session/voice.manager"
+import {VoiceManager} from "./voice.manager"
 
 // Single process-wide sessions store — survives duplicate module loads
 const SESSIONS_KEY = Symbol.for("clawed.chat.sessions")

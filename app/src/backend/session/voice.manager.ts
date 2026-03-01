@@ -11,7 +11,7 @@
  */
 
 import type {AppSession, TranscriptionData} from "@mentra/sdk"
-import type {UserSession} from "../UserSession"
+import type {UserSession} from "./UserSession"
 
 interface SSEWriter {
   write: (data: string) => void

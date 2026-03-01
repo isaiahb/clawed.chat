@@ -9,7 +9,7 @@
 import {Hono} from "hono"
 import type {Context} from "hono"
 import {streamSSE} from "hono/streaming"
-import {UserSession} from "../UserSession"
+import {UserSession} from "../session/UserSession"
 
 const app = new Hono()
 

@@ -43,7 +43,7 @@ clawed.chat is the fastest way to deploy, manage, and talk to a personal [OpenCl
 │         │                                                │
 │    GCP Compute + Cloudflare DNS                          │
 │         │                                                │
-│    Per-user VMs running OpenClaw                         │
+│    Per-user VMs running OpenClaw (Bun, native)           │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -60,8 +60,9 @@ clawed.chat is the fastest way to deploy, manage, and talk to a personal [OpenCl
 | **Frontend** | React 19, Tailwind v4 | Bun bundles TSX/CSS natively, no Vite needed |
 | **Auth** | Clerk | Google OAuth, works across web + desktop + glasses |
 | **Database** | Convex | Real-time by default — dashboard updates without polling |
+| **Integrations** | Composio | Fast OAuth API for Gmail, Calendar, GitHub |
 | **Infra Provisioning** | Pulumi Automation API | Per-user GCP VMs created programmatically from TypeScript |
-| **Cloud** | GCP Compute Engine | Pre-baked VM images, scalable |
+| **Cloud** | GCP Compute Engine | Pre-baked VM images (Ubuntu 24.04 + Bun), scalable |
 | **DNS** | Cloudflare API | Wildcard `*.clawed.chat`, per-user A records |
 | **Browser Automation** | Browser Use Cloud | Stealth browsers, CAPTCHA solving, live view |
 | **Desktop App** | ElectroBun | Bun-native, 14MB bundle, native webview |
@@ -88,11 +89,12 @@ clawed.chat/
 ├── desktop/                ← ElectroBun companion app
 ├── deploy/                 ← Pulumi config for OUR infra (CI/CD)
 ├── scripts/                ← Image baking, utilities
+├── openclaw-channel-clawed/← Custom OpenClaw channel plugin for our clients
+├── .isaiah/                ← Human + agent checklists, design docs, AI memory
 ├── .github/workflows/      ← CI/CD pipeline
 ├── mentra-mini-app-example/← Reference template (read-only)
 ├── SPEC.md                 ← Full project spec
-├── SPIKE.md                ← Technical research + decisions
-└── isaiah.md               ← Third-party setup checklist
+└── SPIKE.md                ← Technical research + decisions
 ```
 
 Every folder has a `README.md` with detailed context, conventions, and planned structure.
@@ -104,7 +106,7 @@ Every folder has a `README.md` with detailed context, conventions, and planned s
 ### Prerequisites
 
 - [Bun](https://bun.sh) ≥ 1.2
-- Third-party accounts set up (see [`isaiah.md`](./isaiah.md) for full checklist)
+- Third-party accounts set up (see [`.isaiah/isaiah.md`](./.isaiah/isaiah.md) for full checklist)
 
 ### Setup
 
@@ -139,7 +141,7 @@ ngrok http --url=<your-static-url> 3000
 ## Core Features
 
 ### 1. One-Click Cloud Deploy
-User clicks "Deploy" → Pulumi Automation API creates a GCP VM (from pre-baked image) + Cloudflare DNS record → OpenClaw running at `username.clawed.chat` in ~60 seconds.
+User clicks "Deploy" → Pulumi Automation API creates a GCP VM (from pre-baked Ubuntu 24.04 + Bun image) + Cloudflare DNS record → OpenClaw (native) running at `username.clawed.chat` with our `clawed` channel plugin in ~60 seconds.
 
 ### 2. Agent Dashboard
 Real-time instance status via Convex. "Watch your agent" via Browser Use `live_url` iframe. Chat interface proxied to OpenClaw gateway. Start/stop/destroy controls.
@@ -150,7 +152,10 @@ Voice in → transcribed on glasses → sent to Hono backend → proxied to Open
 ### 4. Browser Use Integration
 Every instance uses Browser Use Cloud as its browser backend. Stealth browsing, CAPTCHA solving, 195+ country proxies. Zero config — OpenClaw supports remote CDP natively.
 
-### 5. Desktop Companion (ElectroBun)
+### 5. Composio Integrations
+Fast, reliable API integrations for Gmail, Google Calendar, and GitHub via Composio OAuth. Lets the agent perform actions instantly instead of slow browser automation.
+
+### 6. Desktop Companion (ElectroBun)
 For users who want OpenClaw on their own Mac. Signs in with Clerk, installs OpenClaw locally, tunnels back to clawed.chat dashboard.
 
 ---
@@ -175,7 +180,9 @@ For users who want OpenClaw on their own Mac. Signs in with Clerk, installs Open
 |----------|---------------|
 | [`SPEC.md`](./SPEC.md) | Full project spec — features, data model, API contracts, demo script |
 | [`SPIKE.md`](./SPIKE.md) | Technical research — how OpenClaw works, stack decisions, risks |
-| [`isaiah.md`](./isaiah.md) | Third-party setup checklist — GCP, Clerk, Convex, Browser Use, etc. |
+| [`.isaiah/isaiah.md`](./.isaiah/isaiah.md) | Third-party setup checklist — GCP, Clerk, Convex, Browser Use, etc. |
+| [`.isaiah/agent.md`](./.isaiah/agent.md) | Agent task checklist — what AI agents should work on next |
+| [`.isaiah/files/`](./.isaiah/files/) | Detailed architecture docs (01-11) covering all features |
 | [`app/README.md`](./app/README.md) | App workspace — architecture, running, folder conventions |
 | [`convex/README.md`](./convex/README.md) | Database — schema, functions, how services talk to Convex |
 | [`deploy/README.md`](./deploy/README.md) | Our infra — Pulumi CI/CD for the backend itself |

@@ -23,9 +23,9 @@
 
 ### Prerequisites
 
-1. GCP project created and configured (see `isaiah.md` step 7)
-2. Cloudflare zone for `clawed.chat` (see `isaiah.md` step 8)
-3. Pulumi CLI installed and logged in (see `isaiah.md` step 9)
+1. GCP project created and configured (see `.isaiah/isaiah.md` step 7)
+2. Cloudflare zone for `clawed.chat` (see `.isaiah/isaiah.md` step 8)
+3. Pulumi CLI installed and logged in (see `.isaiah/isaiah.md` step 9)
 
 ### First-Time Config
 

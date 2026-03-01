@@ -6,7 +6,7 @@
  */
 
 import {AppServer, AppSession} from "@mentra/sdk"
-import {UserSession} from "./UserSession"
+import {UserSession} from "./session/UserSession"
 
 export interface ClawedChatConfig {
   packageName: string

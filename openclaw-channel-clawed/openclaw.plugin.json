@@ -1,0 +1,19 @@
+{
+  "id": "clawed",
+  "channels": ["clawed"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "backendUrl": {
+        "type": "string",
+        "description": "clawed.chat backend URL for outbound message callbacks"
+      },
+      "authToken": {
+        "type": "string",
+        "description": "Per-instance auth token for verifying callbacks"
+      }
+    },
+    "required": ["backendUrl", "authToken"]
+  }
+}

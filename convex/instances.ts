@@ -8,8 +8,8 @@
  * the actual infrastructure — these functions just track state.
  */
 
-import {v} from "convex/values"
-import {mutation, query} from "./_generated/server"
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 
 const instanceStatus = v.union(
   v.literal("provisioning"),
@@ -20,14 +20,14 @@ const instanceStatus = v.union(
   v.literal("destroying"),
   v.literal("destroyed"),
   v.literal("error"),
-)
+);
 
 const llmProvider = v.union(
   v.literal("anthropic"),
   v.literal("openai"),
   v.literal("google"),
   v.literal("minimax"),
-)
+);
 
 // ─── Mutations ───────────────────────────────────────────────────────────────
 
@@ -38,24 +38,24 @@ const llmProvider = v.union(
  */
 export const create = mutation({
   args: {
-    userId: v.id("users"),
+    user_id: v.string(),
     type: v.union(v.literal("cloud"), v.literal("local")),
     subdomain: v.string(),
-    llmProvider,
+    llm_provider: llmProvider,
     status: instanceStatus,
   },
   handler: async (ctx, args) => {
     const instanceId = await ctx.db.insert("instances", {
-      userId: args.userId,
+      user_id: args.user_id,
       type: args.type,
       subdomain: args.subdomain,
-      llmProvider: args.llmProvider,
+      llm_provider: args.llm_provider,
       status: args.status,
-      lastActiveAt: Date.now(),
-    })
-    return instanceId
+      last_active_at: Date.now(),
+    });
+    return instanceId;
   },
-})
+});
 
 /**
  * Update instance status.
@@ -67,9 +67,9 @@ export const updateStatus = mutation({
     status: instanceStatus,
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, {status: args.status})
+    await ctx.db.patch(args.id, { status: args.status });
   },
-})
+});
 
 /**
  * Update instance infrastructure details.
@@ -79,26 +79,26 @@ export const updateDetails = mutation({
   args: {
     id: v.id("instances"),
     ip: v.optional(v.string()),
-    gcpVmName: v.optional(v.string()),
-    gcpZone: v.optional(v.string()),
-    browserUseSessionId: v.optional(v.string()),
-    browserUseLiveUrl: v.optional(v.string()),
+    gcp_vm_name: v.optional(v.string()),
+    gcp_zone: v.optional(v.string()),
+    browser_use_session_id: v.optional(v.string()),
+    browser_use_live_url: v.optional(v.string()),
     status: v.optional(instanceStatus),
   },
   handler: async (ctx, args) => {
-    const {id, ...fields} = args
+    const { id, ...fields } = args;
     // Filter out undefined values
-    const updates: Record<string, unknown> = {}
+    const updates: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) {
-        updates[key] = value
+        updates[key] = value;
       }
     }
     if (Object.keys(updates).length > 0) {
-      await ctx.db.patch(id, updates)
+      await ctx.db.patch(id, updates);
     }
   },
-})
+});
 
 /**
  * Touch last_active_at timestamp.
@@ -110,9 +110,9 @@ export const touch = mutation({
     id: v.id("instances"),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, {lastActiveAt: Date.now()})
+    await ctx.db.patch(args.id, { last_active_at: Date.now() });
   },
-})
+});
 
 /**
  * Soft-delete: mark an instance as destroyed.
@@ -123,9 +123,9 @@ export const markDestroyed = mutation({
     id: v.id("instances"),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, {status: "destroyed"})
+    await ctx.db.patch(args.id, { status: "destroyed" });
   },
-})
+});
 
 /**
  * Hard-delete: remove the instance record entirely.
@@ -136,9 +136,9 @@ export const remove = mutation({
     id: v.id("instances"),
   },
   handler: async (ctx, args) => {
-    await ctx.db.delete(args.id)
+    await ctx.db.delete(args.id);
   },
-})
+});
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
@@ -151,9 +151,9 @@ export const get = query({
     id: v.id("instances"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id)
+    return await ctx.db.get(args.id);
   },
-})
+});
 
 /**
  * List all instances for a user (excluding destroyed).
@@ -162,18 +162,18 @@ export const get = query({
  */
 export const listByUser = query({
   args: {
-    userId: v.id("users"),
+    user_id: v.string(),
   },
   handler: async (ctx, args) => {
     const all = await ctx.db
       .query("instances")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .collect()
+      .withIndex("by_user", (q) => q.eq("user_id", args.user_id))
+      .collect();
 
     // Filter out destroyed instances
-    return all.filter((i) => i.status !== "destroyed")
+    return all.filter((i) => i.status !== "destroyed");
   },
-})
+});
 
 /**
  * List all instances with a given status.
@@ -187,9 +187,9 @@ export const listByStatus = query({
     return await ctx.db
       .query("instances")
       .withIndex("by_status", (q) => q.eq("status", args.status))
-      .collect()
+      .collect();
   },
-})
+});
 
 /**
  * Find an instance by its subdomain.
@@ -204,31 +204,31 @@ export const getBySubdomain = query({
     return await ctx.db
       .query("instances")
       .withIndex("by_subdomain", (q) => q.eq("subdomain", args.subdomain))
-      .unique()
+      .unique();
   },
-})
+});
 
 /**
  * List running instances that have been idle beyond the given threshold.
  * Used by the auto-sleep cron to find instances to put to sleep.
  *
- * Returns running instances where lastActiveAt < (now - idleThresholdMs).
+ * Returns running instances where last_active_at < (now - idleThresholdMs).
  */
 export const listIdle = query({
   args: {
-    idleThresholdMs: v.number(),
+    idle_threshold_ms: v.number(),
   },
   handler: async (ctx, args) => {
-    const cutoff = Date.now() - args.idleThresholdMs
+    const cutoff = Date.now() - args.idle_threshold_ms;
 
     const running = await ctx.db
       .query("instances")
       .withIndex("by_status", (q) => q.eq("status", "running"))
-      .collect()
+      .collect();
 
     return running.filter((i) => {
-      const lastActive = i.lastActiveAt ?? 0
-      return lastActive < cutoff
-    })
+      const lastActive = i.last_active_at ?? 0;
+      return lastActive < cutoff;
+    });
   },
-})
+});

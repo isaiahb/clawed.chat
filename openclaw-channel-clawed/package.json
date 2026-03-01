@@ -1,0 +1,12 @@
+{
+  "name": "@clawed-chat/openclaw-channel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenClaw channel plugin for clawed.chat dashboard and Mentra smart glasses",
+  "type": "module",
+  "openclaw": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  }
+}

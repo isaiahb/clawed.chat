@@ -5,8 +5,8 @@
  * Handles user creation (first sign-in) and lookup.
  */
 
-import {v} from "convex/values"
-import {mutation, query} from "./_generated/server"
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 
 /**
  * Get or create a user by their Clerk ID.
@@ -17,7 +17,7 @@ import {mutation, query} from "./_generated/server"
  */
 export const getOrCreate = mutation({
   args: {
-    clerkId: v.string(),
+    clerk_id: v.string(),
     email: v.string(),
     name: v.string(),
   },
@@ -25,8 +25,8 @@ export const getOrCreate = mutation({
     // Check if user already exists
     const existing = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-      .unique()
+      .withIndex("by_clerk_id", (q) => q.eq("clerk_id", args.clerk_id))
+      .unique();
 
     if (existing) {
       // Update name/email if changed (Clerk profile updates)
@@ -34,21 +34,21 @@ export const getOrCreate = mutation({
         await ctx.db.patch(existing._id, {
           email: args.email,
           name: args.name,
-        })
+        });
       }
-      return existing._id
+      return existing._id;
     }
 
     // Create new user
     const userId = await ctx.db.insert("users", {
-      clerkId: args.clerkId,
+      clerk_id: args.clerk_id,
       email: args.email,
       name: args.name,
-    })
+    });
 
-    return userId
+    return userId;
   },
-})
+});
 
 /**
  * Get a user by their Clerk ID.
@@ -56,15 +56,15 @@ export const getOrCreate = mutation({
  */
 export const getByClerkId = query({
   args: {
-    clerkId: v.string(),
+    clerk_id: v.string(),
   },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-      .unique()
+      .withIndex("by_clerk_id", (q) => q.eq("clerk_id", args.clerk_id))
+      .unique();
   },
-})
+});
 
 /**
  * Get a user by their Convex document ID.
@@ -75,6 +75,6 @@ export const get = query({
     id: v.id("users"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id)
+    return await ctx.db.get(args.id);
   },
-})
+});

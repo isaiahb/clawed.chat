@@ -10,40 +10,35 @@
 
 ## bake-image/
 
-The pre-baked GCP image is critical for fast deploys. Instead of installing Node.js + OpenClaw on every new VM (10+ minutes), we create a golden image once and boot from it (~60 seconds).
+The pre-baked GCP image is critical for fast deploys. Instead of installing Bun + OpenClaw on every new VM (10+ minutes), we create a golden image once and boot from it (~60 seconds).
 
 ### What the baked image includes
 
-- Ubuntu 22.04 LTS
-- Node.js 22 (via nodesource)
-- OpenClaw (latest, globally installed via npm)
-- systemd unit file for `openclaw-gateway` service
+- Ubuntu 24.04 LTS
+- Bun (latest, via curl installer)
+- OpenClaw (latest, globally installed via `bun i -g openclaw`)
+- Our `clawed` channel plugin (pre-installed in `~/.openclaw/extensions/clawed/`)
+- systemd unit file for `openclaw` service
 - Basic security hardening (fail2ban, unattended-upgrades)
-- Pre-pulled Browser Use CDP dependencies
+- UFW firewall rules (ports 80/443/18789)
 
 ### How to bake (when GCP is set up)
 
 ```bash
 cd scripts/bake-image
 
-# 1. Create a temporary VM
-./bake.sh create
+# Full pipeline — creates VM, provisions, snapshots, cleans up
+./bake.sh
 
-# 2. SSH in and install everything
-./bake.sh provision
-
-# 3. Create the image from the VM's disk
-./bake.sh image
-
-# 4. Clean up the temporary VM
-./bake.sh cleanup
+# Or see bake-image/README.md for step-by-step
 ```
 
 ### When to re-bake
 
 - OpenClaw releases a new version
-- Node.js needs updating
+- Bun needs updating
 - Security patches
+- Channel plugin changes
 - Config changes to the base image
 
 ## Adding New Scripts

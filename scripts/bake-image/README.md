@@ -6,19 +6,20 @@
 
 Without a pre-baked image, every new user VM would need to:
 
-1. Install Node.js 22 (~30s)
+1. Install Bun (~10s)
 2. Install OpenClaw globally (~60s)
-3. Pull dependencies (~60s)
+3. Install our channel plugin (~30s)
 4. Configure systemd service (~10s)
 
 That's 2-3 minutes on top of VM boot time. With a baked image, the VM boots in ~60 seconds and OpenClaw is already installed — the startup script only writes user-specific config and starts the service.
 
 ## What the Baked Image Includes
 
-- **OS:** Ubuntu 22.04 LTS (GCP `ubuntu-2204-lts`)
-- **Node.js 22** via nodesource apt repo
-- **OpenClaw** (latest stable, globally installed via `npm install -g openclaw@latest`)
-- **systemd unit file** at `/etc/systemd/system/openclaw-gateway.service`
+- **OS:** Ubuntu 24.04 LTS (GCP `ubuntu-2404-lts-amd64`)
+- **Bun** (latest stable, via `curl -fsSL https://bun.sh/install | bash`)
+- **OpenClaw** (latest stable, globally installed via `bun i -g openclaw`)
+- **clawed.chat channel plugin** pre-installed in `/home/openclaw/.openclaw/extensions/clawed/`
+- **systemd unit file** at `/etc/systemd/system/openclaw.service`
 - **Security:** fail2ban, unattended-upgrades, UFW rules for ports 80/443/18789
 - **Utilities:** curl, jq, git, htop (for debugging)
 
@@ -31,7 +32,7 @@ That's 2-3 minutes on top of VM boot time. With a baked image, the VM boots in ~
 
 ## Prerequisites
 
-- GCP project set up (see `isaiah.md` step 7)
+- GCP project set up (see `.isaiah/isaiah.md`)
 - `gcloud` CLI installed and authenticated
 - GCP project set as default: `gcloud config set project <PROJECT_ID>`
 
@@ -39,24 +40,21 @@ That's 2-3 minutes on top of VM boot time. With a baked image, the VM boots in ~
 
 ```bash
 # Full bake pipeline — creates VM, provisions, snapshots, cleans up
-./bake.sh all
+./bake.sh
 
-# Or step by step:
-./bake.sh create      # 1. Create a temporary e2-small VM
-./bake.sh provision    # 2. SSH in and install Node.js + OpenClaw + security
-./bake.sh image        # 3. Stop VM, create image from disk
-./bake.sh cleanup      # 4. Delete the temporary VM (keep the image)
+# Uses GCP_PROJECT env var (or defaults to clawed-chat)
+GCP_PROJECT=clawed-chat ./bake.sh
 ```
 
 ## Image Naming
 
-Images are created in a family called `clawed-chat`:
+Images are created in a family called `openclaw-base`:
 
-- `clawed-chat-openclaw-v1` — first bake
-- `clawed-chat-openclaw-v2` — after OpenClaw update
+- `openclaw-base-20260301` — named by date
+- `openclaw-base-20260315` — after OpenClaw update
 - etc.
 
-The Pulumi program in `app/src/backend/services/instance.pulumi.ts` references the family (`clawed-chat`), so new VMs always get the latest image in that family.
+The Pulumi program in `app/src/backend/services/instance.pulumi.ts` references the family (`openclaw-base`), so new VMs always get the latest image in that family.
 
 ## Estimated Time
 
@@ -71,17 +69,18 @@ The Pulumi program in `app/src/backend/services/instance.pulumi.ts` references t
 ## When to Re-Bake
 
 - OpenClaw releases a new version
-- Node.js major version update
+- Bun major version update
+- Channel plugin changes
 - Security patches needed on the base image
 - Changes to the systemd service configuration
 
-## Files (planned)
+## Files
 
 | File | Description |
 |------|-------------|
-| `bake.sh` | Main bake script — create, provision, image, cleanup |
-| `provision.sh` | Runs inside the VM via SSH — installs everything |
-| `openclaw-gateway.service` | systemd unit file copied into the image |
+| `bake.sh` | Main script — runs from local machine, orchestrates the whole pipeline |
+| `setup-vm.sh` | Runs inside the builder VM via SSH — installs Bun, OpenClaw, plugin, systemd |
+| `startup-script.sh` | Template — injected per-user via GCP metadata, writes config + starts service |
 
 ## Hackathon Priority
 

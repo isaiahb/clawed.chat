@@ -2,9 +2,14 @@
   "name": "clawed-chat",
   "private": true,
   "type": "module",
-  "workspaces": ["app", "web", "desktop", "deploy"],
+  "workspaces": [
+    "app",
+    "web",
+    "desktop",
+    "deploy"
+  ],
   "scripts": {
-    "dev": "bun run --filter app dev",
+    "dev": "bun run --filter clawed-chat-app dev",
     "dev:web": "bun run --filter web dev",
     "dev:desktop": "bun run --filter desktop dev",
     "check": "tsc --noEmit",
