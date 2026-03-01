@@ -36,6 +36,18 @@ const SERVICE_MAP: Record<string, {toolkit: string; authConfigEnv: string}> = {
     toolkit: "github",
     authConfigEnv: "COMPOSIO_GITHUB_AUTH_CONFIG",
   },
+  slack: {
+    toolkit: "slack",
+    authConfigEnv: "COMPOSIO_SLACK_AUTH_CONFIG",
+  },
+  notion: {
+    toolkit: "notion",
+    authConfigEnv: "COMPOSIO_NOTION_AUTH_CONFIG",
+  },
+  linear: {
+    toolkit: "linear",
+    authConfigEnv: "COMPOSIO_LINEAR_AUTH_CONFIG",
+  },
 }
 
 // ─── Singleton Client ────────────────────────────────────────────────────────
