@@ -109,6 +109,7 @@ async function sendMessage(c: Context) {
         text: message,
         userId: auth.userId,
         source: source as "web" | "glasses" | "desktop",
+        instanceId,
       })
       console.log(`[chat] dispatched to OpenClaw: session=${result.sessionKey} dispatched=${result.dispatched}`)
     } catch (err: any) {

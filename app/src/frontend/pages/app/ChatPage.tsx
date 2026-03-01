@@ -72,10 +72,12 @@ export default function ChatPage() {
 
   const [input, setInput] = useState("")
   const [sending, setSending] = useState(false)
+  const [waitingForAgent, setWaitingForAgent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showBrowser, setShowBrowser] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const lastMessageCountRef = useRef(0)
 
   // Real-time message subscription via Convex
   const messages = useQuery(
@@ -96,7 +98,17 @@ export default function ChatPage() {
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({behavior: "smooth"})
-  }, [messages?.length])
+  }, [messages?.length, waitingForAgent])
+
+  // Clear "waiting for agent" when a new agent message arrives
+  useEffect(() => {
+    if (!messages) return
+    const agentMessages = messages.filter((m) => m.role === "agent")
+    if (agentMessages.length > lastMessageCountRef.current) {
+      setWaitingForAgent(false)
+    }
+    lastMessageCountRef.current = agentMessages.length
+  }, [messages])
 
   // Focus input on mount
   useEffect(() => {
@@ -117,6 +129,7 @@ export default function ChatPage() {
 
     setInput("")
     setSending(true)
+    setWaitingForAgent(true)
     setError(null)
 
     try {
@@ -133,6 +146,7 @@ export default function ChatPage() {
     } catch (err: any) {
       setError(err.message)
       setInput(text)
+      setWaitingForAgent(false)
     } finally {
       setSending(false)
       inputRef.current?.focus()
@@ -274,7 +288,7 @@ export default function ChatPage() {
             </div>
           )}
 
-          {messages?.map((msg) => (
+          {messages?.map((msg, i) => (
             <div
               key={msg._id}
               className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
@@ -307,6 +321,22 @@ export default function ChatPage() {
               </div>
             </div>
           ))}
+
+          {/* Typing indicator */}
+          {waitingForAgent && (
+            <div className="flex justify-start">
+              <div className="bg-muted/60 border border-border/30 rounded-2xl rounded-bl-md px-4 py-3">
+                <div className="flex items-center gap-1.5">
+                  <div className="flex gap-1">
+                    <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce" style={{animationDelay: "0ms"}} />
+                    <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce" style={{animationDelay: "150ms"}} />
+                    <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce" style={{animationDelay: "300ms"}} />
+                  </div>
+                  <span className="text-xs text-muted-foreground/50 ml-2">Thinking…</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div ref={messagesEndRef} />
         </div>
