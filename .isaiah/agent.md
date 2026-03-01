@@ -128,12 +128,36 @@ These are scaffolding only — route definitions + handler signatures with TODOs
 - [x] **Intro splash** — optimized (15fps throttle, slower claw), added `?intro=1` query param for demo replay
 - [x] **Full-height layout** — fixed half-page rendering with `min-h-screen`
 
-## Blocked on Isaiah
+## Remaining / Needs Polish
 
-- [ ] **Test Browser Use session creation** — API key is set, service is wired, just needs a live deploy to verify live_url renders in iframe
-- [ ] **Test Composio OAuth flow** — SDK is wired, needs real callback URL to test end-to-end
+- [ ] **Debug glasses connection on prod** — `/webhook` route is fixed, Mentra app config is correct (`publicUrl=https://clawed.chat`), but `onSession` not firing through Cloudflare. Works locally via ngrok. May need Cloudflare WS debugging or Mentra cloud routing investigation.
+- [ ] **Test Composio OAuth end-to-end** — integrations created (all 6), `PUBLIC_URL` is correct, but user-facing Connect → OAuth → callback flow not tested on prod yet.
+- [ ] **Test Browser Use agent actions** — CDP URL configured on VM, live_url in Convex, iframe works. But untested whether the agent actually uses the cloud browser for web tasks. May need OpenClaw skill/tool configuration.
+- [ ] **Desktop app polish** — UI works, real provider/model selection, but needs: design refinement, real Clerk auth flow (currently simulated timer), proper ElectroBun external URL handling.
+- [ ] **Chat persistence edge cases** — core dual-write bug is fixed, but streaming→Convex transition may still have edge cases during rapid messages.
+- [ ] **Real per-user VM provisioning** — hackathon mode (shared VM) works for demo. Real Pulumi + startup script provisioning is written but untested.
 
 ---
+
+## Done — Session 5 continued (WebSocket proxy, glasses, integrations)
+
+- [x] **Clerk middleware fix** — `clerkMiddleware()` was never mounted → every authenticated route returned 500. Added to `api/index.ts` for all auth paths.
+- [x] **Hackathon mode deploy** — `HACKATHON_MODE=true` assigns existing `openclaw-agent` VM instantly. If user already has instance, returns it. No Pulumi needed.
+- [x] **Model upgraded to Sonnet 4.6** — `anthropic/claude-sonnet-4-6` confirmed working. Haiku 3.5 model ID was wrong.
+- [x] **Gateway publicly accessible** — firewall rule `0.0.0.0/0` (was VPC-internal). Token auth protects it. Any dev can connect.
+- [x] **WebSocket proxy (`openclaw-proxy.ts`)** — ported from demo branch. Full gateway auth server-side (token-only). Frontend connects to `/api/openclaw-ws`. Ed25519 device identity code kept but disabled (causes pairing error).
+- [x] **`useOpenClaw` React hook** — ported from demo branch. Connects to proxy, handles proxy events, dispatches RPCs, receives streaming deltas/finals, auto-reconnects.
+- [x] **ChatPage wired to `useOpenClaw`** — real-time streaming, "Thinking..." dots, streaming→persist without flash. Streaming content stays visible until Convex confirms.
+- [x] **Dual-write bug fixed** — `openclaw.service.ts` is now fire-and-forget (closes WS after `chat.send` ack). Only frontend writes final response via `/api/openclaw/outbound`.
+- [x] **`/webhook` route fix** — Mentra SDK's `POST /webhook` was swallowed by SPA catch-all. Added explicit route in `Bun.serve()`.
+- [x] **Glasses voice→agent→TTS pipeline** — `WakeWordDetector` ("hey claude/clawed"), `VoiceManager` connects to gateway WS directly, sends `chat.send`, speaks response via TTS. Wake word locked during agent processing.
+- [x] **Mentra app config** — `publicUrl=https://clawed.chat`, `webviewURL=https://clawed.chat/app/agents`, logo set. Package: `com.isaiah.clawed`.
+- [x] **Composio integrations (all 6)** — Gmail, Google Calendar, GitHub + Slack, Notion, Linear. Auth config IDs in env. `composio.service.ts` SERVICE_MAP updated.
+- [x] **Browser Use session** — created via v2 API, CDP URL on VM (`browser.profiles.browseruse`), live_url in Convex, "Watch Agent" iframe in ChatPage.
+- [x] **Desktop app redesign** — light theme, Tailwind-only, 5 screens, real provider/model selection (Opus 4.6, Sonnet 4.6, GPT-5.2, Gemini 2.5, MiniMax M1, Fireworks), claw logo, provider logos from CDN.
+- [x] **Emoji cleanup** — all emoji icons replaced with real SVG logos across InstanceCard, ChatPage, DeployModal, desktop app.
+- [x] **Multiple users** — hackathon mode creates instances for each Clerk user pointing at shared VM. Separate session keys.
+- [x] **Prod merged** — `isaiah` → `prod` merged and deployed multiple times throughout session.
 
 ## Done — Session 5 (production deploy + OpenClaw e2e)
 
@@ -192,10 +216,11 @@ These are scaffolding only — route definitions + handler signatures with TODOs
 For an agent picking up work, do it in this order:
 
 ```
-1. Frontend chat test — log in to clawed.chat, send message from ChatPage UI, verify response renders
-2. Deploy button test — click deploy, wait for new VM to boot + install OpenClaw (~8-10 min)
-3. Demo polish — verify landing page, sign-in, agents, settings, connections all render cleanly on prod
-4. Test Browser Use + Composio live flows (blocked on deploy)
+1. Debug glasses on prod — why onSession doesn't fire through Cloudflare (webhook route is fixed, works via ngrok)
+2. Test Composio OAuth — click Connect on Connections page, complete OAuth, verify callback at clawed.chat
+3. Test Browser Use agent — ask agent to browse a website, verify cloud browser is used
+4. Desktop app — wire real Clerk auth, polish UI, test ElectroBun build
+5. Demo polish — clean up any remaining UI issues
 ```
 
 ---
@@ -215,4 +240,4 @@ For an agent picking up work, do it in this order:
 
 ---
 
-*Last updated: 2026-03-01 15:42 UTC (session 5 — E2E chat working ✅, OpenClaw VM fully set up, website fix deployed, frontend UI test pending)*
+*Last updated: 2026-03-01 20:00 UTC (session 5 — WS proxy ✅, streaming chat ✅, glasses pipeline ✅, Composio 6 integrations ✅, Browser Use configured ✅, dual-write fix ✅, desktop app redesigned ✅)*
