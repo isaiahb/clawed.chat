@@ -54,11 +54,7 @@ interface AppState {
   activeSessionId: string | null;
   setActiveSessionId: (id: string | null) => void;
 
-  // Account info (basic)
-  accountName: string;
-  setAccountName: (name: string) => void;
-  accountEmail: string;
-  setAccountEmail: (email: string) => void;
+
 }
 
 export const useAppStore = create<AppState>()(
@@ -107,11 +103,7 @@ export const useAppStore = create<AppState>()(
       activeSessionId: null,
       setActiveSessionId: (id) => set({ activeSessionId: id }),
 
-      // Account info
-      accountName: "Parth",
-      setAccountName: (name) => set({ accountName: name }),
-      accountEmail: "parth@example.com",
-      setAccountEmail: (email) => set({ accountEmail: email }),
+
     }),
     {
       name: "clawed-app-store",
@@ -122,8 +114,6 @@ export const useAppStore = create<AppState>()(
         demoMode: state.demoMode,
         savedSessions: state.savedSessions,
         activeSessionId: state.activeSessionId,
-        accountName: state.accountName,
-        accountEmail: state.accountEmail,
       }),
     },
   ),

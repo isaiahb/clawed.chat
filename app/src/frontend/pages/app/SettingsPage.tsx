@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
+import { useUser } from "@clerk/clerk-react";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import {
   Card,
@@ -193,6 +194,7 @@ function SettingsSection({
 
 export default function SettingsPage() {
   useDocumentTitle("Settings");
+  const { user: clerkUser } = useUser();
   const {
     safetyMode,
     setSafetyMode,
@@ -202,11 +204,11 @@ export default function SettingsPage() {
     setResponseStyle,
     demoMode,
     setDemoMode,
-    accountName,
-    setAccountName,
-    accountEmail,
-    setAccountEmail,
   } = useAppStore();
+
+  // Account info sourced from Clerk (read-only here — edit via Clerk profile)
+  const accountName = clerkUser?.fullName ?? clerkUser?.firstName ?? "User";
+  const accountEmail = clerkUser?.primaryEmailAddress?.emailAddress ?? "";
 
   const [copied, setCopied] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
@@ -291,13 +293,33 @@ export default function SettingsPage() {
     }
   }
 
-  const agentEndpoint = "https://api.clawed.chat/v1/agent/parth-demo-01";
+  // Sync local form values when Clerk user data loads/changes
+  useEffect(() => {
+    if (clerkUser) {
+      setNameValue(clerkUser.fullName ?? clerkUser.firstName ?? "User");
+      setEmailValue(clerkUser.primaryEmailAddress?.emailAddress ?? "");
+    }
+  }, [clerkUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSaveAccount = () => {
-    setAccountName(nameValue);
-    setAccountEmail(emailValue);
-    setAccountSaved(true);
-    setTimeout(() => setAccountSaved(false), 2000);
+  const agentEndpoint = clerkUser?.id
+    ? `https://api.clawed.chat/v1/agent/${clerkUser.id.replace("user_", "").slice(-8)}`
+    : "https://api.clawed.chat/v1/agent/demo";
+
+  const handleSaveAccount = async () => {
+    // Update profile via Clerk SDK
+    if (clerkUser) {
+      try {
+        await clerkUser.update({
+          firstName: nameValue.split(" ")[0] || nameValue,
+          lastName: nameValue.split(" ").slice(1).join(" ") || undefined,
+        });
+        setAccountSaved(true);
+        toast.success("Account updated");
+        setTimeout(() => setAccountSaved(false), 2000);
+      } catch (err: any) {
+        toast.error("Failed to update account", { description: err.message });
+      }
+    }
   };
 
   const handleCopyEndpoint = () => {
@@ -361,28 +383,27 @@ export default function SettingsPage() {
               id="account-email"
               type="email"
               value={emailValue}
-              onChange={(e) => setEmailValue(e.target.value)}
+              readOnly
               placeholder="you@example.com"
-              className="h-9"
+              className="h-9 text-muted-foreground cursor-not-allowed"
             />
+            <p className="text-[10px] text-muted-foreground">
+              Email is managed by your Google account via Clerk.
+            </p>
           </div>
 
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <KeyRound className="h-3.5 w-3.5" />
-              <span>Password</span>
+          {clerkUser?.imageUrl && (
+            <div className="flex items-center gap-3">
+              <img
+                src={clerkUser.imageUrl}
+                alt={accountName}
+                className="h-9 w-9 rounded-full border border-border"
+              />
+              <div className="text-[12px] text-muted-foreground">
+                Signed in as <span className="font-medium text-foreground">{accountEmail}</span>
+              </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 text-[11px]"
-              onClick={() => {
-                // Password reset flow — stub for v1
-              }}
-            >
-              Reset password
-            </Button>
-          </div>
+          )}
 
           <Separator />
 
@@ -392,7 +413,7 @@ export default function SettingsPage() {
               className="h-8 gap-1.5 text-[11px]"
               onClick={handleSaveAccount}
               disabled={
-                nameValue === accountName && emailValue === accountEmail
+                nameValue === accountName
               }
             >
               {accountSaved ? (
