@@ -111,6 +111,7 @@ Restart=always
 RestartSec=3
 Environment=PATH=/root/.bun/bin:/root/.pulumi/bin:/usr/local/bin:/usr/bin:/bin
 EnvironmentFile=/opt/clawed-chat/app/.env
+Environment=PORT=80
 
 # Security
 NoNewPrivileges=false
