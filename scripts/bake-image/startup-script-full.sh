@@ -324,11 +324,9 @@ log "Writing OpenClaw config..."
 
 mkdir -p "$OPENCLAW_HOME"/{workspace,extensions,credentials}
 
-# Build the LLM provider block
-PROVIDER_BLOCK="\"${LLM_PROVIDER:-anthropic}\": { \"apiKey\": \"${LLM_API_KEY}\" }"
-if [ -n "$LLM_BASE_URL" ]; then
-  PROVIDER_BLOCK="\"${LLM_PROVIDER}\": { \"apiKey\": \"${LLM_API_KEY}\", \"baseUrl\": \"${LLM_BASE_URL}\" }"
-fi
+# Note: API key goes in auth-profiles.json (step 4b), NOT in openclaw.json.
+# Setting models.providers in config can cause validation errors.
+# The model reference tells OpenClaw which provider to look up in auth-profiles.
 
 cat > "$OPENCLAW_HOME/openclaw.json" << CONFIG_EOF
 {
@@ -356,11 +354,6 @@ cat > "$OPENCLAW_HOME/openclaw.json" << CONFIG_EOF
       "workspace": "${OPENCLAW_HOME}/workspace"
     }
   },
-  "models": {
-    "providers": {
-      ${PROVIDER_BLOCK}
-    }
-  },
   "commands": {
     "native": "auto",
     "nativeSkills": "auto",
@@ -375,6 +368,39 @@ CONFIG_EOF
 
 chmod 600 "$OPENCLAW_HOME/openclaw.json"
 log "Config written to $OPENCLAW_HOME/openclaw.json"
+
+# ─── Step 4b: Write Auth Profiles (API key store) ────────────────────────────
+#
+# The API key does NOT go in openclaw.json. It lives in a separate file:
+#   ~/.openclaw/agents/main/agent/auth-profiles.json
+#
+# Format: {version: 1, profiles: {"<name>": {type: "api_key", provider: "<provider>", key: "<key>"}}}
+#
+# The onboard wizard's --anthropic-api-key flag does NOT reliably write this file
+# when running non-interactively over SSH. We must write it manually.
+
+log "Writing auth-profiles.json..."
+
+AGENT_DIR="$OPENCLAW_HOME/agents/main/agent"
+mkdir -p "$AGENT_DIR"
+
+RESOLVED_PROVIDER="${LLM_PROVIDER:-anthropic}"
+
+cat > "$AGENT_DIR/auth-profiles.json" << AUTH_EOF
+{
+  "version": 1,
+  "profiles": {
+    "${RESOLVED_PROVIDER}-default": {
+      "type": "api_key",
+      "provider": "${RESOLVED_PROVIDER}",
+      "key": "${LLM_API_KEY}"
+    }
+  }
+}
+AUTH_EOF
+
+chmod 600 "$AGENT_DIR/auth-profiles.json"
+log "Auth profiles written to $AGENT_DIR/auth-profiles.json"
 
 # ─── Step 5: Restart Gateway ─────────────────────────────────────────────────
 

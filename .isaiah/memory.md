@@ -276,19 +276,25 @@ Independent: 05 Desktop, 07 Landing Page
 
 ---
 
-### Session 5 (production deploy fixes + demo prep) — 2026-03-01 06:00–ongoing
+### Session 5 (production deploy fixes + OpenClaw e2e) — 2026-03-01 06:00–16:00 UTC
 - **Bun.serve routing fix**: Put `/api/*`, `/mentra/*`, `/clerk/*` as explicit routes before `"/*"` SPA catch-all. Bun matches more-specific patterns first, so API traffic goes to Hono while HTML bundler handles everything else (with proper CSS/JS injection).
 - **jsxDEV production fix**: `development: false` in production (not `{ hmr: false }` which is truthy → still emits dev JSX). The earlier theory that `false` broke HTML routes was wrong — the crash was caused by missing `@composio/core`.
 - **convex-server-stub plugin**: Created `plugins/convex-server-stub.ts` — stubs out `convex/server` for the frontend HTML bundler. The generated `convex/_generated/api.js` imports `anyApi` from `convex/server`, which Bun tried to bundle into the frontend, hitting "Unseekable reading file" on `.bun/` cache symlinks. Stub mirrors real Convex `createApi()` proxy with `Symbol.for("functionName")`.
 - **@composio/core missing from package.json**: Was installed locally (in `node_modules/.bun/` cache) but never added to `app/package.json`. Fresh `bun install` on VM couldn't find it. Added properly + made import lazy as defensive coding.
 - **Favicon**: Replaced inline 🐾 emoji with Parth's animated claw SVG (`favicon.svg`)
 - **CI/CD verified working**: GitHub Actions → GCP VM deploys succeed, `/api/health` returns JSON, site renders at clawed.chat
+- **OpenClaw VM (`openclaw-agent`) fully set up**: Bun 1.3.10, Node.js 22, OpenClaw 2026.2.26, system-level systemd service, LAN bind (0.0.0.0:18789), GCP firewall rule for VPC-internal traffic
+- **Channel plugin loaded**: `openclaw-channel-clawed` auto-discovered from `~/.openclaw/extensions/clawed/src/index.ts` (1/1 loaded). Plugin config uses hardcoded defaults (no `plugins.entries` or `plugins.allow` in config — both cause validation errors).
+- **Gateway WebSocket auth protocol**: Challenge-response flow — gateway sends `connect.challenge` with nonce, client sends `{type: "req", id: "<string>", method: "connect", params: {minProtocol: 3, maxProtocol: 3, client: {id: "gateway-client", mode: "backend", ...}, auth: {token}, ...}}`. Frame `type: "req"` and string `id` are mandatory (wrong format = silent 1008 disconnect).
+- **Anthropic API key in auth-profiles.json**: Key does NOT go in `openclaw.json`. Lives at `/root/.openclaw/agents/main/agent/auth-profiles.json` with format `{version: 1, profiles: {"anthropic-default": {type: "api_key", provider: "anthropic", key: "sk-ant-..."}}}`. The `--anthropic-api-key` onboard flag does NOT reliably write this file.
+- **🎉 E2E chat pipeline verified**: WS connect → challenge-response auth → `chat.send` acked → Anthropic API called → agent responded "Hello, I am here now." → full pipeline works
+- **Seeded instance in Convex**: Pre-inserted `openclaw-agent` VM as instance `j972bjjcpxj8xz8yannjtvgnk1822p3b` (user_id: "seed"). Auto-claimed on first login via `me.api.ts` → `instances.claimForUser`.
+- **Website blank page fix**: Moving `favicon.svg` from `frontend/` to `public/` broke Bun's HTML bundler (empty responses). Copied it back to `app/src/frontend/favicon.svg`.
+- **Full-install startup script**: `scripts/bake-image/startup-script-full.sh` — 448-line idempotent script that installs everything from scratch on plain Ubuntu 24.04. No pre-baked image needed. First boot ~6-10 min, subsequent ~15 sec.
 
 ## Next Priorities
 
 ### Isaiah still needs to:
-- OpenClaw local dev install (`bun i -g openclaw`)
-- Bake GCP VM image (`./scripts/bake-image/bake.sh`)
 - Sponsor credit signups
 - Rotate leaked keys + scrub git history
 
@@ -297,13 +303,16 @@ Independent: 05 Desktop, 07 Landing Page
 - ✅ Clerk auth (sign in/out, JWT validation)
 - ✅ Convex real-time DB (schema, all server functions)
 - ✅ Instance deploy/stop/start/destroy (Pulumi → GCP + Cloudflare)
-- ✅ CI/CD (GitHub Actions → GCP VM, deploys succeed)
-- ✅ Chat backend (user msg → Convex → OpenClaw gateway → agent response → Convex → frontend)
+- ✅ CI/CD (GitHub Actions → GCP VM, deploys in ~1m30s)
+- ✅ **E2E Chat pipeline** — user msg → `chat.api.ts` → `openclaw.service.ts` (WS challenge-response auth) → OpenClaw gateway → Anthropic API → agent response (verified: "Hello, I am here now.")
+- ✅ **OpenClaw VM** — `openclaw-agent` running with gateway (0.0.0.0:18789), channel plugin loaded, Anthropic key configured, systemd service
+- ✅ **Seeded demo instance** — pre-inserted in Convex, auto-claimed on first login
+- ✅ **Full-install startup script** — `startup-script-full.sh` installs everything from scratch on plain Ubuntu 24.04 (no pre-baked image)
 - ✅ LLM Proxy (partial — forwards to Anthropic/OpenAI/Google, token verification stubbed)
 - ✅ Frontend route structure, dark mode, design system, animated claw favicon
 - ✅ `keys.api.ts` — list/add/delete wired to encryption + LLM validation + Convex
 - ✅ `connections.api.ts` — list/initiate/callback/disconnect wired to Composio service + Convex
-- ✅ `me.api.ts` — fetches user profile from Convex, graceful fallback for unsynced users
+- ✅ `me.api.ts` — fetches user profile from Convex, graceful fallback + auto-claims seeded instances
 - ✅ `desktop.api.ts` — register-local + heartbeat wired to Convex instances
 - ✅ API Keys UI in SettingsPage — list masked keys, add with validation, delete (wired to `/api/keys`)
 - ✅ ConnectionsPage frontend — wired to real `/api/connections` with service catalog merge, OAuth flow, loading states
@@ -313,16 +322,17 @@ Independent: 05 Desktop, 07 Landing Page
 - ✅ Landing page polish — "How It Works" 3-step section, Browser Use + MentraOS hackathon attribution, fixed testimonials
 - ✅ Settings page — Clerk `useUser()` for name/email/avatar, `clerkUser.update()` for name saves, removed hardcoded "Parth", zustand cleanup
 
-### What's still blocked/untested:
-- ❌ End-to-end chat — blocked on OpenClaw running on VM
-- ❌ Browser Use live test — service is wired but needs a real deploy to confirm `live_url` renders in iframe
-- ❌ Composio OAuth live test — SDK is wired but needs real callback URL to test end-to-end
+### What's still untested:
+- ⏳ Frontend chat via ChatPage UI — backend e2e works, need to test through the actual UI
+- ⏳ Deploy button spins up new VM — startup script written + Pulumi updated, not yet tested live
+- ⏳ Browser Use live test — service is wired but needs a real deploy to confirm `live_url` renders in iframe
+- ⏳ Composio OAuth live test — SDK is wired but needs real callback URL to test end-to-end
 
 ### Agent should work on next:
-1. **Demo polish** — make sure landing page, sign-in, agents, settings, connections all look good
-2. **End-to-end chat test** — blocked on Isaiah: OpenClaw on VM
-3. **Bake GCP image** — blocked on Isaiah: run `bake.sh`
+1. **Frontend chat test** — log in, send message from ChatPage, verify response renders
+2. **Deploy button test** — click deploy, wait for new VM to boot + install OpenClaw
+3. **Demo polish** — ensure all pages render cleanly for demo
 
 ---
 
-*Last updated: 2026-03-01 (session 5 — production deploy fixes: Bun.serve routing, jsxDEV fix, convex-server-stub plugin, @composio/core in package.json, favicon)*
+*Last updated: 2026-03-01 15:42 UTC (session 5 — E2E chat working ✅, OpenClaw VM fully set up, website fix deployed)*
