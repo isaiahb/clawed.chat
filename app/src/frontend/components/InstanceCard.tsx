@@ -47,11 +47,18 @@ const STATUS_CONFIG: Record<string, {label: string, color: string, bg: string, p
   error:        {label: "Error",        color: "text-red-400",    bg: "bg-red-400/10"},
 }
 
-const PROVIDER_LABELS: Record<string, {name: string, icon: string}> = {
-  anthropic: {name: "Anthropic", icon: "🟣"},
-  openai:    {name: "OpenAI",    icon: "🟢"},
-  google:    {name: "Google",    icon: "🔵"},
-  minimax:   {name: "Minimax",   icon: "🟠"},
+const PROVIDER_LOGOS: Record<string, string> = {
+  anthropic: "https://cdn.simpleicons.org/anthropic/a78bfa",
+  openai:    "https://cdn.simpleicons.org/openai/10a37f",
+  google:    "https://cdn.simpleicons.org/google/4285f4",
+  minimax:   "https://cdn.simpleicons.org/minutemailer/f59e0b",
+}
+
+const PROVIDER_LABELS: Record<string, {name: string}> = {
+  anthropic: {name: "Anthropic"},
+  openai:    {name: "OpenAI"},
+  google:    {name: "Google"},
+  minimax:   {name: "Minimax"},
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -68,7 +75,8 @@ export default function InstanceCard({
   const [confirmDestroy, setConfirmDestroy] = useState(false)
 
   const status = STATUS_CONFIG[instance.status] ?? STATUS_CONFIG.error!
-  const provider = PROVIDER_LABELS[instance.llm_provider] ?? {name: instance.llm_provider, icon: "⚪"}
+  const provider = PROVIDER_LABELS[instance.llm_provider] ?? {name: instance.llm_provider}
+  const providerLogo = PROVIDER_LOGOS[instance.llm_provider]
   const isTransitioning = ["provisioning", "stopping", "starting", "destroying"].includes(instance.status)
   const isRunning = instance.status === "running"
   const isStopped = instance.status === "stopped"
@@ -109,7 +117,7 @@ export default function InstanceCard({
               {status.label}
             </span>
             <span className="text-[10px] text-neutral-600">
-              {instance.type === "local" ? "💻 local" : "☁️ cloud"}
+              {instance.type === "local" ? "local" : "cloud"}
             </span>
           </div>
           <h3 className="text-sm font-medium truncate">
@@ -130,7 +138,11 @@ export default function InstanceCard({
 
         {/* Provider badge */}
         <div className="flex items-center gap-1.5 text-xs text-neutral-500 ml-3 shrink-0">
-          <span>{provider.icon}</span>
+          {providerLogo ? (
+            <img src={providerLogo} alt="" width={14} height={14} className="object-contain" />
+          ) : (
+            <span className="w-3.5 h-3.5 rounded-full bg-neutral-600" />
+          )}
           <span>{provider.name}</span>
         </div>
       </div>
@@ -151,7 +163,7 @@ export default function InstanceCard({
             onClick={() => onOpenChat(instance._id)}
             className="flex-1 py-2 px-3 bg-neutral-100 text-neutral-900 rounded-lg text-xs font-medium hover:bg-white transition-colors"
           >
-            💬 Chat
+            Chat
           </button>
         )}
 

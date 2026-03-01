@@ -391,7 +391,7 @@ export default function ChatPage() {
                 {/* Source badge for non-web messages */}
                 {msg.source !== "web" && (
                   <span className="text-[9px] uppercase tracking-wider mb-1 block opacity-60">
-                    {msg.source === "glasses" ? "👓 glasses" : `💻 ${msg.source}`}
+                    {msg.source === "glasses" ? "glasses" : msg.source}
                   </span>
                 )}
 
