@@ -3,7 +3,6 @@
  *
  * Dev:  bun dev        → runtime bundling + HMR
  * Prod: bun run start  → development: false, lazy cached minified bundles
- * Static: bun run build → bun build index.html to dist/ for CDN/static hosting
  *
  * The server always runs from source (Bun handles TS natively).
  * bunfig.toml configures plugins (tailwind, react-dedupe) and env inlining.
@@ -12,7 +11,7 @@
 import { ClawedChat } from "./backend/ClawedChat"
 import { api } from "./backend/api"
 import { createMentraAuthRoutes } from "@mentra/sdk"
-import index from "./frontend/index.html"
+import indexHtml from "./frontend/index.html"
 
 // Configuration from environment
 const PORT = parseInt(process.env.PORT || "80", 10)
@@ -60,6 +59,9 @@ const isDevelopment = process.env.NODE_ENV === "development"
 
 console.log(`clawed.chat running at http://localhost:${PORT} (${isDevelopment ? "development" : "production"})`)
 
+// Serve static assets — resolved once at startup
+const publicPath = `${process.cwd()}/src/public/assets`
+
 // Start Bun server
 Bun.serve({
   port: PORT,
@@ -69,32 +71,21 @@ Bun.serve({
     console: true,
   },
   routes: {
-    // Serve bundled index.html at root.
-    // Can't use "/*" here — it would swallow /api/* before fetch() sees them.
-    "/": index,
+    // Static assets — checked before the catch-all HTML route
+    "/assets/*": (request: Request) => {
+      const url = new URL(request.url)
+      const filePath = `${publicPath}${url.pathname.replace("/assets", "")}`
+      const file = Bun.file(filePath)
+      return new Response(file)
+    },
+    // SPA catch-all — serves bundled index.html
+    // Dev: runtime bundled with HMR
+    // Prod: lazy bundled, cached, minified. No HMR.
+    "/*": indexHtml,
   },
-  async fetch(request) {
-    const url = new URL(request.url)
-
-    // API, SDK, and Mentra routes → Hono
-    if (
-      url.pathname.startsWith("/api/") ||
-      url.pathname.startsWith("/mentra/") ||
-      url.pathname.startsWith("/clerk/")
-    ) {
-      return app.fetch(request)
-    }
-
-    // Try Hono for any other registered backend routes
-    const response = await app.fetch(request)
-    if (response.status !== 404) {
-      return response
-    }
-
-    // SPA fallback — serve the same bundled index.html for all other paths.
-    // The `index` import is a Response-like object from Bun's HTML bundler.
-    // Clone it so it can be served multiple times.
-    return new Response(Bun.file(import.meta.dir + "/frontend/index.html"))
+  fetch(request) {
+    // All non-matched routes (API, SDK, Mentra) go through Hono
+    return app.fetch(request)
   },
 })
 
