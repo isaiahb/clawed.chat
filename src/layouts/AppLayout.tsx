@@ -277,17 +277,17 @@ export default function AppLayout() {
             : false;
 
     return cn(
-      "flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.04em] border transition-all",
+      "flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.04em] border transition-all duration-200",
       isActive
         ? "border-foreground bg-foreground text-background"
-        : "border-border text-muted-foreground hover:border-foreground hover:text-foreground",
+        : "border-border text-muted-foreground hover:border-foreground hover:text-foreground active:translate-y-px",
     );
   };
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       {/* ── Top Navigation Bar ── */}
-      <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-card px-4">
+      <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-card px-4 shadow-[0_1px_3px_oklch(0_0_0/0.04)]">
         {/* Left — Logo */}
         <Link to="/app" className="group flex items-center gap-2">
           <ClawLogo className="transition-transform group-hover:scale-105" />
@@ -334,7 +334,7 @@ export default function AppLayout() {
                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
                 onClick={() => setCommandBarOpen(true)}
               >
-                <Search className="h-3.5 w-3.5" />
+                <Search className="h-3.5 w-3.5 transition-transform duration-150" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -378,11 +378,11 @@ export default function AppLayout() {
                     to="/app"
                     end
                     className={cn(
-                      "flex h-8 w-8 items-center justify-center border transition-all",
+                      "flex h-8 w-8 items-center justify-center border transition-all duration-200",
                       location.pathname === "/app" ||
                         location.pathname === "/app/"
                         ? "border-foreground bg-foreground text-background"
-                        : "border-border text-muted-foreground hover:border-foreground hover:text-foreground",
+                        : "border-border text-muted-foreground hover:border-foreground hover:text-foreground active:translate-y-px",
                     )}
                   >
                     <MessageSquare className="h-3.5 w-3.5" />
@@ -396,10 +396,10 @@ export default function AppLayout() {
                   <NavLink
                     to="/app/connections"
                     className={cn(
-                      "flex h-8 w-8 items-center justify-center border transition-all",
+                      "flex h-8 w-8 items-center justify-center border transition-all duration-200",
                       location.pathname.startsWith("/app/connections")
                         ? "border-foreground bg-foreground text-background"
-                        : "border-border text-muted-foreground hover:border-foreground hover:text-foreground",
+                        : "border-border text-muted-foreground hover:border-foreground hover:text-foreground active:translate-y-px",
                     )}
                   >
                     <Plug className="h-3.5 w-3.5" />
@@ -413,10 +413,10 @@ export default function AppLayout() {
                   <NavLink
                     to="/app/settings"
                     className={cn(
-                      "flex h-8 w-8 items-center justify-center border transition-all",
+                      "flex h-8 w-8 items-center justify-center border transition-all duration-200",
                       location.pathname.startsWith("/app/settings")
                         ? "border-foreground bg-foreground text-background"
-                        : "border-border text-muted-foreground hover:border-foreground hover:text-foreground",
+                        : "border-border text-muted-foreground hover:border-foreground hover:text-foreground active:translate-y-px",
                     )}
                   >
                     <Settings className="h-3.5 w-3.5" />
@@ -430,9 +430,9 @@ export default function AppLayout() {
           {/* Account menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex h-8 w-8 items-center justify-center border border-border transition-all hover:border-foreground">
+              <button className="flex h-8 w-8 items-center justify-center border border-border transition-all duration-200 hover:border-foreground hover:shadow-[0_0_0_3px_var(--claw-red-glow)] active:translate-y-px">
                 <Avatar className="h-6 w-6">
-                  <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-semibold">
+                  <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-semibold select-none">
                     {accountName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -489,7 +489,7 @@ export default function AppLayout() {
       </header>
 
       {/* ── Page Content ── */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto scroll-smooth">
         <Outlet />
       </main>
 

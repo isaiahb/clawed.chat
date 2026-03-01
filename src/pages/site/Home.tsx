@@ -115,7 +115,7 @@ function Tag({
 function SectionDivider() {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="h-px bg-border" />
+      <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
     </div>
   );
 }
@@ -199,15 +199,17 @@ function Hero() {
             </div>
 
             {/* Trust line */}
-            <div className="mt-6 flex items-center gap-4 text-[12px] text-muted-foreground animate-fade-in [animation-delay:600ms]">
+            <div className="mt-8 flex items-center gap-5 text-[12px] text-muted-foreground animate-fade-in [animation-delay:600ms]">
               <span className="flex items-center gap-1.5">
                 <Check className="h-3 w-3 text-claw-red" />
                 Free tier available
               </span>
+              <span className="h-3 w-px bg-border" />
               <span className="flex items-center gap-1.5">
                 <Check className="h-3 w-3 text-claw-red" />
                 Smart glasses included
               </span>
+              <span className="hidden sm:block h-3 w-px bg-border" />
               <span className="hidden sm:flex items-center gap-1.5">
                 <Check className="h-3 w-3 text-claw-red" />
                 No DevOps required
@@ -349,8 +351,8 @@ function ProblemSolution() {
           {/* Without */}
           <div className="border border-border bg-card p-8 sm:p-10">
             <div className="flex items-center gap-2.5 mb-8">
-              <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
-              <span className="text-[13px] font-bold text-red-400 uppercase tracking-wider">
+              <div className="h-2 w-2 bg-red-500" />
+              <span className="text-[11px] font-bold text-red-400 uppercase tracking-[0.12em]">
                 Without Clawed
               </span>
             </div>
@@ -398,19 +400,19 @@ function ProblemSolution() {
             <div className="absolute -top-20 -right-20 h-40 w-40 bg-emerald-500/[0.06] blur-[60px]" />
 
             <div className="flex items-center gap-2.5 mb-8 relative z-10">
-              <div className="h-2.5 w-2.5 bg-emerald-500 animate-pulse" />
-              <span className="text-[13px] font-bold text-emerald-400 uppercase tracking-wider">
+              <div className="h-2 w-2 bg-emerald-500 animate-pulse" />
+              <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-[0.12em]">
                 With Clawed Chat
               </span>
             </div>
 
-            <div className="border border-border bg-background px-5 py-4 mb-8 relative z-10">
+            <div className="border border-emerald-500/20 bg-emerald-500/[0.03] px-5 py-4 mb-8 relative z-10">
               <div className="flex items-center gap-2.5 text-emerald-400 font-mono text-[13px]">
                 <div className="h-2 w-2 bg-emerald-500 animate-pulse" />
                 Your OpenClaw agent is live.
               </div>
               <div className="mt-1.5 text-[11px] text-muted-foreground font-mono">
-                Deployed in 28 seconds.
+                Deployed in 28 seconds · 3 channels active
               </div>
             </div>
 
@@ -482,10 +484,10 @@ function Pillars() {
               className="group border border-border bg-card p-8 transition-all duration-200 hover:border-foreground"
             >
               <div className="flex items-center gap-4 mb-6">
-                <div className="flex h-11 w-11 items-center justify-center bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/12 group-hover:border-claw-red/20 transition-colors">
+                <div className="flex h-11 w-11 items-center justify-center bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/15 group-hover:border-claw-red/25 transition-all duration-200">
                   <p.icon className="h-5 w-5 text-claw-red" />
                 </div>
-                <span className="text-[48px] font-black text-border leading-none select-none group-hover:text-muted-foreground transition-colors">
+                <span className="text-[48px] font-black text-border leading-none select-none group-hover:text-muted-foreground/60 transition-colors duration-300">
                   {String(i + 1).padStart(2, "0")}
                 </span>
               </div>
@@ -550,7 +552,7 @@ function HowItWorks() {
 
         <div className="relative">
           {/* Connecting line */}
-          <div className="hidden md:block absolute top-6 left-[10%] right-[10%] h-px bg-gradient-to-r from-border via-claw-red/20 to-border" />
+          <div className="hidden md:block absolute top-6 left-[10%] right-[10%] h-px bg-gradient-to-r from-transparent via-claw-red/15 to-transparent" />
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 md:gap-4">
             {steps.map((step, i) => (
@@ -649,9 +651,9 @@ function Capabilities() {
           {capabilities.map((cap) => (
             <div
               key={cap.title}
-              className="group flex items-start gap-4 border border-border bg-card p-5 transition-all duration-150 hover:border-foreground"
+              className="group flex items-start gap-4 border border-border bg-card p-5 transition-all duration-200 hover:border-foreground/60"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/12 transition-colors">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/15 group-hover:border-claw-red/25 transition-all duration-200">
                 <cap.icon className="h-4 w-4 text-claw-red" />
               </div>
               <div className="min-w-0">
@@ -792,7 +794,7 @@ function GlassesSection() {
 
             <div className="relative w-full max-w-sm">
               {/* Lens */}
-              <div className="relative overflow-hidden w-full aspect-[2/1] rounded-[50%/40%] bg-gradient-to-br from-card via-secondary to-background border border-border shadow-[0_0_80px_rgba(0,0,0,0.4),inset_0_2px_0_rgba(255,255,255,0.02)]">
+              <div className="relative overflow-hidden w-full aspect-[2/1] rounded-[50%/40%] bg-gradient-to-br from-card via-secondary/80 to-background border border-border shadow-[0_0_60px_rgba(0,0,0,0.3),0_0_120px_rgba(139,0,0,0.06),inset_0_2px_0_rgba(255,255,255,0.03)]">
                 {/* Scan lines */}
                 <div
                   className="absolute inset-0 pointer-events-none opacity-[0.015]"
@@ -934,13 +936,13 @@ function Testimonials() {
           {testimonials.map((t, i) => (
             <div
               key={i}
-              className="break-inside-avoid border border-border bg-card p-6 transition-all duration-150 hover:border-foreground"
+              className="break-inside-avoid border border-border bg-card p-6 transition-all duration-200 hover:border-foreground/60 hover:shadow-[0_2px_12px_oklch(0_0_0/0.06)]"
             >
               <p className="text-[14px] text-foreground/80 leading-relaxed mb-5">
-                "{t.text}"
+                &ldquo;{t.text}&rdquo;
               </p>
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center bg-claw-red/8 border border-claw-red/10 text-claw-red text-[11px] font-bold">
+                <div className="flex h-8 w-8 items-center justify-center bg-claw-red/8 border border-claw-red/10 text-claw-red text-[11px] font-bold select-none">
                   {t.author[0]}
                 </div>
                 <div>
@@ -1183,7 +1185,7 @@ function BetaCTA() {
 
           {/* Waitlist */}
           <div className="mt-20">
-            <div className="h-px bg-border mb-12" />
+            <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-12" />
 
             <div className="max-w-md mx-auto">
               <div className="border border-border bg-card p-8">
@@ -1348,7 +1350,7 @@ export default function Home() {
     },
   );
   return (
-    <>
+    <div className="animate-page-enter">
       <ThemeToggle />
       <Hero />
       <SectionDivider />
@@ -1365,6 +1367,6 @@ export default function Home() {
       <WhyTheClaw />
       <BetaCTA />
       <NotClaude />
-    </>
+    </div>
   );
 }

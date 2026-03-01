@@ -113,7 +113,7 @@ function NavLinks({
           >
             {item.label}
             {isActive && (
-              <span className="absolute -bottom-0.5 left-0 right-0 h-[2px] bg-claw-red" />
+              <span className="absolute -bottom-0.5 left-0 right-0 h-[2px] bg-claw-red transition-all duration-200" />
             )}
           </Link>
         );
@@ -134,7 +134,7 @@ function HeaderThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="flex h-8 w-8 items-center justify-center border border-border bg-transparent transition-all hover:bg-muted hover:border-foreground active:translate-y-px"
+      className="flex h-8 w-8 items-center justify-center border border-border bg-transparent transition-all duration-200 hover:bg-muted hover:border-foreground active:translate-y-px"
       aria-label="Toggle theme"
     >
       {isDark ? (
@@ -150,7 +150,7 @@ function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur-xl transition-theme">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/85 backdrop-blur-2xl backdrop-saturate-[1.3] transition-theme">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link to="/" className="group flex items-center gap-2.5">
@@ -291,9 +291,9 @@ function SiteFooter() {
     <footer className="relative border-t border-border bg-card transition-theme">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* CTA strip */}
-        <div className="py-8 sm:py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border-b border-border">
+        <div className="py-8 sm:py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border-b border-border relative">
           <div className="flex items-start gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-claw-red/20 bg-claw-red/8">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-claw-red/20 bg-claw-red/8 transition-colors group-hover:bg-claw-red/12">
               <Zap className="h-4 w-4 text-claw-red" />
             </div>
             <div>
@@ -346,12 +346,12 @@ function SiteFooter() {
             </p>
 
             {/* Socials — square, blocky icons */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <a
                 href="https://github.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center border border-border bg-background text-muted-foreground transition-all hover:border-foreground hover:text-foreground hover:bg-muted"
+                className="flex h-8 w-8 items-center justify-center border border-border bg-background text-muted-foreground transition-all duration-200 hover:border-foreground hover:text-foreground hover:bg-muted active:translate-y-px"
               >
                 <Github className="h-3.5 w-3.5" />
               </a>
@@ -359,13 +359,13 @@ function SiteFooter() {
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center border border-border bg-background text-muted-foreground transition-all hover:border-foreground hover:text-foreground hover:bg-muted"
+                className="flex h-8 w-8 items-center justify-center border border-border bg-background text-muted-foreground transition-all duration-200 hover:border-foreground hover:text-foreground hover:bg-muted active:translate-y-px"
               >
                 <Twitter className="h-3.5 w-3.5" />
               </a>
               <a
                 href="mailto:hello@clawed.chat"
-                className="flex h-8 w-8 items-center justify-center border border-border bg-background text-muted-foreground transition-all hover:border-foreground hover:text-foreground hover:bg-muted"
+                className="flex h-8 w-8 items-center justify-center border border-border bg-background text-muted-foreground transition-all duration-200 hover:border-foreground hover:text-foreground hover:bg-muted active:translate-y-px"
               >
                 <Mail className="h-3.5 w-3.5" />
               </a>
@@ -375,7 +375,7 @@ function SiteFooter() {
           {/* Link sections */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4 className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-4">
+              <h4 className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-5">
                 {title}
               </h4>
               <nav className="flex flex-col gap-2.5">
@@ -408,7 +408,7 @@ function SiteFooter() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-border py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="border-t border-border py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
             <p>&copy; {currentYear} Clawed Chat</p>
             <span>·</span>

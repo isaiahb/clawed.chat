@@ -142,15 +142,17 @@ function SettingsSection({
   children: React.ReactNode;
 }) {
   return (
-    <Card>
+    <Card className="transition-all duration-200">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center border border-border bg-card text-primary">
+          <div className="flex h-9 w-9 items-center justify-center border border-claw-red/15 bg-claw-red/6 text-claw-red transition-colors duration-200">
             <Icon className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-base">{title}</CardTitle>
-            <CardDescription className="text-sm">{description}</CardDescription>
+            <CardTitle className="text-base font-bold">{title}</CardTitle>
+            <CardDescription className="text-sm leading-relaxed">
+              {description}
+            </CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -215,10 +217,10 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-foreground">
+        <h1 className="text-xl font-black tracking-tight text-foreground">
           Settings
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
           Manage appearance, response behavior, and safety preferences.
         </p>
       </div>
@@ -325,15 +327,15 @@ export default function SettingsPage() {
                     key={option.value}
                     onClick={() => setTheme(option.value)}
                     className={cn(
-                      "relative flex flex-col items-center gap-2 border-2 p-4 transition-all",
+                      "relative flex flex-col items-center gap-2.5 border-2 p-4 transition-all duration-200 active:translate-y-px",
                       isSelected
-                        ? "border-foreground bg-card"
-                        : "border-border hover:border-foreground/40",
+                        ? "border-foreground bg-foreground/[0.03]"
+                        : "border-border hover:border-foreground/40 hover:bg-muted/30",
                     )}
                   >
                     <Icon
                       className={cn(
-                        "h-5 w-5",
+                        "h-5 w-5 transition-colors duration-200",
                         isSelected
                           ? "text-foreground"
                           : "text-muted-foreground",
@@ -341,7 +343,7 @@ export default function SettingsPage() {
                     />
                     <span
                       className={cn(
-                        "text-xs font-semibold",
+                        "text-xs font-bold transition-colors duration-200",
                         isSelected
                           ? "text-foreground"
                           : "text-muted-foreground",
@@ -373,10 +375,10 @@ export default function SettingsPage() {
                 key={option.style}
                 onClick={() => setResponseStyle(option.style)}
                 className={cn(
-                  "relative w-full border-2 p-4 text-left transition-all",
+                  "relative w-full border-2 p-4 text-left transition-all duration-200 active:translate-y-px",
                   isSelected
-                    ? "border-foreground bg-card"
-                    : "border-border hover:border-foreground/40",
+                    ? "border-foreground bg-foreground/[0.03]"
+                    : "border-border hover:border-foreground/40 hover:bg-muted/30",
                 )}
               >
                 <div className="flex items-start gap-3">

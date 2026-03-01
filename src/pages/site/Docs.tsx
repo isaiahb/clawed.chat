@@ -126,7 +126,7 @@ const apiSections = [
 
 export default function DocsPage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen animate-page-enter">
       {/* Hero */}
       <section className="border-b bg-muted/30">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
@@ -134,7 +134,7 @@ export default function DocsPage() {
             <div className="flex items-center justify-center gap-2 mb-6">
               <BookOpen className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+            <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
               Documentation
             </h1>
             <p className="mt-4 text-lg text-muted-foreground leading-relaxed">
@@ -149,10 +149,10 @@ export default function DocsPage() {
                 <input
                   type="text"
                   placeholder="Search documentation…"
-                  className="w-full rounded-lg border bg-background px-10 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full border bg-background px-10 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-claw-red/25 focus:border-claw-red/30 transition-all"
                   disabled
                 />
-                <kbd className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                <kbd className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none inline-flex h-5 select-none items-center gap-1 border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                   ⌘K
                 </kbd>
               </div>
@@ -166,7 +166,7 @@ export default function DocsPage() {
 
       {/* Quick Links */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-bold tracking-tight">Quick Links</h2>
+        <h2 className="text-2xl font-black tracking-tight">Quick Links</h2>
         <p className="mt-2 text-muted-foreground">
           Jump to the most common topics.
         </p>
@@ -174,9 +174,9 @@ export default function DocsPage() {
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {quickLinks.map((link) => (
             <Link key={link.title} to={link.href}>
-              <Card className="group h-full transition-all hover:shadow-md hover:border-primary/20">
+              <Card className="group h-full transition-all duration-200 hover:border-foreground/60">
                 <CardContent className="flex items-start gap-4 p-5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-claw-red/8 border border-claw-red/10 text-claw-red group-hover:bg-claw-red/15 group-hover:border-claw-red/25 transition-all duration-200">
                     <link.icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -206,7 +206,7 @@ export default function DocsPage() {
 
       {/* Guides */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-bold tracking-tight">Guides</h2>
+        <h2 className="text-2xl font-black tracking-tight">Guides</h2>
         <p className="mt-2 text-muted-foreground">
           Step-by-step walkthroughs for every feature.
         </p>
@@ -223,7 +223,7 @@ export default function DocsPage() {
                   .map((guide) => (
                     <Card
                       key={guide.title}
-                      className="group cursor-pointer transition-all hover:shadow-sm hover:border-muted-foreground/30"
+                      className="group cursor-pointer transition-all duration-200 hover:border-foreground/60"
                     >
                       <CardHeader className="pb-2">
                         <div className="flex items-center gap-2">
@@ -257,7 +257,9 @@ export default function DocsPage() {
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">API Reference</h2>
+            <h2 className="text-2xl font-black tracking-tight">
+              API Reference
+            </h2>
             <p className="mt-2 text-muted-foreground">
               Build on top of Clawed with our REST API and SDKs.
             </p>
@@ -272,10 +274,10 @@ export default function DocsPage() {
           {apiSections.map((section) => (
             <Card
               key={section.title}
-              className="group cursor-pointer transition-all hover:shadow-sm hover:border-muted-foreground/30"
+              className="group cursor-pointer transition-all duration-200 hover:border-foreground/60"
             >
               <CardContent className="flex items-start gap-4 p-5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground group-hover:text-foreground transition-colors">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-muted border border-border text-muted-foreground group-hover:text-foreground group-hover:border-foreground/30 transition-all duration-200">
                   <section.icon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
@@ -290,7 +292,7 @@ export default function DocsPage() {
         </div>
 
         {/* Code sample placeholder */}
-        <div className="mt-8 rounded-lg border bg-neutral-950 p-6 text-sm">
+        <div className="mt-8 border bg-neutral-950 p-6 text-sm">
           <div className="flex items-center gap-2 mb-4">
             <Terminal className="h-4 w-4 text-neutral-400" />
             <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
@@ -332,7 +334,7 @@ console.log(\`\${approvals.length} actions waiting for review\`);`}</code>
 
       {/* Help CTA */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="rounded-2xl border bg-muted/30 p-8 text-center sm:p-12">
+        <div className="border bg-muted/30 p-8 text-center sm:p-12">
           <MessageSquare className="mx-auto h-8 w-8 text-muted-foreground" />
           <h2 className="mt-4 text-xl font-bold">Need help?</h2>
           <p className="mt-2 text-muted-foreground max-w-md mx-auto">

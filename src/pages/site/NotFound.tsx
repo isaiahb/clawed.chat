@@ -50,10 +50,13 @@ export default function NotFound() {
   const location = useLocation();
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
-      <div className="mx-auto max-w-md text-center">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
+      {/* Subtle ambient glow */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[350px] w-[350px] bg-claw-red/[0.03] blur-[120px] pointer-events-none" />
+
+      <div className="relative mx-auto max-w-md text-center animate-fade-in">
         {/* Claw icon */}
-        <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center border border-border bg-card">
+        <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center border border-border bg-card transition-colors duration-200 hover:border-claw-red/30">
           <ClawIcon className="h-14 w-14" />
         </div>
 
@@ -84,7 +87,10 @@ export default function NotFound() {
 
         {/* Actions */}
         <div className="mt-8 flex items-center justify-center gap-3">
-          <Button asChild className="gap-2">
+          <Button
+            asChild
+            className="gap-2 bg-claw-red hover:bg-claw-red-bright text-white"
+          >
             <Link to="/app">
               <MessageSquare className="h-4 w-4" />
               Go to Chat
@@ -101,7 +107,7 @@ export default function NotFound() {
         </div>
 
         {/* Lobster hint */}
-        <p className="mt-12 text-[11px] text-muted-foreground/50">
+        <p className="mt-12 text-[11px] text-muted-foreground/40 select-none">
           The crustacean looked everywhere. Nothing here.
         </p>
       </div>

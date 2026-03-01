@@ -203,15 +203,15 @@ function ChatCard({
     return (
       <div
         className={cn(
-          "border border-border bg-card p-4",
+          "border border-border bg-card p-4 transition-colors duration-200 hover:border-foreground/20",
           isLast && "animate-in fade-in-0 slide-in-from-bottom-2 duration-300",
         )}
       >
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground select-none">
             You
           </span>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-[10px] text-muted-foreground/60 tabular-nums select-none">
             {formatTime(message.timestamp)}
           </span>
         </div>
@@ -247,7 +247,7 @@ function ChatCard({
   return (
     <div
       className={cn(
-        "border border-border bg-card border-l-[3px]",
+        "border border-border bg-card border-l-[3px] transition-colors duration-200 hover:border-foreground/20",
         config.accentClass,
         isLast && "animate-in fade-in-0 slide-in-from-bottom-2 duration-300",
       )}
@@ -255,12 +255,12 @@ function ChatCard({
       {/* Card header */}
       <div className="flex items-center justify-between px-4 pt-3 pb-2">
         <div className="flex items-center gap-2">
-          <CardIcon className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          <CardIcon className="h-3.5 w-3.5 text-muted-foreground transition-colors duration-200" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground select-none">
             {config.label}
           </span>
         </div>
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-[10px] text-muted-foreground/60 tabular-nums select-none">
           {formatTime(message.timestamp)}
         </span>
       </div>
@@ -445,7 +445,7 @@ function ActionIndicator({
       {/* Step progress dots */}
       {steps.length > 1 && (
         <div className="flex items-center gap-1.5 mt-3">
-          {steps.map((step, idx) => (
+          {steps.map((_step, idx) => (
             <div key={idx} className="flex items-center gap-1.5">
               <div
                 className={cn(
@@ -568,15 +568,15 @@ function SessionBox({
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       className={cn(
-        "group relative w-full text-left border transition-all p-3",
+        "group relative w-full text-left border transition-all duration-200 p-3",
         isActive
-          ? "border-foreground bg-card"
-          : "border-border bg-card hover:border-foreground/40",
+          ? "border-foreground bg-foreground/[0.03] shadow-[inset_2px_0_0_var(--foreground)]"
+          : "border-border bg-card hover:border-foreground/40 hover:bg-muted/30 active:translate-y-px",
       )}
     >
       {/* Title row */}
       <div className="flex items-start justify-between gap-2">
-        <h4 className="text-sm font-semibold truncate pr-6 text-foreground leading-snug">
+        <h4 className="text-sm font-bold truncate pr-6 text-foreground leading-snug">
           {conversation.title}
         </h4>
 
@@ -594,7 +594,7 @@ function SessionBox({
 
       {/* Timestamp + mode tag */}
       <div className="flex items-center gap-2 mt-1">
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-[10px] text-muted-foreground tabular-nums">
           {formatRelativeTime(conversation.updatedAt)}
         </span>
         {conversation.modeTag && (
@@ -606,7 +606,7 @@ function SessionBox({
 
       {/* Summary */}
       {conversation.summary && (
-        <p className="mt-1.5 text-[11px] text-muted-foreground leading-snug line-clamp-1">
+        <p className="mt-1.5 text-[11px] text-muted-foreground leading-snug line-clamp-1 transition-colors duration-150">
           {conversation.summary}
         </p>
       )}
@@ -616,7 +616,7 @@ function SessionBox({
         !isActive &&
         lastMessage &&
         lastMessage.role === "assistant" && (
-          <div className="mt-2 p-2 bg-muted/50 border border-border text-[10px] text-muted-foreground leading-relaxed line-clamp-2 transition-all">
+          <div className="mt-2 p-2 bg-muted/40 border border-border text-[10px] text-muted-foreground leading-relaxed line-clamp-2 animate-fade-in">
             {lastMessage.content.slice(0, 120)}
             {lastMessage.content.length > 120 ? "…" : ""}
           </div>
@@ -624,12 +624,12 @@ function SessionBox({
 
       {/* Right-click actions (shown as dropdown on hover) */}
       <div
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <div className="flex h-6 w-6 items-center justify-center border border-border bg-card hover:bg-muted cursor-pointer transition-colors">
+            <div className="flex h-6 w-6 items-center justify-center border border-border bg-card hover:bg-muted hover:border-foreground/40 cursor-pointer transition-all duration-150">
               <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
             </div>
           </DropdownMenuTrigger>
@@ -667,12 +667,12 @@ function EmptyState({
   onSelectPrompt: (prompt: string, chips: AskContextChip[]) => void;
 }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center p-8">
+    <div className="flex flex-1 flex-col items-center justify-center p-8 animate-fade-in">
       {/* Lobster claw watermark */}
       <div className="relative mb-6">
         <svg
           viewBox="-20 -20 40 40"
-          className="h-20 w-20 text-claw-red/10"
+          className="h-20 w-20 text-claw-red/8 transition-colors duration-500"
           fill="currentColor"
         >
           <path d="M-10 2 C-10 2, -6 8, 2 10 C6 11, 12 8, 14 4 C14 4, 10 6, 6 5 C2 4, -4 2, -10 2Z" />
@@ -681,10 +681,10 @@ function EmptyState({
         </svg>
       </div>
 
-      <h2 className="text-lg font-bold text-foreground text-center">
+      <h2 className="text-lg font-black text-foreground text-center">
         No sessions yet
       </h2>
-      <p className="mt-1.5 text-sm text-muted-foreground text-center max-w-sm">
+      <p className="mt-2 text-sm text-muted-foreground text-center max-w-sm leading-relaxed">
         Create your first session — ask anything and your crustacean will get to
         work.
       </p>
@@ -695,11 +695,11 @@ function EmptyState({
           <button
             key={idx}
             onClick={() => onSelectPrompt(suggestion.prompt, suggestion.chips)}
-            className="group flex items-start gap-3 border border-border bg-card p-3 text-left transition-all hover:border-foreground/40"
+            className="group flex items-start gap-3 border border-border bg-card p-3.5 text-left transition-all duration-200 hover:border-foreground/40 hover:bg-muted/30 active:translate-y-px"
           >
-            <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-claw-red transition-colors" />
+            <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-claw-red group-hover:translate-x-0.5 transition-all duration-200" />
             <div className="min-w-0">
-              <p className="text-[12px] font-medium leading-snug text-foreground">
+              <p className="text-[12px] font-semibold leading-snug text-foreground">
                 {suggestion.prompt}
               </p>
               <div className="mt-1.5 flex items-center gap-1">
@@ -776,10 +776,10 @@ function PromptInput({
   }, [value]);
 
   return (
-    <div className="border-t border-border bg-card p-4">
+    <div className="border-t border-border bg-card p-4 transition-colors duration-200">
       {/* Context chip toggles */}
       <div className="mb-3 flex items-center gap-1.5 flex-wrap">
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mr-1">
+        <span className="text-[10px] text-muted-foreground uppercase tracking-[0.08em] font-bold mr-1.5 select-none">
           Context
         </span>
         {contextChips.map((chip) => {
@@ -791,9 +791,9 @@ function PromptInput({
                 <button
                   onClick={() => onToggleChip(chip.id)}
                   className={cn(
-                    "inline-flex items-center gap-1 border px-2 py-0.5 text-[11px] font-medium transition-all",
+                    "inline-flex items-center gap-1 border px-2 py-0.5 text-[11px] font-medium transition-all duration-150",
                     isActive ? chip.activeColor : chip.color,
-                    "hover:opacity-80",
+                    "hover:opacity-80 active:scale-95",
                   )}
                 >
                   <Icon className="h-3 w-3" />
@@ -820,24 +820,24 @@ function PromptInput({
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask anything… (Enter to send, Shift+Enter for new line)"
-            className="min-h-[44px] max-h-[160px] resize-none pr-4 py-3 text-sm"
+            className="min-h-[44px] max-h-[160px] resize-none pr-4 py-3 text-sm transition-[border-color,box-shadow] duration-150 focus:border-claw-red/30 focus:shadow-[0_0_0_3px_var(--claw-red-glow)]"
             rows={1}
             disabled={disabled}
           />
         </div>
         <Button
           size="icon"
-          className="h-11 w-11 shrink-0 bg-claw-red hover:bg-claw-red-bright text-white"
+          className="h-11 w-11 shrink-0 bg-claw-red hover:bg-claw-red-bright text-white transition-all duration-150 active:scale-95 disabled:opacity-40"
           onClick={onSubmit}
           disabled={!value.trim() || disabled}
         >
-          <Send className="h-4 w-4" />
+          <Send className="h-4 w-4 transition-transform duration-150" />
           <span className="sr-only">Send</span>
         </Button>
       </div>
 
       {/* Hint */}
-      <p className="mt-2 text-[10px] text-muted-foreground text-center">
+      <p className="mt-2.5 text-[10px] text-muted-foreground/70 text-center select-none">
         Clawed can make mistakes. Sensitive actions always require your
         approval.
       </p>
@@ -1050,7 +1050,6 @@ export default function AskPage() {
       setActiveConversationId(newConv.id);
     }
 
-    const sentPrompt = promptValue.trim();
     setPromptValue("");
     setIsThinking(true);
 
@@ -1162,7 +1161,7 @@ export default function AskPage() {
       <div className="hidden md:flex w-72 lg:w-80 flex-col border-r border-border bg-background shrink-0">
         {/* Header */}
         <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          <h2 className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground select-none">
             Sessions
           </h2>
           <Tooltip>
@@ -1189,7 +1188,7 @@ export default function AskPage() {
               placeholder="Search sessions…"
               value={sidebarSearch}
               onChange={(e) => setSidebarSearch(e.target.value)}
-              className="w-full border border-border bg-card py-1.5 pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-claw-red"
+              className="w-full border border-border bg-card py-1.5 pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-claw-red/40 focus:border-claw-red/30 transition-all duration-150"
             />
           </div>
         </div>
@@ -1224,8 +1223,8 @@ export default function AskPage() {
         </ScrollArea>
 
         {/* Session count */}
-        <div className="border-t border-border px-4 py-2.5">
-          <p className="text-[10px] text-muted-foreground">
+        <div className="border-t border-border px-4 py-2.5 bg-muted/30">
+          <p className="text-[10px] text-muted-foreground tabular-nums select-none">
             {conversations.length} session
             {conversations.length !== 1 ? "s" : ""} ·{" "}
             {conversations.reduce((sum, c) => sum + c.messages.length, 0)}{" "}

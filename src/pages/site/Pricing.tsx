@@ -373,21 +373,21 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   return (
     <div className="border-b last:border-b-0">
       <button
-        className="flex w-full items-center justify-between gap-4 py-5 text-left transition-colors hover:text-foreground"
+        className="flex w-full items-center justify-between gap-4 py-5 text-left transition-colors hover:text-foreground group"
         onClick={() => setOpen(!open)}
       >
-        <span className="text-sm font-medium text-foreground">{q}</span>
+        <span className="text-sm font-semibold text-foreground">{q}</span>
         <HelpCircle
           className={cn(
-            "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
-            open && "rotate-180 text-primary",
+            "h-4 w-4 shrink-0 text-muted-foreground transition-all duration-300",
+            open ? "rotate-45 text-claw-red" : "group-hover:text-foreground",
           )}
         />
       </button>
       <div
         className={cn(
-          "overflow-hidden transition-all duration-200",
-          open ? "max-h-96 pb-5" : "max-h-0",
+          "overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          open ? "max-h-96 pb-5 opacity-100" : "max-h-0 opacity-0",
         )}
       >
         <p className="text-sm text-muted-foreground leading-relaxed pr-8">
@@ -406,11 +406,14 @@ export default function Pricing() {
   const [annual, setAnnual] = useState(false);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col animate-page-enter">
       {/* ── Hero ───────────────────────────────────── */}
       <section className="relative overflow-hidden border-b bg-gradient-to-b from-muted/50 to-background">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8 text-center">
-          <Badge variant="secondary" className="mb-6 gap-1.5 px-3 py-1 text-xs">
+          <Badge
+            variant="secondary"
+            className="mb-6 gap-1.5 px-3 py-1 text-[11px]"
+          >
             <Sparkles className="h-3 w-3" />
             Simple, transparent pricing
           </Badge>
@@ -487,14 +490,15 @@ export default function Pricing() {
               <Card
                 key={tier.id}
                 className={cn(
-                  "relative flex flex-col transition-shadow hover:shadow-lg",
-                  tier.highlighted &&
-                    "border-primary shadow-md ring-1 ring-primary/20 scale-[1.02] z-10",
+                  "relative flex flex-col transition-all duration-200",
+                  tier.highlighted
+                    ? "border-claw-red shadow-[0_0_0_1px_var(--claw-red),0_8px_30px_oklch(0.55_0.22_25/0.1)] scale-[1.02] z-10"
+                    : "hover:border-foreground/40",
                 )}
               >
                 {tier.highlighted && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="px-3 py-0.5 text-xs shadow-sm">
+                    <Badge className="px-3 py-0.5 text-[10px] shadow-sm bg-claw-red text-white border-claw-red-dark">
                       Most popular
                     </Badge>
                   </div>
@@ -504,7 +508,7 @@ export default function Pricing() {
                   <div className="flex items-center gap-2.5 mb-2">
                     <div
                       className={cn(
-                        "flex h-9 w-9 items-center justify-center rounded-lg",
+                        "flex h-9 w-9 items-center justify-center",
                         tier.highlighted
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-muted-foreground",
@@ -639,7 +643,7 @@ export default function Pricing() {
       <section className="border-t bg-muted/30">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
               Compare plans in detail
             </h2>
             <p className="mt-2 text-muted-foreground text-sm">
@@ -648,7 +652,7 @@ export default function Pricing() {
           </div>
 
           {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto rounded-xl border bg-card">
+          <div className="hidden md:block overflow-x-auto border bg-card">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
@@ -755,7 +759,7 @@ export default function Pricing() {
       <section className="border-t">
         <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
               Frequently asked questions
             </h2>
             <p className="mt-2 text-muted-foreground text-sm">
@@ -763,7 +767,7 @@ export default function Pricing() {
             </p>
           </div>
 
-          <div className="divide-y rounded-xl border bg-card px-6">
+          <div className="divide-y border bg-card px-6">
             {faqs.map((faq) => (
               <FAQItem key={faq.q} {...faq} />
             ))}
@@ -774,7 +778,7 @@ export default function Pricing() {
       {/* ── Bottom CTA ─────────────────────────────── */}
       <section className="border-t bg-muted/30">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 text-center">
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
             Ready to join the beta?
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
@@ -822,7 +826,7 @@ function LimitBadge({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2">
+    <div className="flex items-center gap-2 border bg-muted/50 px-3 py-2">
       <span className="text-muted-foreground">{icon}</span>
       <div className="min-w-0">
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider leading-none">

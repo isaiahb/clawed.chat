@@ -20,12 +20,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  MessageSquare,
-  Mail,
-  Calendar,
-  FileText,
-  SquareKanban,
-  Github,
   Plug,
   PlugZap,
   CheckCircle2,
@@ -52,19 +46,26 @@ import type {
   ConnectionPermission,
 } from "@/types";
 
-// ─── Icon map — use official-feeling icons per provider ──────────────────────
+// ─── Brand logos ─────────────────────────────────────────────────────────────
 
-const iconMap: Record<string, LucideIcon> = {
-  MessageSquare,
-  Mail,
-  Calendar,
-  FileText,
-  SquareKanban,
-  Github,
+import slackLogo from "@/assets/logos/slack.svg";
+import gmailLogo from "@/assets/logos/gmail.svg";
+import googleCalendarLogo from "@/assets/logos/google-calendar.svg";
+import notionLogo from "@/assets/logos/notion.svg";
+import linearLogo from "@/assets/logos/linear.svg";
+import githubLogo from "@/assets/logos/github.svg";
+
+const logoMap: Record<string, string> = {
+  slack: slackLogo,
+  gmail: gmailLogo,
+  "google-calendar": googleCalendarLogo,
+  notion: notionLogo,
+  linear: linearLogo,
+  github: githubLogo,
 };
 
-function getProviderIcon(iconName: string) {
-  return iconMap[iconName] ?? Plug;
+function getProviderLogo(provider: string): string | null {
+  return logoMap[provider] ?? null;
 }
 
 // ─── Status config ───────────────────────────────────────────────────────────
@@ -162,7 +163,7 @@ function ConnectionTile({
   onViewPermissions: (c: Connection) => void;
 }) {
   const [testing, setTesting] = useState(false);
-  const Icon = getProviderIcon(connection.icon);
+  const logo = getProviderLogo(connection.provider);
   const status = statusConfig[connection.status];
   const isConnected = connection.status === "connected";
   const isError = connection.status === "error";
@@ -178,31 +179,42 @@ function ConnectionTile({
   return (
     <Card
       className={cn(
-        "group relative transition-all",
-        isError && "border-red-200",
+        "group relative transition-all duration-200",
+        isError && "border-red-200 dark:border-red-800/40",
       )}
     >
       <CardContent className="p-5">
         {/* Header row */}
         <div className="flex items-start gap-4">
-          {/* Provider icon — official service icon placeholder */}
+          {/* Provider icon — official brand logo */}
           <div
             className={cn(
-              "flex h-12 w-12 shrink-0 items-center justify-center transition-colors border",
+              "flex h-12 w-12 shrink-0 items-center justify-center transition-all duration-200 border rounded-lg overflow-hidden",
               isConnected
-                ? "bg-primary/10 text-primary border-primary/20"
+                ? "bg-white dark:bg-white/95 border-primary/20 group-hover:border-primary/40 group-hover:shadow-[0_0_0_3px_oklch(0.52_0.22_25/0.06)]"
                 : isError
-                  ? "bg-red-50 text-red-600 border-red-200"
-                  : "bg-muted text-muted-foreground border-border",
+                  ? "bg-white dark:bg-white/95 border-red-200 dark:border-red-800/40"
+                  : "bg-muted border-border group-hover:border-foreground/20",
             )}
           >
-            <Icon className="h-6 w-6" />
+            {logo ? (
+              <img
+                src={logo}
+                alt={connection.name}
+                className={cn(
+                  "h-7 w-7 object-contain",
+                  !isConnected && !isError && "opacity-40 grayscale",
+                )}
+              />
+            ) : (
+              <Plug className="h-6 w-6 text-muted-foreground" />
+            )}
           </div>
 
           {/* Name + status + capability */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-sm truncate text-foreground">
+              <h3 className="font-bold text-sm truncate text-foreground">
                 {connection.name}
               </h3>
               <Badge
@@ -353,7 +365,7 @@ function PermissionsDialog({
 }) {
   if (!connection) return null;
 
-  const Icon = getProviderIcon(connection.icon);
+  const logo = getProviderLogo(connection.provider);
   const status = statusConfig[connection.status];
 
   // Group permissions by type
@@ -367,8 +379,16 @@ function PermissionsDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center border border-border bg-card text-primary">
-              <Icon className="h-5 w-5" />
+            <div className="flex h-10 w-10 items-center justify-center border border-border bg-white dark:bg-white/95 rounded-lg overflow-hidden">
+              {logo ? (
+                <img
+                  src={logo}
+                  alt={connection.name}
+                  className="h-6 w-6 object-contain"
+                />
+              ) : (
+                <Plug className="h-5 w-5 text-muted-foreground" />
+              )}
             </div>
             <div>
               <DialogTitle className="text-base">{connection.name}</DialogTitle>
@@ -683,34 +703,40 @@ export default function ConnectionsPage() {
     <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
       {/* Page Header */}
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-foreground">
+        <h1 className="text-xl font-black tracking-tight text-foreground">
           Connect your tools
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
           Choose what your agent can access. Each service shows exactly what
           Clawed can read, write, and when it will ask for approval.
         </p>
       </div>
 
       {/* Stats bar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 border border-border bg-card px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex items-center gap-2 border border-border bg-card px-3 py-2 transition-colors duration-200 hover:border-emerald-300">
           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-          <span className="text-sm font-semibold">{connectedCount}</span>
+          <span className="text-sm font-bold tabular-nums">
+            {connectedCount}
+          </span>
           <span className="text-[11px] text-muted-foreground">connected</span>
         </div>
         {errorCount > 0 && (
-          <div className="flex items-center gap-2 border border-red-200 bg-red-50 px-3 py-2">
+          <div className="flex items-center gap-2 border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800/40 px-3 py-2 transition-colors duration-200">
             <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-            <span className="text-sm font-semibold text-red-700">
+            <span className="text-sm font-bold text-red-700 dark:text-red-400 tabular-nums">
               {errorCount}
             </span>
-            <span className="text-[11px] text-red-600">need attention</span>
+            <span className="text-[11px] text-red-600 dark:text-red-400/80">
+              need attention
+            </span>
           </div>
         )}
-        <div className="flex items-center gap-2 border border-border bg-card px-3 py-2">
+        <div className="flex items-center gap-2 border border-border bg-card px-3 py-2 transition-colors duration-200 hover:border-foreground/30">
           <Plug className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-sm font-semibold">{connections.length}</span>
+          <span className="text-sm font-bold tabular-nums">
+            {connections.length}
+          </span>
           <span className="text-[11px] text-muted-foreground">total</span>
         </div>
       </div>
@@ -728,10 +754,10 @@ export default function ConnectionsPage() {
             <button
               key={f.key}
               className={cn(
-                "px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.04em] border transition-all",
+                "px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.04em] border transition-all duration-200",
                 filter === f.key
                   ? "border-foreground bg-foreground text-background"
-                  : "border-border text-muted-foreground hover:border-foreground hover:text-foreground",
+                  : "border-border text-muted-foreground hover:border-foreground hover:text-foreground active:translate-y-px",
               )}
               onClick={() => setFilter(f.key)}
             >

@@ -115,23 +115,23 @@
    ─────────────────────────────────────────────── */
 
 .dark {
-    --background: oklch(0.115 0.005 260);
-    --foreground: oklch(0.92 0.005 260);
+    --background: oklch(0.11 0.005 260);
+    --foreground: oklch(0.93 0.004 260);
 
-    --card: oklch(0.145 0.005 260);
-    --card-foreground: oklch(0.92 0.005 260);
+    --card: oklch(0.14 0.006 260);
+    --card-foreground: oklch(0.93 0.004 260);
 
-    --popover: oklch(0.155 0.005 260);
-    --popover-foreground: oklch(0.92 0.005 260);
+    --popover: oklch(0.155 0.006 260);
+    --popover-foreground: oklch(0.93 0.004 260);
 
     --primary: oklch(0.58 0.22 25);
     --primary-foreground: oklch(0.98 0 0);
 
-    --secondary: oklch(0.18 0.005 260);
-    --secondary-foreground: oklch(0.85 0.005 260);
+    --secondary: oklch(0.175 0.005 260);
+    --secondary-foreground: oklch(0.86 0.005 260);
 
-    --muted: oklch(0.17 0.005 260);
-    --muted-foreground: oklch(0.55 0.01 260);
+    --muted: oklch(0.165 0.005 260);
+    --muted-foreground: oklch(0.56 0.01 260);
 
     --accent: oklch(0.19 0.012 20);
     --accent-foreground: oklch(0.92 0.005 260);
@@ -139,8 +139,8 @@
     --destructive: oklch(0.55 0.22 28);
     --destructive-foreground: oklch(0.98 0 0);
 
-    --border: oklch(0.23 0.006 260);
-    --input: oklch(0.2 0.005 260);
+    --border: oklch(0.22 0.006 260);
+    --input: oklch(0.19 0.005 260);
     --ring: oklch(0.58 0.22 25);
 
     --sidebar-background: oklch(0.1 0.005 260);
@@ -642,8 +642,8 @@
         overflow-x: hidden;
         font-feature-settings: "cv11", "ss01";
         transition:
-            background-color 0.3s ease,
-            color 0.2s ease;
+            background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+            color 0.25s ease;
     }
 
     /* ── Grain texture — viewport-locked, body only ── */
@@ -653,14 +653,14 @@
         inset: 0;
         pointer-events: none;
         z-index: 9999;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
         background-repeat: repeat;
         opacity: var(--noise-opacity);
         mix-blend-mode: multiply;
     }
 
     .dark body::before {
-        mix-blend-mode: overlay;
+        mix-blend-mode: soft-light;
     }
 
     /* Selection — claw red */
@@ -678,18 +678,20 @@
     :focus-visible {
         outline: 2px solid var(--claw-red);
         outline-offset: 2px;
+        transition: outline-offset 0.15s ease;
     }
 
     /* Scrollbar */
     ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+        width: 5px;
+        height: 5px;
     }
     ::-webkit-scrollbar-track {
-        background: var(--background);
+        background: transparent;
     }
     ::-webkit-scrollbar-thumb {
         background: var(--border);
+        border-radius: 0;
     }
     ::-webkit-scrollbar-thumb:hover {
         background: var(--claw-red);
@@ -698,7 +700,7 @@
     /* Firefox scrollbar */
     * {
         scrollbar-width: thin;
-        scrollbar-color: var(--border) var(--background);
+        scrollbar-color: var(--border) transparent;
     }
 
     /* Links */
@@ -942,18 +944,20 @@
     /* ── Card hover — tactile 1px press ── */
     .hover-lift {
         transition:
-            transform 0.15s ease,
-            box-shadow 0.15s ease;
+            transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+            box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .hover-lift:hover {
-        transform: translateY(-1px);
+        transform: translateY(-2px);
         box-shadow:
-            0 4px 16px oklch(0 0 0 / 8%),
+            0 6px 20px oklch(0 0 0 / 7%),
+            0 2px 6px oklch(0 0 0 / 4%),
             0 0 0 1px var(--border);
     }
     .dark .hover-lift:hover {
         box-shadow:
-            0 4px 16px oklch(0 0 0 / 20%),
+            0 6px 24px oklch(0 0 0 / 25%),
+            0 2px 8px oklch(0 0 0 / 15%),
             0 0 0 1px var(--border);
     }
 
@@ -1043,7 +1047,7 @@
 button[data-slot="button"],
 a[data-slot="button"] {
     border-radius: 0 !important;
-    transition: all 0.15s ease;
+    transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
     font-weight: 600;
     letter-spacing: 0.01em;
 }
@@ -1091,22 +1095,40 @@ a[data-slot="button"][data-variant="ghost"]:active {
     border: 1px solid var(--border);
     transition:
         background-color 0.3s ease,
-        border-color 0.15s ease;
+        border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 0.2s ease;
 }
 [data-slot="card"]:hover {
     border-color: var(--foreground);
+}
+.dark [data-slot="card"] {
+    box-shadow:
+        0 1px 2px oklch(0 0 0 / 12%),
+        inset 0 1px 0 oklch(1 0 0 / 2%) !important;
 }
 
 /* ── Inputs: zero radius, clear border, strong focus ── */
 [data-slot="input"],
 [data-slot="textarea"] {
     border-radius: 0 !important;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+[data-slot="input"]:focus,
+[data-slot="textarea"]:focus {
+    box-shadow: 0 0 0 3px var(--claw-red-glow);
 }
 
 /* ── Dialogs / Sheets: sharp, strong overlay ── */
 [data-slot="dialog-content"],
 [data-slot="sheet-content"] {
     border-radius: 0 !important;
+}
+.dark [data-slot="dialog-content"] {
+    box-shadow:
+        0 24px 64px oklch(0 0 0 / 40%),
+        0 0 0 1px oklch(1 0 0 / 4%);
 }
 
 /* ── Badges ── */
@@ -1116,6 +1138,10 @@ a[data-slot="button"][data-variant="ghost"]:active {
     letter-spacing: 0.02em;
     text-transform: uppercase;
     font-size: 11px;
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
 }
 [data-slot="badge"][data-variant="default"] {
     background: var(--claw-red);
@@ -1163,6 +1189,7 @@ a[data-slot="button"][data-variant="ghost"]:active {
     text-transform: uppercase;
     border: 1px solid;
     line-height: 1.2;
+    transition: all 0.15s ease;
 }
 
 .status-live {
@@ -1223,4 +1250,117 @@ a[data-slot="button"][data-variant="ghost"]:active {
 
 #splash-screen.hidden {
     display: none;
+}
+
+/* ═══════════════════════════════════════════════
+   Visual Polish — Micro-refinements
+   ═══════════════════════════════════════════════ */
+
+/* Subtle inner highlight on dark cards for depth */
+.dark [data-slot="card"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border: 1px solid oklch(1 0 0 / 2%);
+    z-index: 0;
+}
+
+/* Better separator visibility in dark mode */
+.dark [data-slot="separator"] {
+    background: oklch(0.24 0.006 260);
+}
+
+/* Smooth image rendering for brand logos */
+img[alt] {
+    image-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Polished dropdown menus */
+[data-slot="dropdown-menu-content"] {
+    border: 1px solid var(--border);
+    box-shadow:
+        0 8px 30px oklch(0 0 0 / 12%),
+        0 2px 8px oklch(0 0 0 / 6%);
+}
+.dark [data-slot="dropdown-menu-content"] {
+    box-shadow:
+        0 8px 30px oklch(0 0 0 / 35%),
+        0 2px 8px oklch(0 0 0 / 20%),
+        0 0 0 1px oklch(1 0 0 / 3%);
+}
+
+/* Subtle backdrop blur on header for glass-like feel */
+header.sticky {
+    -webkit-backdrop-filter: blur(20px) saturate(1.3);
+    backdrop-filter: blur(20px) saturate(1.3);
+}
+
+/* Better link underline transitions */
+a[class*="underline"] {
+    text-underline-offset: 3px;
+    transition:
+        color 0.15s ease,
+        text-decoration-color 0.15s ease;
+}
+
+/* Tooltip arrow & content styling */
+[data-slot="tooltip-content"] {
+    border-radius: 0 !important;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 16px oklch(0 0 0 / 15%);
+}
+.dark [data-slot="tooltip-content"] {
+    box-shadow: 0 4px 16px oklch(0 0 0 / 30%);
+}
+
+/* Switch polish — smooth thumb transition */
+[data-slot="switch"] {
+    transition: background-color 0.2s ease;
+}
+
+/* Select trigger focus */
+[data-slot="select-trigger"]:focus {
+    box-shadow: 0 0 0 3px var(--claw-red-glow);
+}
+
+/* Tab trigger active state */
+[data-slot="tabs-trigger"][data-state="active"] {
+    transition: all 0.15s ease;
+}
+
+/* Smooth page transitions for lazy-loaded content */
+@keyframes page-enter {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-page-enter {
+    animation: page-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Better text rendering for small text */
+.text-\[10px\],
+.text-\[11px\],
+.text-\[12px\] {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+}
+
+/* Print styles — hide noise and decorative elements */
+@media print {
+    body::before {
+        display: none !important;
+    }
+    .noise-overlay::before {
+        display: none !important;
+    }
 }
