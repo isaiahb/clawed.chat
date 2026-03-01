@@ -105,7 +105,6 @@ WorkingDirectory=/opt/clawed-chat/app
 ExecStart=/root/.bun/bin/bun run start
 Restart=always
 RestartSec=3
-Environment=NODE_ENV=production
 Environment=PATH=/root/.bun/bin:/root/.pulumi/bin:/usr/local/bin:/usr/bin:/bin
 EnvironmentFile=/opt/clawed-chat/app/.env
 
