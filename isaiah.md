@@ -26,30 +26,27 @@ All installed. Just need auth on a few:
 # - ngrok 3.35.0
 # - mentra CLI 1.0.3
 # - gcloud 558.0.0 (authed, project created)
+# - pulumi 3.224.0 (authed as isaiahb)
 
 # ⏳ Installed, need YOUR auth (interactive browser login):
-pulumi login           # → browser opens → sign in → done
 bunx convex dev        # → browser opens → create project "clawed-chat" → keep running
 ```
 
-**After you auth these two, agents can create Pulumi stacks, push Convex schema, and test functions.**
+**After you auth Convex, agents can push schema and test functions.**
 
 ---
 
 # 🔑 PART 1: CLI Auth Items (do these first, 5 min total)
 
-## ⏳ 1. Pulumi Auth — ~2 min
+## ✅ 1. Pulumi Auth — DONE
 
-Agents need this to create stacks, preview infra, and deploy.
+Authed as `isaiahb`.
 
 ```bash
-pulumi login
-# Browser opens → app.pulumi.com → sign in (GitHub OAuth easiest)
-# Done. Verify:
-pulumi whoami
+pulumi whoami  # isaiahb
 ```
 
-Then grab your access token for `.env`:
+Still need access token for `.env`:
 1. Go to [app.pulumi.com/account/tokens](https://app.pulumi.com/account/tokens)
 2. Create a token
 3. Save:
@@ -57,7 +54,7 @@ Then grab your access token for `.env`:
    PULUMI_ACCESS_TOKEN=pul-...
    ```
 
-**After this, agents can:** create stacks, set config, run `pulumi preview`, deploy infra.
+**Agents can now:** create stacks, set config, run `pulumi preview`, deploy infra.
 
 ---
 
@@ -367,7 +364,7 @@ KEY_ENCRYPTION_SECRET=            # openssl rand -hex 32
 - [x] pulumi CLI installed (v3.224.0)
 - [x] convex CLI installed (v1.32.0)
 - [x] SA key moved to `~/.config/gcloud/`
-- [ ] `pulumi login` → `pulumi whoami` works
+- [x] `pulumi whoami` → `isaiahb`
 - [ ] `bunx convex dev` → project created, schema pushed
 - [ ] Clerk app created with Google OAuth + webhook
 - [ ] Browser Use API key obtained + tested
