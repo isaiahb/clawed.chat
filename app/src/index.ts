@@ -71,21 +71,38 @@ Bun.serve({
     console: true,
   },
   routes: {
-    // Static assets — checked before the catch-all HTML route
+    // Static assets — checked before fetch()
     "/assets/*": (request: Request) => {
       const url = new URL(request.url)
       const filePath = `${publicPath}${url.pathname.replace("/assets", "")}`
       const file = Bun.file(filePath)
       return new Response(file)
     },
-    // SPA catch-all — serves bundled index.html
-    // Dev: runtime bundled with HMR
-    // Prod: lazy bundled, cached, minified. No HMR.
-    "/*": indexHtml,
+    // Serve bundled index.html at root only.
+    // Can't use "/*" here — it would swallow /api/* before fetch() sees them.
+    "/": indexHtml,
   },
-  fetch(request) {
-    // All non-matched routes (API, SDK, Mentra) go through Hono
-    return app.fetch(request)
+  async fetch(request) {
+    const url = new URL(request.url)
+
+    // API, SDK, and Mentra routes → Hono
+    if (
+      url.pathname.startsWith("/api/") ||
+      url.pathname.startsWith("/mentra/") ||
+      url.pathname.startsWith("/clerk/")
+    ) {
+      return app.fetch(request)
+    }
+
+    // Try Hono for any other registered backend routes
+    const response = await app.fetch(request)
+    if (response.status !== 404) {
+      return response
+    }
+
+    // SPA fallback — serve the bundled index.html for all other paths.
+    // This lets client-side routing handle /app/agents, /app/chat/:id, etc.
+    return new Response(Bun.file(import.meta.dir + "/frontend/index.html"))
   },
 })
 
