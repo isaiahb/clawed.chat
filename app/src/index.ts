@@ -2,10 +2,19 @@
  * clawed.chat — Fullstack Entry Point
  *
  * Dev:  bun dev        → runtime bundling + HMR
- * Prod: bun run start  → development: false, lazy cached minified bundles
+ * Prod: bun run start  → development: { hmr: false }, lazy cached minified bundles
  *
  * The server always runs from source (Bun handles TS natively).
  * bunfig.toml configures plugins (tailwind, react-dedupe) and env inlining.
+ *
+ * Routing priority in Bun.serve:
+ *   1. Exact/specific routes in `routes` (e.g. "/api/*", "/assets/*")
+ *   2. Wildcard catch-all "/*" for SPA HTML bundling
+ *   3. `fetch()` is the fallback for anything not matched by `routes`
+ *
+ * Since Bun matches more-specific routes before less-specific wildcards,
+ * "/api/*" will match before "/*", so Hono gets all API traffic while
+ * the HTML bundler handles everything else (SPA client-side routing).
  */
 
 import { ClawedChat } from "./backend/ClawedChat"
@@ -66,43 +75,49 @@ const publicPath = `${process.cwd()}/src/public/assets`
 Bun.serve({
   port: PORT,
   idleTimeout: 120,
-  development: isDevelopment && {
-    hmr: true,
-    console: true,
-  },
+  // Bun 1.3.10 needs the dev bundler pipeline active for HTML routes to work.
+  // Setting development to `false` or omitting it breaks jsxDEV at runtime.
+  // In production: keep bundler active (object, not false) but disable HMR + console.
+  // React/Clerk prod mode is controlled by NODE_ENV=production in systemd.
+  development: isDevelopment
+    ? { hmr: true, console: true }
+    : { hmr: false, console: false },
   routes: {
-    // Static assets — checked before fetch()
+    // ── Backend routes (more-specific, matched before "/*") ──────────
+    //
+    // Bun's router matches more-specific patterns first:
+    //   "/api/*" beats "/*" for any path starting with /api/
+    //   "/mentra/*" beats "/*" for any path starting with /mentra/
+    //
+    // All backend traffic is forwarded to the Hono app.
+
+    "/api/*": (request: Request) => app.fetch(request),
+    "/mentra/*": (request: Request) => app.fetch(request),
+    "/clerk/*": (request: Request) => app.fetch(request),
+
+    // ── Static assets ────────────────────────────────────────────────
+
     "/assets/*": (request: Request) => {
       const url = new URL(request.url)
       const filePath = `${publicPath}${url.pathname.replace("/assets", "")}`
-      const file = Bun.file(filePath)
-      return new Response(file)
+      return new Response(Bun.file(filePath))
     },
-    // Serve bundled index.html at root only.
-    // Can't use "/*" here — it would swallow /api/* before fetch() sees them.
-    "/": indexHtml,
+
+    // ── SPA catch-all ────────────────────────────────────────────────
+    //
+    // Serves the bundled index.html for all remaining paths.
+    // Dev:  runtime bundled with HMR
+    // Prod: lazy bundled, cached, minified (no HMR)
+    //
+    // This handles /, /app/agents, /app/chat/:id, /app/settings, etc.
+    // React Router takes over client-side after the HTML loads.
+    "/*": indexHtml,
   },
-  async fetch(request) {
-    const url = new URL(request.url)
-
-    // API, SDK, and Mentra routes → Hono
-    if (
-      url.pathname.startsWith("/api/") ||
-      url.pathname.startsWith("/mentra/") ||
-      url.pathname.startsWith("/clerk/")
-    ) {
-      return app.fetch(request)
-    }
-
-    // Try Hono for any other registered backend routes
-    const response = await app.fetch(request)
-    if (response.status !== 404) {
-      return response
-    }
-
-    // SPA fallback — serve the bundled index.html for all other paths.
-    // This lets client-side routing handle /app/agents, /app/chat/:id, etc.
-    return new Response(Bun.file(import.meta.dir + "/frontend/index.html"))
+  fetch(request) {
+    // Fallback — anything that slipped past routes goes to Hono.
+    // In practice this shouldn't be hit since "/*" catches everything,
+    // but it's here as a safety net for edge cases.
+    return app.fetch(request)
   },
 })
 
