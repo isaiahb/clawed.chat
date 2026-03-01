@@ -156,16 +156,46 @@ async function handleCallback(c: Context) {
       if (result.status === "connected") {
         console.log(`[connections] OAuth verified: service=${result.service} connectionId=${result.connectionId} user=${result.userId}`)
 
-        // Update Convex with the real connection data
+        // Update Convex with the real connection data.
+        // The entityId from Composio may be empty, so we look up the user
+        // by the composio_connection_id we stored during the initiate step.
         const db = getConvex()
-        if (result.userId) {
+
+        // First try: use entityId from Composio (our Clerk userId)
+        let userId = result.userId
+
+        // Fallback: search all connections for this composio_connection_id
+        // (we stored it during POST /:service/connect)
+        if (!userId) {
+          try {
+            const allConnections = await db.query(api.connections.listByUser, {user_id: ""})
+            // Can't search all users easily, so search by the connection ID we stored
+            // The composio_connection_id was set during initiate — find which user owns it
+          } catch {}
+        }
+
+        // If we still don't have a userId, update by scanning for the composio_connection_id
+        // Since we stored it during initiate, we can find the matching record
+        if (!userId) {
+          // Use the connectedAccountId to find and update the existing record directly
+          // We need a mutation that updates by composio_connection_id instead of user_id
+          console.log(`[connections] No entityId from Composio, updating by composio_connection_id=${connectedAccountId}`)
+          try {
+            await db.mutation(api.connections.updateByComposioId, {
+              composio_connection_id: connectedAccountId,
+              status: "connected" as const,
+              permissions: result.permissions || [],
+            })
+          } catch (err: any) {
+            console.error(`[connections] updateByComposioId failed:`, err.message)
+          }
+        } else {
           await db.mutation(api.connections.upsert, {
-            user_id: result.userId,
+            user_id: userId,
             service: result.service,
             composio_connection_id: connectedAccountId,
             status: "connected" as const,
             permissions: result.permissions || [],
-            connected_at: Date.now(),
           })
         }
 

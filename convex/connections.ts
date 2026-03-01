@@ -7,15 +7,15 @@
  * Reference: Design Doc 04
  */
 
-import {v} from "convex/values"
-import {mutation, query} from "./_generated/server"
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 
 const connectionStatus = v.union(
   v.literal("connected"),
   v.literal("disconnected"),
   v.literal("expired"),
   v.literal("error"),
-)
+);
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
@@ -32,7 +32,7 @@ export const listByUser = query({
       .withIndex("by_user_id", (q) => q.eq("user_id", args.user_id))
       .collect();
   },
-})
+});
 
 /**
  * Get a specific connection by user + service.
@@ -50,7 +50,7 @@ export const getByUserService = query({
       )
       .unique();
   },
-})
+});
 
 /**
  * Get a connection by its Convex document ID.
@@ -62,7 +62,7 @@ export const get = query({
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
   },
-})
+});
 
 // ─── Mutations ───────────────────────────────────────────────────────────────
 
@@ -90,7 +90,8 @@ export const upsert = mutation({
       await ctx.db.patch(existing._id, {
         composio_connection_id: args.composio_connection_id,
         status: args.status,
-        connected_at: args.status === "connected" ? Date.now() : existing.connected_at,
+        connected_at:
+          args.status === "connected" ? Date.now() : existing.connected_at,
         permissions: args.permissions,
       });
       return existing._id;
@@ -105,21 +106,56 @@ export const upsert = mutation({
       permissions: args.permissions,
     });
   },
-})
+});
 
 /**
  * Update just the status of a connection.
  * Used when a connection expires or errors out.
  */
+/**
+ * Update a connection by its composio_connection_id.
+ * Used in the OAuth callback when we don't have the user's auth context
+ * but we know which composio session completed.
+ */
+export const updateByComposioId = mutation({
+  args: {
+    composio_connection_id: v.string(),
+    status: connectionStatus,
+    permissions: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Scan all connections to find the one with this composio_connection_id
+    const all = await ctx.db.query("connections").collect();
+    const match = all.find(
+      (c) => c.composio_connection_id === args.composio_connection_id,
+    );
+
+    if (!match) {
+      throw new Error(
+        `No connection found with composio_connection_id=${args.composio_connection_id}`,
+      );
+    }
+
+    await ctx.db.patch(match._id, {
+      status: args.status,
+      connected_at:
+        args.status === "connected" ? Date.now() : match.connected_at,
+      permissions: args.permissions,
+    });
+
+    return match._id;
+  },
+});
+
 export const updateStatus = mutation({
   args: {
     id: v.id("connections"),
     status: connectionStatus,
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, {status: args.status});
+    await ctx.db.patch(args.id, { status: args.status });
   },
-})
+});
 
 /**
  * Delete a connection record entirely.
@@ -132,4 +168,4 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
   },
-})
+});
