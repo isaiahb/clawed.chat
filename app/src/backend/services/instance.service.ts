@@ -30,8 +30,10 @@
 
 import {ConvexHttpClient} from "convex/browser"
 import {api} from "../../../../convex/_generated/api"
-import * as pulumi from "./instance.pulumi"
 import * as openclaw from "./openclaw.service"
+
+// Lazy-load Pulumi — uses node:v8 internally which Bun doesn't support at import time
+const getPulumi = () => import("./instance.pulumi")
 
 // ─── Convex Client ───────────────────────────────────────────────────────────
 
@@ -141,6 +143,7 @@ export async function stop(instanceId: string): Promise<void> {
 
   try {
     // Call GCP to stop the VM
+    const pulumi = await getPulumi()
     await pulumi.stopVM(instance.gcp_vm_name, instance.gcp_zone || undefined)
 
     // Wait a bit for the stop to take effect
@@ -188,6 +191,7 @@ export async function start(instanceId: string): Promise<void> {
 
   try {
     // Call GCP to start the VM
+    const pulumi = await getPulumi()
     await pulumi.startVM(instance.gcp_vm_name, instance.gcp_zone || undefined)
 
     // Wait for the OpenClaw gateway to become reachable
@@ -236,6 +240,7 @@ export async function destroy(instanceId: string): Promise<void> {
 
   try {
     // Destroy the Pulumi stack (VM + DNS)
+    const pulumi = await getPulumi()
     await pulumi.destroyStack(instance.user_id)
 
     // Clear chat messages for this instance
@@ -280,6 +285,7 @@ async function provisionAsync(
   console.log(`[instance] provisioning: instance=${instanceId} user=${userId}`)
 
   // Run Pulumi Automation API
+  const pulumi = await getPulumi()
   const result = await pulumi.deployStack(userId, {
     llmProvider: config.llmProvider,
     apiKey: config.apiKey,
