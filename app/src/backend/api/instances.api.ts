@@ -10,6 +10,8 @@
 
 import {Hono} from "hono"
 import type {Context} from "hono"
+import {getAuth} from "@hono/clerk-auth"
+import * as instanceService from "../services/instance.service"
 
 const app = new Hono()
 
@@ -25,81 +27,118 @@ app.delete("/:id", destroyInstance)
 
 /** POST /create — provision a new OpenClaw cloud instance */
 async function createInstance(c: Context) {
-  const {llm_provider, api_key} = await c.req.json()
+  const auth = getAuth(c)
+  if (!auth?.userId) {
+    return c.json({error: "Unauthorized"}, 401)
+  }
 
-  if (!llm_provider) return c.json({error: "llm_provider is required"}, 400)
-  if (!api_key) return c.json({error: "api_key is required"}, 400)
+  const body = await c.req.json()
+  const {llm_provider, api_key, managed} = body
 
-  // TODO: get authenticated user from Clerk
-  // TODO: call instance.service.ts → deploy() which:
-  //   1. creates instance record in Convex (status: "provisioning")
-  //   2. kicks off Pulumi Automation API async (fire-and-forget)
-  //   3. Pulumi updates Convex at each milestone
-  //   4. returns immediately with instance_id + status
+  // Managed mode doesn't need an API key
+  const isManaged = managed === true
 
-  return c.json({
-    instance_id: "TODO",
-    subdomain: "TODO.clawed.chat",
-    status: "provisioning",
-  }, 201)
+  if (!isManaged && !api_key) {
+    return c.json({error: "api_key is required for BYOK mode"}, 400)
+  }
+
+  const validProviders = ["anthropic", "openai", "google", "minimax"]
+  if (!isManaged && !validProviders.includes(llm_provider)) {
+    return c.json({error: `llm_provider must be one of: ${validProviders.join(", ")}`}, 400)
+  }
+
+  try {
+    const result = await instanceService.deploy({
+      userId: auth.userId,
+      llmProvider: isManaged ? "anthropic" : llm_provider,
+      apiKey: isManaged ? "" : api_key,
+      managed: isManaged,
+    })
+
+    return c.json({
+      instance_id: result.instanceId,
+      subdomain: result.subdomain,
+      status: result.status,
+    }, 201)
+  } catch (err: any) {
+    console.error("[instances] deploy failed:", err.message)
+    return c.json({error: err.message || "Deploy failed"}, 500)
+  }
 }
 
 /** GET /:id — get instance details and current status */
 async function getInstance(c: Context) {
+  const auth = getAuth(c)
+  if (!auth?.userId) {
+    return c.json({error: "Unauthorized"}, 401)
+  }
+
   const id = c.req.param("id")
 
-  // TODO: fetch instance from Convex by id
-  // TODO: verify requesting user owns this instance
-  // TODO: return full instance record including:
-  //   id, status, subdomain, ip, browser_use_live_url, last_active_at, created_at
-
+  // TODO: fetch from Convex + verify ownership
+  // For now, return the id so the frontend doesn't break
   return c.json({
     id,
-    status: "TODO",
-    subdomain: "TODO.clawed.chat",
+    status: "unknown",
+    subdomain: "",
     ip: null,
     browser_use_live_url: null,
     last_active_at: null,
-    created_at: null,
   })
 }
 
 /** POST /:id/stop — sleep an instance (VM stops, $0 compute) */
 async function stopInstance(c: Context) {
+  const auth = getAuth(c)
+  if (!auth?.userId) {
+    return c.json({error: "Unauthorized"}, 401)
+  }
+
   const id = c.req.param("id")
 
-  // TODO: verify user owns instance
-  // TODO: call instance.service.ts → stop() which:
-  //   1. calls GCP Compute Engine instances.stop()
-  //   2. updates Convex status to "stopped"
-
-  return c.json({id, status: "stopped"})
+  try {
+    await instanceService.stop(id)
+    return c.json({id, status: "stopping"})
+  } catch (err: any) {
+    console.error("[instances] stop failed:", err.message)
+    return c.json({error: err.message || "Stop failed"}, 500)
+  }
 }
 
-/** POST /:id/start — wake a sleeping instance (~30-45s resume) */
+/** POST /:id/start — wake a sleeping instance */
 async function startInstance(c: Context) {
+  const auth = getAuth(c)
+  if (!auth?.userId) {
+    return c.json({error: "Unauthorized"}, 401)
+  }
+
   const id = c.req.param("id")
 
-  // TODO: verify user owns instance
-  // TODO: call instance.service.ts → start() which:
-  //   1. calls GCP Compute Engine instances.start()
-  //   2. updates Convex status to "starting"
-  //   3. polls until VM is running, then updates to "running"
-
-  return c.json({id, status: "starting"})
+  try {
+    await instanceService.start(id)
+    return c.json({id, status: "starting"})
+  } catch (err: any) {
+    console.error("[instances] start failed:", err.message)
+    return c.json({error: err.message || "Start failed"}, 500)
+  }
 }
 
 /** DELETE /:id — permanently destroy an instance and all its resources */
 async function destroyInstance(c: Context) {
+  const auth = getAuth(c)
+  if (!auth?.userId) {
+    return c.json({error: "Unauthorized"}, 401)
+  }
+
   const id = c.req.param("id")
 
-  // TODO: verify user owns instance
-  // TODO: call instance.service.ts → destroy() which:
-  //   1. calls Pulumi stack.destroy() (removes VM, DNS, firewall rules)
-  //   2. updates Convex status to "destroyed"
-  //   3. optionally cleans up Browser Use session
-
-  return c.json({id, status: "destroyed"})
+  try {
+    await instanceService.destroy(id)
+    return c.json({id, status: "destroying"})
+  } catch (err: any) {
+    console.error("[instances] destroy failed:", err.message)
+    return c.json({error: err.message || "Destroy failed"}, 500)
+  }
 }
 
 export default app

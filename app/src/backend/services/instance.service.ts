@@ -6,56 +6,62 @@
  *
  * Flow for deploy:
  *   1. Create instance record in Convex (status: "provisioning")
- *   2. Create Browser Use session (get cdpUrl + live_url)
- *   3. Kick off Pulumi Automation API (VM + DNS) — async, fire-and-forget
- *   4. Pulumi updates Convex at each milestone (vm_created, dns_set, running)
- *   5. Return immediately with instance_id + status
+ *   2. Generate subdomain from user info
+ *   3. Kick off Pulumi Automation API (VM + DNS) — async
+ *   4. Pulumi creates VM + DNS, returns IP + tokens
+ *   5. Update Convex with VM details (ip, vm_name, tokens, status: "running")
  *
  * Flow for stop (sleep):
  *   1. Update Convex status to "stopping"
- *   2. Call GCP Compute Engine instances.stop()
+ *   2. Call GCP Compute Engine instances.stop() via Pulumi helper
  *   3. Update Convex status to "stopped"
  *
  * Flow for start (wake):
  *   1. Update Convex status to "starting"
- *   2. Call GCP Compute Engine instances.start()
- *   3. Poll until VM is running
+ *   2. Call GCP Compute Engine instances.start() via Pulumi helper
+ *   3. Wait for gateway to become reachable
  *   4. Update Convex status to "running"
  *
  * Flow for destroy:
  *   1. Update Convex status to "destroying"
- *   2. Call Pulumi stack.destroy() (removes VM, DNS, firewall — everything)
- *   3. Tear down Browser Use session
- *   4. Update Convex status to "destroyed"
+ *   2. Call Pulumi stack.destroy() (removes VM, DNS — everything)
+ *   3. Update Convex status to "destroyed"
  */
 
-// TODO: import {ConvexHttpClient} from "convex/browser"
-// TODO: import * as pulumi from "./instance.pulumi"
-// TODO: import * as browseruse from "./browseruse.service"
-// TODO: import * as dns from "./dns.service"
+import {ConvexHttpClient} from "convex/browser"
+import {api} from "../../../../convex/_generated/api"
+import * as pulumi from "./instance.pulumi"
+import * as openclaw from "./openclaw.service"
+
+// ─── Convex Client ───────────────────────────────────────────────────────────
+
+const CONVEX_URL = process.env.CONVEX_URL || ""
+const convex = CONVEX_URL ? new ConvexHttpClient(CONVEX_URL) : null
+
+function getConvex(): ConvexHttpClient {
+  if (!convex) {
+    throw new Error("[instance] CONVEX_URL not configured")
+  }
+  return convex
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface DeployConfig {
+  /** Clerk user ID */
   userId: string
+  /** LLM provider — "anthropic", "openai", "google", "minimax" */
   llmProvider: "anthropic" | "openai" | "google" | "minimax"
+  /** User's LLM API key (BYOK) — empty for managed mode */
   apiKey: string
+  /** Whether to use managed credits (our LLM proxy) instead of BYOK */
+  managed: boolean
 }
 
 export interface DeployResult {
   instanceId: string
   subdomain: string
   status: "provisioning"
-}
-
-export interface InstanceStatus {
-  id: string
-  status: "provisioning" | "running" | "stopped" | "stopping" | "starting" | "destroying" | "destroyed" | "error"
-  subdomain: string
-  ip: string | null
-  browserUseLiveUrl: string | null
-  lastActiveAt: string | null
-  createdAt: string
 }
 
 // ─── Deploy ──────────────────────────────────────────────────────────────────
@@ -67,42 +73,46 @@ export interface InstanceStatus {
  * The dashboard subscribes to Convex real-time updates to show progress.
  */
 export async function deploy(config: DeployConfig): Promise<DeployResult> {
-  const {userId, llmProvider, apiKey} = config
+  const {userId, llmProvider, apiKey, managed} = config
+  const db = getConvex()
 
-  // TODO: Step 1 — create instance record in Convex
-  //   const instanceId = await convex.mutation(api.instances.create, {
-  //     userId,
-  //     type: "cloud",
-  //     llmProvider,
-  //     status: "provisioning",
-  //     subdomain: generateSubdomain(userId),
-  //   })
+  // Generate a clean subdomain
+  const subdomain = generateSubdomain(userId)
+  const fullSubdomain = `${subdomain}.clawed.chat`
 
-  // TODO: Step 2 — create Browser Use session
-  //   const browserSession = await browseruse.createSession()
-  //   await convex.mutation(api.instances.update, {
-  //     id: instanceId,
-  //     browserUseSessionId: browserSession.browserId,
-  //     browserUseLiveUrl: browserSession.liveUrl,
-  //   })
+  // Step 1: Create instance record in Convex
+  const instanceId = await db.mutation(api.instances.create, {
+    user_id: userId,
+    type: "cloud",
+    subdomain: fullSubdomain,
+    llm_provider: managed ? "anthropic" : llmProvider,
+    status: "provisioning",
+  })
 
-  // TODO: Step 3 — kick off Pulumi async (fire-and-forget)
-  //   provisionAsync(instanceId, userId, {
-  //     llmProvider,
-  //     apiKey,
-  //     cdpUrl: browserSession.cdpUrl,
-  //   }).catch((err) => {
-  //     console.error(`[instance] provision failed: instance=${instanceId}`, err)
-  //     convex.mutation(api.instances.updateStatus, {id: instanceId, status: "error"})
-  //   })
+  console.log(`[instance] deploy started: user=${userId} instance=${instanceId} subdomain=${fullSubdomain} managed=${managed}`)
 
-  const subdomain = `${userId}.clawed.chat`
-
-  console.log(`[instance] deploy started: user=${userId} subdomain=${subdomain}`)
+  // Step 2: Kick off Pulumi async (fire-and-forget)
+  // The dashboard sees real-time updates via Convex subscription
+  provisionAsync(instanceId, userId, {
+    llmProvider: managed ? "anthropic" : llmProvider,
+    apiKey: managed ? "" : apiKey,
+    managed,
+    subdomain,
+  }).catch(async (err) => {
+    console.error(`[instance] provision failed: instance=${instanceId}`, err)
+    try {
+      await db.mutation(api.instances.updateStatus, {
+        id: instanceId,
+        status: "error",
+      })
+    } catch (convexErr) {
+      console.error(`[instance] failed to update error status:`, convexErr)
+    }
+  })
 
   return {
-    instanceId: "TODO",
-    subdomain,
+    instanceId,
+    subdomain: fullSubdomain,
     status: "provisioning",
   }
 }
@@ -114,13 +124,43 @@ export async function deploy(config: DeployConfig): Promise<DeployResult> {
  * Resume with start(). Takes effect in ~10-15 seconds.
  */
 export async function stop(instanceId: string): Promise<void> {
-  // TODO: fetch instance from Convex to get gcp_vm_name + gcp_zone
-  // TODO: update Convex status to "stopping"
-  // TODO: call GCP Compute Engine:
-  //   await compute.instances.stop({project: GCP_PROJECT, zone, instance: vmName})
-  // TODO: update Convex status to "stopped"
+  const db = getConvex()
 
-  console.log(`[instance] stop: instance=${instanceId}`)
+  // Fetch instance details
+  const instance = await db.query(api.instances.get, {id: instanceId as any})
+  if (!instance) throw new Error(`[instance] not found: ${instanceId}`)
+  if (!instance.gcp_vm_name) throw new Error(`[instance] no VM name for: ${instanceId}`)
+
+  console.log(`[instance] stopping: ${instanceId} vm=${instance.gcp_vm_name}`)
+
+  // Update status
+  await db.mutation(api.instances.updateStatus, {
+    id: instanceId as any,
+    status: "stopping",
+  })
+
+  try {
+    // Call GCP to stop the VM
+    await pulumi.stopVM(instance.gcp_vm_name, instance.gcp_zone || undefined)
+
+    // Wait a bit for the stop to take effect
+    await sleep(5000)
+
+    // Update status to stopped
+    await db.mutation(api.instances.updateStatus, {
+      id: instanceId as any,
+      status: "stopped",
+    })
+
+    console.log(`[instance] stopped: ${instanceId}`)
+  } catch (err) {
+    console.error(`[instance] stop failed: ${instanceId}`, err)
+    await db.mutation(api.instances.updateStatus, {
+      id: instanceId as any,
+      status: "error",
+    })
+    throw err
+  }
 }
 
 // ─── Start (Wake) ────────────────────────────────────────────────────────────
@@ -130,33 +170,96 @@ export async function stop(instanceId: string): Promise<void> {
  * Called explicitly or auto-triggered when a chat message arrives for a sleeping instance.
  */
 export async function start(instanceId: string): Promise<void> {
-  // TODO: fetch instance from Convex to get gcp_vm_name + gcp_zone
-  // TODO: update Convex status to "starting"
-  // TODO: call GCP Compute Engine:
-  //   await compute.instances.start({project: GCP_PROJECT, zone, instance: vmName})
-  // TODO: poll until VM status is RUNNING (with timeout)
-  // TODO: update Convex status to "running"
+  const db = getConvex()
 
-  console.log(`[instance] start: instance=${instanceId}`)
+  // Fetch instance details
+  const instance = await db.query(api.instances.get, {id: instanceId as any})
+  if (!instance) throw new Error(`[instance] not found: ${instanceId}`)
+  if (!instance.gcp_vm_name) throw new Error(`[instance] no VM name for: ${instanceId}`)
+  if (!instance.ip) throw new Error(`[instance] no IP for: ${instanceId}`)
+
+  console.log(`[instance] starting: ${instanceId} vm=${instance.gcp_vm_name}`)
+
+  // Update status
+  await db.mutation(api.instances.updateStatus, {
+    id: instanceId as any,
+    status: "starting",
+  })
+
+  try {
+    // Call GCP to start the VM
+    await pulumi.startVM(instance.gcp_vm_name, instance.gcp_zone || undefined)
+
+    // Wait for the OpenClaw gateway to become reachable
+    await openclaw.waitForGateway(instance.ip)
+
+    // Update status to running
+    await db.mutation(api.instances.updateStatus, {
+      id: instanceId as any,
+      status: "running",
+    })
+
+    // Touch last_active_at
+    await db.mutation(api.instances.touch, {id: instanceId as any})
+
+    console.log(`[instance] started: ${instanceId}`)
+  } catch (err) {
+    console.error(`[instance] start failed: ${instanceId}`, err)
+    await db.mutation(api.instances.updateStatus, {
+      id: instanceId as any,
+      status: "error",
+    })
+    throw err
+  }
 }
 
 // ─── Destroy ─────────────────────────────────────────────────────────────────
 
 /**
- * Permanently destroy an instance — removes VM, DNS record, firewall rules.
+ * Permanently destroy an instance — removes VM, DNS record, all resources.
  * This is irreversible.
  */
 export async function destroy(instanceId: string): Promise<void> {
-  // TODO: fetch instance from Convex to get userId (for Pulumi stack name)
-  // TODO: update Convex status to "destroying"
-  // TODO: call Pulumi stack.destroy() via instance.pulumi.ts
-  // TODO: tear down Browser Use session via browseruse.service.ts
-  // TODO: update Convex status to "destroyed"
+  const db = getConvex()
 
-  console.log(`[instance] destroy: instance=${instanceId}`)
+  // Fetch instance details
+  const instance = await db.query(api.instances.get, {id: instanceId as any})
+  if (!instance) throw new Error(`[instance] not found: ${instanceId}`)
+
+  console.log(`[instance] destroying: ${instanceId}`)
+
+  // Update status
+  await db.mutation(api.instances.updateStatus, {
+    id: instanceId as any,
+    status: "destroying",
+  })
+
+  try {
+    // Destroy the Pulumi stack (VM + DNS)
+    await pulumi.destroyStack(instance.user_id)
+
+    // Clear chat messages for this instance
+    await db.mutation(api.chatMessages.clearByInstance, {
+      instance_id: instanceId,
+    })
+
+    // Mark as destroyed in Convex
+    await db.mutation(api.instances.markDestroyed, {
+      id: instanceId as any,
+    })
+
+    console.log(`[instance] destroyed: ${instanceId}`)
+  } catch (err) {
+    console.error(`[instance] destroy failed: ${instanceId}`, err)
+    await db.mutation(api.instances.updateStatus, {
+      id: instanceId as any,
+      status: "error",
+    })
+    throw err
+  }
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Async Provisioning ──────────────────────────────────────────────────────
 
 /**
  * Async provisioning — runs Pulumi, updates Convex at each step.
@@ -165,33 +268,61 @@ export async function destroy(instanceId: string): Promise<void> {
 async function provisionAsync(
   instanceId: string,
   userId: string,
-  config: {llmProvider: string, apiKey: string, cdpUrl: string},
+  config: {
+    llmProvider: string
+    apiKey: string
+    managed: boolean
+    subdomain: string
+  },
 ): Promise<void> {
-  // TODO: Step 1 — run Pulumi Automation API (instance.pulumi.ts)
-  //   const result = await pulumi.deployStack(userId, {
-  //     cdpUrl: config.cdpUrl,
-  //     llmProvider: config.llmProvider,
-  //     apiKey: config.apiKey,
-  //   })
+  const db = getConvex()
 
-  // TODO: Step 2 — update Convex with VM details
-  //   await convex.mutation(api.instances.update, {
-  //     id: instanceId,
-  //     ip: result.ip,
-  //     gcpVmName: result.vmName,
-  //     gcpZone: GCP_ZONE,
-  //     status: "running",
-  //   })
+  console.log(`[instance] provisioning: instance=${instanceId} user=${userId}`)
 
-  console.log(`[instance] provision complete: instance=${instanceId} user=${userId}`)
+  // Run Pulumi Automation API
+  const result = await pulumi.deployStack(userId, {
+    llmProvider: config.llmProvider,
+    apiKey: config.apiKey,
+    managed: config.managed,
+    subdomain: config.subdomain,
+  })
+
+  console.log(`[instance] VM created: ip=${result.ip} vm=${result.vmName}`)
+
+  // Update Convex with VM details
+  await db.mutation(api.instances.updateDetails, {
+    id: instanceId as any,
+    ip: result.ip,
+    gcp_vm_name: result.vmName,
+    gcp_zone: process.env.GCP_ZONE || "us-west1-a",
+    status: "running",
+  })
+
+  // Touch last_active_at
+  await db.mutation(api.instances.touch, {id: instanceId as any})
+
+  console.log(`[instance] provisioning complete: instance=${instanceId} ip=${result.ip}`)
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 /**
- * Generate a subdomain from a userId. For hackathon, just use a slug.
+ * Generate a subdomain from a userId.
+ * For hackathon, create a short clean slug.
  * Production would need collision detection + Convex uniqueness check.
  */
 function generateSubdomain(userId: string): string {
-  // TODO: generate a clean slug from Clerk user data (name, email, etc.)
-  // For now, just sanitize the userId
-  return userId.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 32)
+  // Clerk user IDs look like "user_2abc123def"
+  // Take the last 8 chars for a short unique slug
+  const slug = userId
+    .replace(/^user_/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .slice(-8)
+
+  return slug || `u${Date.now().toString(36)}`
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
