@@ -23,7 +23,7 @@ const navItems = [
   { label: "Docs", href: "/docs" },
 ];
 
-// ── Claw Logo SVG ──
+// ── Claw Logo SVG — sharp square, no rounded corners ──
 function ClawLogo({ className }: { className?: string }) {
   return (
     <svg
@@ -37,8 +37,8 @@ function ClawLogo({ className }: { className?: string }) {
         y={-18}
         width={36}
         height={36}
-        rx={8}
-        className="fill-[oklch(0.10_0.004_260)] dark:fill-[oklch(0.10_0.004_260)]"
+        rx={0}
+        className="fill-claw-black"
       />
       <g transform="scale(0.85)">
         {/* Bottom jaw */}
@@ -106,15 +106,15 @@ function NavLinks({
             to={item.href}
             onClick={onClick}
             className={cn(
-              "text-[13px] font-medium transition-colors relative",
+              "text-[13px] font-semibold tracking-[0.01em] transition-colors relative py-1",
               isActive
                 ? "text-foreground"
-                : "text-neutral-500 hover:text-foreground",
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             {item.label}
             {isActive && (
-              <span className="absolute -bottom-1 left-0 right-0 h-px bg-claw-red/50" />
+              <span className="absolute -bottom-0.5 left-0 right-0 h-[2px] bg-claw-red" />
             )}
           </Link>
         );
@@ -135,13 +135,13 @@ function HeaderThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="flex h-8 w-8 items-center justify-center rounded-full border border-[oklch(0.28_0.006_260)] bg-transparent transition-all hover:border-[oklch(0.35_0.008_260)] hover:bg-[oklch(0.18_0.004_260)] active:scale-90"
+      className="flex h-8 w-8 items-center justify-center border border-border bg-transparent transition-all hover:bg-muted hover:border-foreground active:translate-y-px"
       aria-label="Toggle theme"
     >
       {isDark ? (
-        <Sun className="h-3.5 w-3.5 text-neutral-400" />
+        <Sun className="h-3.5 w-3.5 text-muted-foreground" />
       ) : (
-        <Moon className="h-3.5 w-3.5 text-neutral-500" />
+        <Moon className="h-3.5 w-3.5 text-muted-foreground" />
       )}
     </button>
   );
@@ -151,12 +151,12 @@ function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[oklch(0.22_0.005_260/0.5)] bg-background/85 backdrop-blur-2xl transition-theme">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur-xl transition-theme">
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link to="/" className="group flex items-center gap-2.5">
-          <ClawLogo className="transition-transform group-hover:scale-110 group-hover:rotate-[-5deg]" />
-          <span className="text-lg font-black tracking-tight text-gradient-red">
+          <ClawLogo className="transition-transform group-hover:scale-105" />
+          <span className="text-base font-black tracking-tight text-gradient-red">
             Clawed
           </span>
         </Link>
@@ -165,20 +165,20 @@ function SiteHeader() {
         <NavLinks className="hidden items-center gap-8 md:flex" />
 
         {/* Desktop actions */}
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-2 md:flex">
           <HeaderThemeToggle />
           <Button
             variant="ghost"
             size="sm"
             asChild
-            className="text-neutral-500 hover:text-foreground text-[13px] font-medium"
+            className="text-muted-foreground hover:text-foreground text-[13px]"
           >
             <Link to="/sign-in">Sign in</Link>
           </Button>
           <Button
             size="sm"
             asChild
-            className="gap-1.5 bg-claw-red hover:bg-claw-red-bright text-white font-semibold transition-all text-[13px] rounded-lg shadow-sm shadow-claw-red/10 hover:shadow-claw-red/20"
+            className="gap-1.5 bg-claw-red hover:bg-claw-red-bright text-white text-[13px] h-8 px-4"
           >
             <Link to="/sign-in">
               Deploy agent
@@ -197,7 +197,7 @@ function SiteHeader() {
           </SheetTrigger>
           <SheetContent
             side="right"
-            className="w-[300px] sm:w-[360px] bg-background border-[oklch(0.22_0.005_260)]"
+            className="w-[300px] sm:w-[360px] bg-background border-border"
           >
             <div className="flex flex-col gap-6 pt-6">
               <div className="flex items-center justify-between">
@@ -207,44 +207,40 @@ function SiteHeader() {
                   onClick={() => setMobileOpen(false)}
                 >
                   <ClawLogo />
-                  <span className="text-lg font-black text-gradient-red">
+                  <span className="text-base font-black text-gradient-red">
                     Clawed
                   </span>
                 </Link>
               </div>
 
-              <div className="h-px bg-[oklch(0.22_0.005_260)]" />
+              <div className="h-px bg-border" />
 
               <NavLinks
                 onClick={() => setMobileOpen(false)}
                 className="flex flex-col gap-5"
               />
 
-              <div className="h-px bg-[oklch(0.22_0.005_260)]" />
+              <div className="h-px bg-border" />
 
               {/* Theme toggle in mobile */}
               <div className="flex items-center justify-between">
-                <span className="text-sm text-neutral-500 font-medium">
+                <span className="text-sm text-muted-foreground font-medium">
                   Theme
                 </span>
                 <HeaderThemeToggle />
               </div>
 
-              <div className="h-px bg-[oklch(0.22_0.005_260)]" />
+              <div className="h-px bg-border" />
 
               <div className="flex flex-col gap-3">
-                <Button
-                  variant="outline"
-                  asChild
-                  className="border-[oklch(0.26_0.006_260)] hover:bg-[oklch(0.16_0.004_260)] hover:border-[oklch(0.30_0.008_260)] font-medium rounded-lg"
-                >
+                <Button variant="outline" asChild>
                   <Link to="/sign-in" onClick={() => setMobileOpen(false)}>
                     Sign in
                   </Link>
                 </Button>
                 <Button
                   asChild
-                  className="bg-claw-red hover:bg-claw-red-bright text-white font-semibold gap-1.5 shadow-sm shadow-claw-red/10 rounded-lg"
+                  className="bg-claw-red hover:bg-claw-red-bright text-white gap-1.5"
                 >
                   <Link to="/sign-in" onClick={() => setMobileOpen(false)}>
                     Deploy agent
@@ -261,12 +257,16 @@ function SiteHeader() {
 }
 
 // ── Footer ──
-// Clean, modern dark grey footer with 4-column layout and polished CTA
+// Blocky, structured, mission-control feel.
+// Hard borders, no rounded corners, clear grid.
 
 function SiteFooter() {
   const currentYear = new Date().getFullYear();
 
-  const footerLinks = {
+  const footerLinks: Record<
+    string,
+    { label: string; href: string; external?: boolean }[]
+  > = {
     Product: [
       { label: "Smart Glasses", href: "/glasses" },
       { label: "Pricing", href: "/pricing" },
@@ -290,31 +290,28 @@ function SiteFooter() {
   };
 
   return (
-    <footer className="relative border-t border-[oklch(0.20_0.005_260/0.6)] bg-[oklch(0.10_0.003_260)] transition-theme">
-      {/* Top accent line */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-claw-red/15 to-transparent" />
-
+    <footer className="relative border-t border-border bg-card transition-theme">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Newsletter / CTA strip */}
-        <div className="py-10 sm:py-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border-b border-[oklch(0.18_0.005_260)]">
+        {/* CTA strip */}
+        <div className="py-8 sm:py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border-b border-border">
           <div className="flex items-start gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-claw-red/8 border border-claw-red/10">
-              <Zap className="h-4.5 w-4.5 text-claw-red" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-claw-red/20 bg-claw-red/8">
+              <Zap className="h-4 w-4 text-claw-red" />
             </div>
             <div>
-              <p className="text-[15px] font-bold text-foreground">
+              <p className="text-[14px] font-semibold text-foreground">
                 Deploy your first agent today
               </p>
-              <p className="mt-0.5 text-[13px] text-neutral-500">
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
                 Free tier available. No credit card required.
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               size="sm"
               asChild
-              className="gap-1.5 bg-claw-red hover:bg-claw-red-bright text-white font-semibold text-[13px] rounded-lg shadow-sm shadow-claw-red/10 hover:shadow-claw-red/20 h-9 px-5"
+              className="gap-1.5 bg-claw-red hover:bg-claw-red-bright text-white text-[13px] h-9 px-5"
             >
               <Link to="/sign-in">
                 Get started
@@ -325,7 +322,7 @@ function SiteFooter() {
               size="sm"
               variant="outline"
               asChild
-              className="gap-1.5 border-[oklch(0.26_0.006_260)] hover:border-[oklch(0.32_0.008_260)] hover:bg-[oklch(0.14_0.004_260)] text-neutral-400 text-[13px] rounded-lg h-9 px-4"
+              className="text-[13px] h-9 px-4"
             >
               <Link to="/pricing">View pricing</Link>
             </Button>
@@ -333,30 +330,30 @@ function SiteFooter() {
         </div>
 
         {/* Main footer grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-8 lg:gap-12 py-12 sm:py-14">
-          {/* Brand column — spans 2 on mobile, 1 on lg */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-8 lg:gap-12 py-12">
+          {/* Brand column */}
           <div className="col-span-2 lg:col-span-2">
             <div className="flex items-center gap-2.5 mb-4">
               <ClawLogo className="h-7 w-7" />
               <span className="text-base font-black text-gradient-red">
                 Clawed
               </span>
-              <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded border border-claw-red/20 text-claw-red/70 font-bold uppercase tracking-widest">
+              <span className="ml-1.5 text-[9px] px-1.5 py-0.5 border border-claw-red/20 text-claw-red/70 font-bold uppercase tracking-widest">
                 Beta
               </span>
             </div>
-            <p className="text-[13px] text-neutral-500 leading-relaxed max-w-xs mb-6">
+            <p className="text-[13px] text-muted-foreground leading-relaxed max-w-xs mb-6">
               Deploy your AI agent in 30 seconds. Watch it work. Talk to it on
               smart glasses. Built on OpenClaw.
             </p>
 
-            {/* Socials */}
-            <div className="flex items-center gap-1.5">
+            {/* Socials — square, blocky icons */}
+            <div className="flex items-center gap-1">
               <a
                 href="https://github.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[oklch(0.22_0.005_260)] bg-[oklch(0.13_0.004_260)] text-neutral-500 transition-all hover:border-[oklch(0.30_0.008_260)] hover:text-neutral-300 hover:bg-[oklch(0.16_0.004_260)]"
+                className="flex h-8 w-8 items-center justify-center border border-border bg-background text-muted-foreground transition-all hover:border-foreground hover:text-foreground hover:bg-muted"
               >
                 <Github className="h-3.5 w-3.5" />
               </a>
@@ -364,13 +361,13 @@ function SiteFooter() {
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[oklch(0.22_0.005_260)] bg-[oklch(0.13_0.004_260)] text-neutral-500 transition-all hover:border-[oklch(0.30_0.008_260)] hover:text-neutral-300 hover:bg-[oklch(0.16_0.004_260)]"
+                className="flex h-8 w-8 items-center justify-center border border-border bg-background text-muted-foreground transition-all hover:border-foreground hover:text-foreground hover:bg-muted"
               >
                 <Twitter className="h-3.5 w-3.5" />
               </a>
               <a
                 href="mailto:hello@clawed.chat"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[oklch(0.22_0.005_260)] bg-[oklch(0.13_0.004_260)] text-neutral-500 transition-all hover:border-[oklch(0.30_0.008_260)] hover:text-neutral-300 hover:bg-[oklch(0.16_0.004_260)]"
+                className="flex h-8 w-8 items-center justify-center border border-border bg-background text-muted-foreground transition-all hover:border-foreground hover:text-foreground hover:bg-muted"
               >
                 <Mail className="h-3.5 w-3.5" />
               </a>
@@ -380,7 +377,7 @@ function SiteFooter() {
           {/* Link sections */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4 className="text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-500 mb-4">
+              <h4 className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-4">
                 {title}
               </h4>
               <nav className="flex flex-col gap-2.5">
@@ -391,7 +388,7 @@ function SiteFooter() {
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[13px] text-neutral-500 transition-colors hover:text-foreground flex items-center gap-1.5 group w-fit"
+                      className="text-[13px] text-muted-foreground transition-colors hover:text-foreground flex items-center gap-1.5 group w-fit"
                     >
                       {link.label}
                       <ExternalLink className="h-2.5 w-2.5 opacity-0 group-hover:opacity-50 transition-opacity" />
@@ -400,7 +397,7 @@ function SiteFooter() {
                     <Link
                       key={link.label}
                       to={link.href}
-                      className="text-[13px] text-neutral-500 transition-colors hover:text-foreground flex items-center gap-1.5 group w-fit"
+                      className="text-[13px] text-muted-foreground transition-colors hover:text-foreground flex items-center gap-1.5 group w-fit"
                     >
                       {link.label}
                       <ArrowUpRight className="h-2.5 w-2.5 opacity-0 group-hover:opacity-50 transition-opacity" />
@@ -413,19 +410,17 @@ function SiteFooter() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-[oklch(0.18_0.005_260)] py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <p className="text-[11px] text-neutral-600">
-              &copy; {currentYear} Clawed Chat
-            </p>
-            <span className="text-neutral-700">·</span>
-            <p className="text-[11px] text-neutral-600">
+        <div className="border-t border-border py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            <p>&copy; {currentYear} Clawed Chat</p>
+            <span>·</span>
+            <p>
               Powered by{" "}
               <a
                 href="https://github.com/openclaw/openclaw"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-neutral-500 hover:text-claw-red transition-colors"
+                className="hover:text-claw-red transition-colors"
               >
                 OpenClaw
               </a>
@@ -435,13 +430,13 @@ function SiteFooter() {
           <div className="flex items-center gap-4">
             <Link
               to="/docs"
-              className="text-[11px] text-neutral-600 hover:text-neutral-400 transition-colors"
+              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             >
               Privacy
             </Link>
             <Link
               to="/docs"
-              className="text-[11px] text-neutral-600 hover:text-neutral-400 transition-colors"
+              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             >
               Terms
             </Link>

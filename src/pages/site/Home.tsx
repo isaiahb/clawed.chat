@@ -81,13 +81,13 @@ function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="fixed bottom-5 right-5 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-[oklch(0.18_0.004_260)] border border-[oklch(0.28_0.006_260)] shadow-2xl shadow-black/40 transition-all hover:scale-110 hover:border-claw-red/40 active:scale-95 backdrop-blur-xl"
+      className="fixed bottom-5 right-5 z-50 flex h-10 w-10 items-center justify-center border border-border bg-card shadow-lg transition-all hover:border-foreground hover:bg-muted active:translate-y-px backdrop-blur-xl"
       aria-label="Toggle theme"
     >
       {isDark ? (
-        <Sun className="h-4 w-4 text-neutral-300" />
+        <Sun className="h-4 w-4 text-muted-foreground" />
       ) : (
-        <Moon className="h-4 w-4 text-neutral-500" />
+        <Moon className="h-4 w-4 text-muted-foreground" />
       )}
     </button>
   );
@@ -105,7 +105,7 @@ function Tag({
   icon?: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-claw-red">
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-claw-red">
       {Icon && <Icon className="h-3 w-3" />}
       {children}
     </span>
@@ -115,7 +115,7 @@ function Tag({
 function SectionDivider() {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="h-px bg-gradient-to-r from-transparent via-[oklch(0.28_0.006_260)] to-transparent" />
+      <div className="h-px bg-border" />
     </div>
   );
 }
@@ -129,8 +129,8 @@ function Hero() {
     <section className="relative overflow-hidden">
       {/* Background atmosphere */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-[10%] right-[20%] h-[600px] w-[600px] rounded-full bg-claw-red/[0.04] blur-[150px]" />
-        <div className="absolute bottom-[10%] left-[10%] h-[400px] w-[400px] rounded-full bg-claw-red/[0.02] blur-[120px]" />
+        <div className="absolute top-[10%] right-[20%] h-[600px] w-[600px] bg-claw-red/[0.04] blur-[150px]" />
+        <div className="absolute bottom-[10%] left-[10%] h-[400px] w-[400px] bg-claw-red/[0.02] blur-[120px]" />
         <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-background to-transparent" />
       </div>
 
@@ -140,12 +140,12 @@ function Hero() {
           <div className="flex flex-col max-w-xl lg:max-w-lg xl:max-w-xl order-2 lg:order-1">
             {/* Badge */}
             <div className="mb-6 animate-fade-in">
-              <span className="inline-flex items-center gap-2 rounded-full bg-claw-red/8 border border-claw-red/15 px-4 py-1.5 text-[12px] font-semibold text-claw-red backdrop-blur-sm">
+              <span className="inline-flex items-center gap-2 bg-claw-red/8 border border-claw-red/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-claw-red">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-claw-red opacity-40" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-claw-red" />
+                  <span className="absolute inline-flex h-full w-full animate-ping bg-claw-red opacity-40" />
+                  <span className="relative inline-flex h-2 w-2 bg-claw-red" />
                 </span>
-                Now in Beta
+                Beta
               </span>
             </div>
 
@@ -159,7 +159,7 @@ function Hero() {
             </h1>
 
             {/* Sub */}
-            <p className="mt-5 text-[16px] sm:text-[17px] leading-relaxed text-neutral-400 animate-fade-in [animation-delay:200ms]">
+            <p className="mt-5 text-[16px] sm:text-[17px] leading-relaxed text-muted-foreground animate-fade-in [animation-delay:200ms]">
               Clawed Chat gives you a fully deployed{" "}
               <a
                 href="https://github.com/openclaw/openclaw"
@@ -178,7 +178,7 @@ function Hero() {
               <Button
                 size="lg"
                 asChild
-                className="gap-2 px-7 h-12 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[15px] rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_30px_rgba(200,0,0,0.15)] hover:shadow-[0_0_40px_rgba(200,0,0,0.25)]"
+                className="gap-2 px-7 h-12 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[15px] transition-all active:translate-y-px"
               >
                 <Link to="/sign-in">
                   Deploy your agent
@@ -189,7 +189,7 @@ function Hero() {
                 size="lg"
                 variant="outline"
                 asChild
-                className="gap-2 px-7 h-12 rounded-xl border-[oklch(0.28_0.006_260)] hover:border-[oklch(0.35_0.008_260)] text-neutral-300 hover:text-white hover:bg-white/[0.03] font-semibold text-[15px] transition-all"
+                className="gap-2 px-7 h-12 text-muted-foreground hover:text-foreground font-semibold text-[15px] transition-all"
               >
                 <Link to="/glasses">
                   <Glasses className="h-4 w-4 text-claw-red" />
@@ -199,17 +199,17 @@ function Hero() {
             </div>
 
             {/* Trust line */}
-            <div className="mt-6 flex items-center gap-4 text-[12px] text-neutral-500 animate-fade-in [animation-delay:600ms]">
+            <div className="mt-6 flex items-center gap-4 text-[12px] text-muted-foreground animate-fade-in [animation-delay:600ms]">
               <span className="flex items-center gap-1.5">
-                <Check className="h-3 w-3 text-claw-red/60" />
+                <Check className="h-3 w-3 text-claw-red" />
                 Free tier available
               </span>
               <span className="flex items-center gap-1.5">
-                <Check className="h-3 w-3 text-claw-red/60" />
+                <Check className="h-3 w-3 text-claw-red" />
                 Smart glasses included
               </span>
               <span className="hidden sm:flex items-center gap-1.5">
-                <Check className="h-3 w-3 text-claw-red/60" />
+                <Check className="h-3 w-3 text-claw-red" />
                 No DevOps required
               </span>
             </div>
@@ -219,7 +219,7 @@ function Hero() {
           <div className="relative flex items-center justify-center order-1 lg:order-2 animate-fade-in-scale [animation-delay:300ms]">
             {/* Ambient glow behind claw */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="h-[300px] w-[300px] sm:h-[400px] sm:w-[400px] rounded-full bg-claw-red/[0.05] blur-[80px] animate-pulse-subtle" />
+              <div className="h-[300px] w-[300px] sm:h-[400px] sm:w-[400px] bg-claw-red/[0.05] blur-[80px] animate-pulse-subtle" />
             </div>
 
             {/* Orbit ring */}
@@ -301,7 +301,7 @@ function ProblemSolution() {
             <br />
             Setting it up is not.
           </h2>
-          <p className="mt-4 text-neutral-400 leading-relaxed max-w-lg">
+          <p className="mt-4 text-muted-foreground leading-relaxed max-w-lg">
             OpenClaw is the hottest open-source AI agent — it browses the web,
             manages files, sends emails, controls your desktop. Think Jarvis,
             but real and open source. The hard part? Getting it running.
@@ -309,9 +309,9 @@ function ProblemSolution() {
         </div>
 
         {/* Comparison */}
-        <div className="grid md:grid-cols-2 gap-5">
+        <div className="grid md:grid-cols-2 gap-4">
           {/* Without */}
-          <div className="rounded-2xl bg-[oklch(0.11_0.004_260)] border border-[oklch(0.22_0.006_260)] p-8 sm:p-10">
+          <div className="border border-border bg-card p-8 sm:p-10">
             <div className="flex items-center gap-2.5 mb-8">
               <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
               <span className="text-[13px] font-bold text-red-400 uppercase tracking-wider">
@@ -328,10 +328,10 @@ function ProblemSolution() {
               ].map((line, i) => (
                 <div
                   key={i}
-                  className={`font-mono text-[12px] px-4 py-2.5 rounded-lg ${
+                  className={`font-mono text-[12px] px-4 py-2.5 ${
                     line.ok
-                      ? "bg-[oklch(0.14_0.003_260)] text-neutral-500"
-                      : "bg-red-950/30 text-red-400/80 border border-red-900/20"
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-destructive/10 text-destructive border border-destructive/20"
                   }`}
                 >
                   {line.text}
@@ -348,9 +348,9 @@ function ProblemSolution() {
               ].map((item) => (
                 <div
                   key={item}
-                  className="flex items-center gap-3 text-[14px] text-neutral-500"
+                  className="flex items-center gap-3 text-[14px] text-muted-foreground"
                 >
-                  <X className="h-3.5 w-3.5 text-red-500/70 shrink-0" />
+                  <X className="h-3.5 w-3.5 text-destructive/70 shrink-0" />
                   {item}
                 </div>
               ))}
@@ -358,22 +358,22 @@ function ProblemSolution() {
           </div>
 
           {/* With */}
-          <div className="rounded-2xl bg-[oklch(0.11_0.004_260)] border border-[oklch(0.22_0.006_260)] p-8 sm:p-10 relative overflow-hidden">
-            <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-emerald-500/[0.06] blur-[60px]" />
+          <div className="border border-border bg-card p-8 sm:p-10 relative overflow-hidden">
+            <div className="absolute -top-20 -right-20 h-40 w-40 bg-emerald-500/[0.06] blur-[60px]" />
 
             <div className="flex items-center gap-2.5 mb-8 relative z-10">
-              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="h-2.5 w-2.5 bg-emerald-500 animate-pulse" />
               <span className="text-[13px] font-bold text-emerald-400 uppercase tracking-wider">
                 With Clawed Chat
               </span>
             </div>
 
-            <div className="rounded-xl bg-[oklch(0.09_0.003_260)] border border-[oklch(0.20_0.005_260)] px-5 py-4 mb-8 relative z-10">
+            <div className="border border-border bg-background px-5 py-4 mb-8 relative z-10">
               <div className="flex items-center gap-2.5 text-emerald-400 font-mono text-[13px]">
-                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="h-2 w-2 bg-emerald-500 animate-pulse" />
                 Your OpenClaw agent is live.
               </div>
-              <div className="mt-1.5 text-[11px] text-neutral-600 font-mono">
+              <div className="mt-1.5 text-[11px] text-muted-foreground font-mono">
                 Deployed in 28 seconds.
               </div>
             </div>
@@ -387,7 +387,7 @@ function ProblemSolution() {
               ].map((item) => (
                 <div
                   key={item}
-                  className="flex items-center gap-3 text-[14px] text-neutral-300"
+                  className="flex items-center gap-3 text-[14px] text-foreground"
                 >
                   <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                   {item}
@@ -433,7 +433,7 @@ function Pillars() {
             Deploy. Watch.{" "}
             <span className="text-gradient-red">Talk to your lobster.</span>
           </h2>
-          <p className="mt-4 text-neutral-400">
+          <p className="mt-4 text-muted-foreground">
             We handle the infrastructure. You focus on telling your AI what to
             do.
           </p>
@@ -443,20 +443,20 @@ function Pillars() {
           {pillars.map((p, i) => (
             <div
               key={p.title}
-              className="group rounded-2xl bg-[oklch(0.15_0.004_260)] border border-[oklch(0.24_0.006_260)] p-8 transition-all duration-300 hover:border-[oklch(0.30_0.008_260)] hover:bg-[oklch(0.16_0.005_260)]"
+              className="group border border-border bg-card p-8 transition-all duration-200 hover:border-foreground"
             >
               <div className="flex items-center gap-4 mb-6">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/12 group-hover:border-claw-red/20 transition-colors">
+                <div className="flex h-11 w-11 items-center justify-center bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/12 group-hover:border-claw-red/20 transition-colors">
                   <p.icon className="h-5 w-5 text-claw-red" />
                 </div>
-                <span className="text-[48px] font-black text-[oklch(0.20_0.004_260)] leading-none select-none group-hover:text-[oklch(0.24_0.005_260)] transition-colors">
+                <span className="text-[48px] font-black text-border leading-none select-none group-hover:text-muted-foreground transition-colors">
                   {String(i + 1).padStart(2, "0")}
                 </span>
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">
                 {p.title}
               </h3>
-              <p className="text-[14px] text-neutral-500 leading-relaxed">
+              <p className="text-[14px] text-muted-foreground leading-relaxed">
                 {p.desc}
               </p>
             </div>
@@ -502,7 +502,7 @@ function HowItWorks() {
 
   return (
     <section className="relative py-24 sm:py-32">
-      <div className="absolute inset-0 bg-[oklch(0.11_0.003_260)]" />
+      <div className="absolute inset-0 bg-muted" />
       <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <Tag icon={MousePointer}>5 steps</Tag>
@@ -514,7 +514,7 @@ function HowItWorks() {
 
         <div className="relative">
           {/* Connecting line */}
-          <div className="hidden md:block absolute top-6 left-[10%] right-[10%] h-px bg-gradient-to-r from-[oklch(0.22_0.005_260)] via-claw-red/20 to-[oklch(0.22_0.005_260)]" />
+          <div className="hidden md:block absolute top-6 left-[10%] right-[10%] h-px bg-gradient-to-r from-border via-claw-red/20 to-border" />
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 md:gap-4">
             {steps.map((step, i) => (
@@ -523,17 +523,17 @@ function HowItWorks() {
                 className="flex flex-col items-center text-center"
               >
                 <div className="relative mb-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[oklch(0.16_0.004_260)] border border-[oklch(0.26_0.006_260)] relative z-10">
+                  <div className="flex h-12 w-12 items-center justify-center bg-card border border-border relative z-10">
                     <step.icon className="h-5 w-5 text-claw-red" />
                   </div>
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-claw-red text-white text-[10px] font-bold z-20">
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center bg-claw-red text-white text-[10px] font-bold z-20">
                     {i + 1}
                   </span>
                 </div>
                 <h3 className="text-[13px] font-bold text-foreground mb-1">
                   {step.label}
                 </h3>
-                <p className="text-[12px] text-neutral-500 leading-relaxed">
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
                   {step.desc}
                 </p>
               </div>
@@ -602,7 +602,7 @@ function Capabilities() {
             Not just chat.{" "}
             <span className="text-gradient-red">Real work, done for you.</span>
           </h2>
-          <p className="mt-4 text-neutral-400 leading-relaxed">
+          <p className="mt-4 text-muted-foreground leading-relaxed">
             Your OpenClaw agent sees your screen, uses your apps, and actually
             does things. It browses, types, clicks, and thinks — you just say
             the word.
@@ -613,16 +613,16 @@ function Capabilities() {
           {capabilities.map((cap) => (
             <div
               key={cap.title}
-              className="group flex items-start gap-4 rounded-xl bg-[oklch(0.15_0.004_260)] border border-[oklch(0.22_0.005_260)] p-5 transition-all duration-200 hover:border-[oklch(0.30_0.008_260)] hover:bg-[oklch(0.17_0.005_260)]"
+              className="group flex items-start gap-4 border border-border bg-card p-5 transition-all duration-150 hover:border-foreground"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/12 transition-colors">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/12 transition-colors">
                 <cap.icon className="h-4 w-4 text-claw-red" />
               </div>
               <div className="min-w-0">
                 <h3 className="text-[13px] font-bold text-foreground mb-0.5">
                   {cap.title}
                 </h3>
-                <p className="text-[12px] text-neutral-500 leading-relaxed">
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
                   {cap.desc}
                 </p>
               </div>
@@ -641,7 +641,7 @@ function Capabilities() {
 function DeploymentOptions() {
   return (
     <section className="relative py-24 sm:py-32">
-      <div className="absolute inset-0 bg-[oklch(0.11_0.003_260)]" />
+      <div className="absolute inset-0 bg-muted" />
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <Tag icon={Server}>Deploy your way</Tag>
@@ -653,28 +653,28 @@ function DeploymentOptions() {
 
         <div className="grid md:grid-cols-2 gap-5">
           {/* Cloud */}
-          <div className="group rounded-2xl bg-[oklch(0.14_0.004_260)] border border-[oklch(0.24_0.006_260)] overflow-hidden transition-all duration-300 hover:border-[oklch(0.30_0.008_260)]">
+          <div className="group border border-border bg-card overflow-hidden transition-all duration-200 hover:border-foreground">
             <div className="p-8 sm:p-10">
               <div className="flex items-center gap-4 mb-5">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-claw-red/8 border border-claw-red/10">
+                <div className="flex h-12 w-12 items-center justify-center bg-claw-red/8 border border-claw-red/10">
                   <Cloud className="h-6 w-6 text-claw-red" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-foreground">
                     Cloud Deploy
                   </h3>
-                  <p className="text-[12px] text-neutral-500">
+                  <p className="text-[12px] text-muted-foreground">
                     Instant · Always on · Zero maintenance
                   </p>
                 </div>
               </div>
-              <p className="text-[14px] text-neutral-400 leading-relaxed mb-6">
+              <p className="text-[14px] text-muted-foreground leading-relaxed mb-6">
                 We spin up a persistent cloud VM for your OpenClaw agent. Pick
                 your plan, click deploy, and you're live in under 30 seconds.
                 Automatic updates, backups, and scaling — all handled.
               </p>
             </div>
-            <div className="grid grid-cols-3 border-t border-[oklch(0.22_0.005_260)]">
+            <div className="grid grid-cols-3 border-t border-border">
               {[
                 { icon: Zap, label: "30s deploy" },
                 { icon: Monitor, label: "Live stream" },
@@ -682,10 +682,10 @@ function DeploymentOptions() {
               ].map((item, i) => (
                 <div
                   key={item.label}
-                  className={`flex flex-col items-center gap-2 py-5 ${i < 2 ? "border-r border-[oklch(0.22_0.005_260)]" : ""}`}
+                  className={`flex flex-col items-center gap-2 py-5 ${i < 2 ? "border-r border-border" : ""}`}
                 >
                   <item.icon className="h-4 w-4 text-claw-red" />
-                  <span className="text-[11px] text-neutral-500 font-medium">
+                  <span className="text-[11px] text-muted-foreground font-medium">
                     {item.label}
                   </span>
                 </div>
@@ -694,28 +694,28 @@ function DeploymentOptions() {
           </div>
 
           {/* Mac */}
-          <div className="group rounded-2xl bg-[oklch(0.14_0.004_260)] border border-[oklch(0.24_0.006_260)] overflow-hidden transition-all duration-300 hover:border-[oklch(0.30_0.008_260)]">
+          <div className="group border border-border bg-card overflow-hidden transition-all duration-200 hover:border-foreground">
             <div className="p-8 sm:p-10">
               <div className="flex items-center gap-4 mb-5">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-claw-red/8 border border-claw-red/10">
+                <div className="flex h-12 w-12 items-center justify-center bg-claw-red/8 border border-claw-red/10">
                   <Download className="h-6 w-6 text-claw-red" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-foreground">
                     Mac Companion
                   </h3>
-                  <p className="text-[12px] text-neutral-500">
+                  <p className="text-[12px] text-muted-foreground">
                     Your hardware · Your data · Your rules
                   </p>
                 </div>
               </div>
-              <p className="text-[14px] text-neutral-400 leading-relaxed mb-6">
+              <p className="text-[14px] text-muted-foreground leading-relaxed mb-6">
                 Got a Mac Mini at home? Download our companion app — it installs
                 OpenClaw on your machine instantly. One download, one click.
                 Your data never leaves your hardware.
               </p>
             </div>
-            <div className="grid grid-cols-3 border-t border-[oklch(0.22_0.005_260)]">
+            <div className="grid grid-cols-3 border-t border-border">
               {[
                 { icon: Lock, label: "Fully local" },
                 { icon: Cpu, label: "Your GPU" },
@@ -723,10 +723,10 @@ function DeploymentOptions() {
               ].map((item, i) => (
                 <div
                   key={item.label}
-                  className={`flex flex-col items-center gap-2 py-5 ${i < 2 ? "border-r border-[oklch(0.22_0.005_260)]" : ""}`}
+                  className={`flex flex-col items-center gap-2 py-5 ${i < 2 ? "border-r border-border" : ""}`}
                 >
                   <item.icon className="h-4 w-4 text-claw-red" />
-                  <span className="text-[11px] text-neutral-500 font-medium">
+                  <span className="text-[11px] text-muted-foreground font-medium">
                     {item.label}
                   </span>
                 </div>
@@ -751,12 +751,12 @@ function GlassesSection() {
           {/* Left — Glasses Mockup */}
           <div className="relative flex items-center justify-center order-2 lg:order-1">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="h-[300px] w-[300px] rounded-full bg-claw-red/[0.03] blur-[80px]" />
+              <div className="h-[300px] w-[300px] bg-claw-red/[0.03] blur-[80px]" />
             </div>
 
             <div className="relative w-full max-w-sm">
               {/* Lens */}
-              <div className="relative overflow-hidden w-full aspect-[2/1] rounded-[50%/40%] bg-gradient-to-br from-[oklch(0.16_0.004_260)] via-[oklch(0.14_0.003_260)] to-[oklch(0.11_0.003_260)] border border-white/[0.06] shadow-[0_0_80px_rgba(0,0,0,0.4),inset_0_2px_0_rgba(255,255,255,0.02)]">
+              <div className="relative overflow-hidden w-full aspect-[2/1] rounded-[50%/40%] bg-gradient-to-br from-card via-secondary to-background border border-border shadow-[0_0_80px_rgba(0,0,0,0.4),inset_0_2px_0_rgba(255,255,255,0.02)]">
                 {/* Scan lines */}
                 <div
                   className="absolute inset-0 pointer-events-none opacity-[0.015]"
@@ -790,7 +790,7 @@ function GlassesSection() {
                 </div>
               </div>
               {/* Nose bridge */}
-              <div className="mx-auto -mt-1 w-8 h-3 bg-[oklch(0.18_0.004_260)] rounded-b-full border-x border-b border-white/[0.03]" />
+              <div className="mx-auto -mt-1 w-8 h-3 bg-muted border-x border-b border-border" />
             </div>
           </div>
 
@@ -802,7 +802,7 @@ function GlassesSection() {
               <span className="text-gradient-red">on your face.</span>
             </h2>
 
-            <div className="mt-6 space-y-4 text-[15px] text-neutral-400 leading-relaxed">
+            <div className="mt-6 space-y-4 text-[15px] text-muted-foreground leading-relaxed">
               <p>
                 Put on your smart glasses and talk to your OpenClaw agent by
                 voice. Ask it to check your email, find an article, or summarize
@@ -826,7 +826,7 @@ function GlassesSection() {
               ].map((item) => (
                 <span
                   key={item.label}
-                  className="inline-flex items-center gap-2 rounded-full bg-[oklch(0.16_0.004_260)] border border-[oklch(0.24_0.006_260)] px-4 py-2 text-[12px] text-neutral-400 font-medium"
+                  className="inline-flex items-center gap-2 border border-border bg-card px-3 py-1.5 text-[12px] text-muted-foreground font-medium"
                 >
                   <item.icon className="h-3.5 w-3.5 text-claw-red" />
                   {item.label}
@@ -880,7 +880,7 @@ const testimonials = [
 function Testimonials() {
   return (
     <section className="relative py-24 sm:py-32">
-      <div className="absolute inset-0 bg-[oklch(0.11_0.003_260)]" />
+      <div className="absolute inset-0 bg-muted" />
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <Tag icon={Quote}>Community</Tag>
@@ -888,7 +888,7 @@ function Testimonials() {
             People are <span className="text-gradient-red">obsessed</span> with
             the engine we build on.
           </h2>
-          <p className="mt-4 text-neutral-400">
+          <p className="mt-4 text-muted-foreground">
             Real reactions to OpenClaw — the AI that powers every Clawed
             deployment.
           </p>
@@ -898,20 +898,22 @@ function Testimonials() {
           {testimonials.map((t, i) => (
             <div
               key={i}
-              className="break-inside-avoid rounded-2xl bg-[oklch(0.15_0.004_260)] border border-[oklch(0.22_0.005_260)] p-6 transition-all duration-200 hover:border-[oklch(0.28_0.007_260)]"
+              className="break-inside-avoid border border-border bg-card p-6 transition-all duration-150 hover:border-foreground"
             >
-              <p className="text-[14px] text-neutral-300 leading-relaxed mb-5">
+              <p className="text-[14px] text-foreground/80 leading-relaxed mb-5">
                 "{t.text}"
               </p>
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-claw-red/8 border border-claw-red/10 text-claw-red text-[11px] font-bold">
+                <div className="flex h-8 w-8 items-center justify-center bg-claw-red/8 border border-claw-red/10 text-claw-red text-[11px] font-bold">
                   {t.author[0]}
                 </div>
                 <div>
                   <p className="text-[13px] font-semibold text-foreground">
                     {t.author}
                   </p>
-                  <p className="text-[11px] text-neutral-600">{t.handle}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t.handle}
+                  </p>
                 </div>
               </div>
             </div>
@@ -934,7 +936,7 @@ function WhyTheClaw() {
           {/* Left — 3D claw */}
           <div className="relative flex items-center justify-center">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="h-[280px] w-[280px] rounded-full bg-claw-red/[0.04] blur-[60px] animate-pulse-subtle" />
+              <div className="h-[280px] w-[280px] bg-claw-red/[0.04] blur-[60px] animate-pulse-subtle" />
             </div>
             <ClawScene
               className="w-[260px] h-[260px] sm:w-[320px] sm:h-[320px]"
@@ -960,7 +962,7 @@ function WhyTheClaw() {
               the world.
             </h2>
 
-            <div className="mt-6 space-y-4 text-[15px] text-neutral-400 leading-relaxed">
+            <div className="mt-6 space-y-4 text-[15px] text-muted-foreground leading-relaxed">
               <p>
                 <a
                   href="https://github.com/openclaw/openclaw"
@@ -1002,7 +1004,7 @@ function WhyTheClaw() {
                 variant="outline"
                 size="sm"
                 asChild
-                className="gap-1.5 rounded-lg border-[oklch(0.26_0.006_260)] hover:border-[oklch(0.32_0.008_260)] hover:bg-[oklch(0.16_0.004_260)] text-[13px] font-semibold text-neutral-300 h-9"
+                className="gap-1.5 text-[13px] h-9"
               >
                 <a
                   href="https://github.com/openclaw/openclaw"
@@ -1018,7 +1020,7 @@ function WhyTheClaw() {
                 variant="outline"
                 size="sm"
                 asChild
-                className="gap-1.5 rounded-lg border-[oklch(0.26_0.006_260)] hover:border-[oklch(0.32_0.008_260)] hover:bg-[oklch(0.16_0.004_260)] text-[13px] font-semibold text-neutral-300 h-9"
+                className="gap-1.5 text-[13px] h-9"
               >
                 <a
                   href="https://openclaw.ai/blog/introducing-openclaw"
@@ -1032,7 +1034,7 @@ function WhyTheClaw() {
               </Button>
             </div>
 
-            <p className="mt-6 text-[11px] text-neutral-600">
+            <p className="mt-6 text-[11px] text-muted-foreground">
               3D model: CC-BY · ScroffyToffee · Thingiverse
             </p>
           </div>
@@ -1059,15 +1061,15 @@ function BetaCTA() {
     <section className="relative py-28 sm:py-36 overflow-hidden">
       {/* Dramatic background */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[oklch(0.10_0.004_260)]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[700px] rounded-full bg-claw-red/[0.04] blur-[150px]" />
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-claw-red/20 to-transparent" />
+        <div className="absolute inset-0 bg-secondary" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[700px] bg-claw-red/[0.04] blur-[150px]" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-border" />
       </div>
 
       <div className="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           {/* Icon */}
-          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-claw-red/10 border border-claw-red/15">
+          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center bg-claw-red/10 border border-claw-red/15">
             <Sparkles className="h-6 w-6 text-claw-red" />
           </div>
 
@@ -1078,7 +1080,7 @@ function BetaCTA() {
             <span className="inline-block">🦞</span>
           </h2>
 
-          <p className="mt-5 text-neutral-400 max-w-md mx-auto leading-relaxed text-[16px]">
+          <p className="mt-5 text-muted-foreground max-w-md mx-auto leading-relaxed text-[16px]">
             Deploy your own OpenClaw agent in 30 seconds, watch it work from
             anywhere, and talk to it from your smart glasses.
           </p>
@@ -1088,7 +1090,7 @@ function BetaCTA() {
             <Button
               size="lg"
               asChild
-              className="gap-2 px-8 h-13 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[16px] rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(200,0,0,0.2)] hover:shadow-[0_0_60px_rgba(200,0,0,0.3)]"
+              className="gap-2 px-8 h-13 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[16px] transition-all active:translate-y-px"
             >
               <Link to="/sign-in">
                 Deploy your agent
@@ -1099,7 +1101,7 @@ function BetaCTA() {
               size="lg"
               variant="outline"
               asChild
-              className="gap-2 px-8 h-13 rounded-xl border-[oklch(0.28_0.006_260)] hover:border-[oklch(0.35_0.008_260)] text-neutral-300 hover:text-white hover:bg-white/[0.03] font-semibold text-[16px] transition-all"
+              className="gap-2 px-8 h-13 text-muted-foreground hover:text-foreground font-semibold text-[16px] transition-all"
             >
               <Link to="/pricing">
                 View pricing
@@ -1110,23 +1112,23 @@ function BetaCTA() {
 
           {/* Waitlist */}
           <div className="mt-20">
-            <div className="h-px bg-gradient-to-r from-transparent via-[oklch(0.26_0.006_260)] to-transparent mb-12" />
+            <div className="h-px bg-border mb-12" />
 
             <div className="max-w-md mx-auto">
-              <div className="rounded-2xl bg-[oklch(0.14_0.004_260)] border border-[oklch(0.24_0.006_260)] p-8">
-                <p className="text-[13px] text-neutral-400 mb-1 font-semibold">
+              <div className="border border-border bg-card p-8">
+                <p className="text-[13px] text-foreground mb-1 font-semibold">
                   Not ready to deploy yet?
                 </p>
-                <p className="text-[12px] text-neutral-500 mb-6">
+                <p className="text-[12px] text-muted-foreground mb-6">
                   Join the waitlist. We'll let you know when your spot opens.
                 </p>
 
                 {submitted ? (
-                  <div className="rounded-xl bg-claw-red/5 border border-claw-red/15 px-6 py-5 animate-fade-in-scale">
+                  <div className="bg-claw-red/5 border border-claw-red/15 px-6 py-5 animate-fade-in-scale">
                     <p className="text-[15px] font-bold text-claw-red-bright">
                       You're on the list! 🦞
                     </p>
-                    <p className="mt-1 text-[13px] text-neutral-500">
+                    <p className="mt-1 text-[13px] text-muted-foreground">
                       We'll reach out when your spot opens up.
                     </p>
                   </div>
@@ -1138,11 +1140,11 @@ function BetaCTA() {
                       placeholder="you@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="flex-1 h-11 rounded-xl border border-[oklch(0.24_0.006_260)] bg-[oklch(0.11_0.003_260)] px-4 text-[14px] text-foreground placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-claw-red/25 focus:border-claw-red/30 transition-all"
+                      className="flex-1 h-11 border border-border bg-background px-4 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-claw-red/25 focus:border-claw-red/30 transition-all"
                     />
                     <Button
                       type="submit"
-                      className="h-11 px-5 bg-claw-red hover:bg-claw-red-bright text-white font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
+                      className="h-11 px-5 bg-claw-red hover:bg-claw-red-bright text-white font-bold transition-all active:translate-y-px shrink-0"
                     >
                       Join
                       <ArrowRight className="h-3.5 w-3.5 ml-1" />
@@ -1171,7 +1173,7 @@ function NotClaude() {
         {!revealed ? (
           <button
             onClick={() => setRevealed(true)}
-            className="group inline-flex items-center gap-2 text-neutral-600 hover:text-claw-red transition-colors text-[12px] cursor-pointer"
+            className="group inline-flex items-center gap-2 text-muted-foreground hover:text-claw-red transition-colors text-[12px] cursor-pointer"
           >
             <AlertTriangle className="h-3 w-3" />
             <span className="underline underline-offset-2 decoration-dotted">
@@ -1181,16 +1183,16 @@ function NotClaude() {
         ) : (
           <div className="animate-fade-in-scale space-y-5">
             <div className="flex items-center gap-4 justify-center">
-              <div className="h-px w-16 bg-[oklch(0.24_0.006_260)]" />
+              <div className="h-px w-16 bg-border" />
               <span className="text-xl">🦞</span>
-              <div className="h-px w-16 bg-[oklch(0.24_0.006_260)]" />
+              <div className="h-px w-16 bg-border" />
             </div>
 
             <h3 className="text-lg font-black text-foreground">
               Not to be confused with Claude.
             </h3>
 
-            <div className="space-y-3 text-[14px] text-neutral-400 leading-relaxed max-w-lg mx-auto">
+            <div className="space-y-3 text-[14px] text-muted-foreground leading-relaxed max-w-lg mx-auto">
               <p>
                 We know what you're thinking.{" "}
                 <span className="italic">
@@ -1212,10 +1214,10 @@ function NotClaude() {
             </div>
 
             {/* Comparison table */}
-            <div className="mt-8 rounded-xl overflow-hidden border border-[oklch(0.22_0.005_260)] text-[12px] max-w-sm mx-auto">
-              <div className="grid grid-cols-3 bg-[oklch(0.14_0.004_260)] border-b border-[oklch(0.22_0.005_260)]">
+            <div className="mt-8 overflow-hidden border border-border text-[12px] max-w-sm mx-auto">
+              <div className="grid grid-cols-3 bg-card border-b border-border">
                 <div className="px-4 py-3 text-left" />
-                <div className="px-4 py-3 text-center font-bold text-neutral-400 border-x border-[oklch(0.20_0.005_260)]">
+                <div className="px-4 py-3 text-center font-bold text-muted-foreground border-x border-border">
                   Claude
                 </div>
                 <div className="px-4 py-3 text-center font-bold text-claw-red">
@@ -1237,22 +1239,22 @@ function NotClaude() {
               ].map(([label, claude, claw], i) => (
                 <div
                   key={i}
-                  className={`grid grid-cols-3 ${i % 2 === 0 ? "bg-[oklch(0.13_0.004_260)]" : "bg-[oklch(0.15_0.004_260)]"}`}
+                  className={`grid grid-cols-3 ${i % 2 === 0 ? "bg-background" : "bg-card"}`}
                 >
-                  <div className="px-4 py-2.5 text-left text-neutral-500">
+                  <div className="px-4 py-2.5 text-left text-muted-foreground">
                     {label}
                   </div>
-                  <div className="px-4 py-2.5 text-center text-neutral-600 border-x border-[oklch(0.20_0.005_260)]">
+                  <div className="px-4 py-2.5 text-center text-muted-foreground border-x border-border">
                     {claude}
                   </div>
-                  <div className="px-4 py-2.5 text-center text-neutral-300">
+                  <div className="px-4 py-2.5 text-center text-foreground">
                     {claw}
                   </div>
                 </div>
               ))}
             </div>
 
-            <p className="text-[11px] text-neutral-600 pt-2">
+            <p className="text-[11px] text-muted-foreground pt-2">
               No AIs were harmed in the making of this disclaimer. Several fish
               were.
             </p>
