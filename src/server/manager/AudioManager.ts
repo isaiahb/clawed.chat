@@ -1,5 +1,8 @@
 import type { User } from "../session/User";
 
+/** ElevenLabs voice ID — change this to switch the TTS voice */
+const TTS_VOICE_ID = process.env.TTS_VOICE_ID || "";
+
 /**
  * AudioManager — text-to-speech and audio control for a single user.
  */
@@ -10,7 +13,9 @@ export class AudioManager {
   async speak(text: string): Promise<void> {
     const session = this.user.appSession;
     if (!session) throw new Error("No active glasses session");
-    await session.audio.speak(text);
+    await session.audio.speak(text, {
+      ...(TTS_VOICE_ID ? { voice_id: TTS_VOICE_ID } : {}),
+    });
   }
 
   /** Play an audio file from a URL on the glasses (fire-and-forget friendly) */

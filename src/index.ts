@@ -78,8 +78,11 @@ const server = Bun.serve({
     console: true,
   },
   routes: {
-    // Serve the React frontend at root
+    // Serve the React frontend — public site + app
     "/": indexHtml,
+    "/pricing": indexHtml,
+    "/docs": indexHtml,
+    "/sign-in": indexHtml,
     "/app": indexHtml,
     "/app/*": indexHtml,
     "/webview": indexHtml,

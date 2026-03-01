@@ -15,6 +15,8 @@ interface HomePageProps {
 export default function HomePage({ userId }: HomePageProps) {
   const { isDarkMode, toggleTheme } = useTheme();
   const { sendMessage, abort, status, onDelta } = useOpenClaw();
+  const statusRef = useRef(status);
+  useEffect(() => { statusRef.current = status; }, [status]);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<
@@ -213,6 +215,9 @@ export default function HomePage({ userId }: HomePageProps) {
     };
     setConversations((prev) => [conv, ...prev]);
     setActiveConversationId(id);
+    // Sync ref immediately so delta handlers see the new conversation
+    // before the next render cycle (useEffect on activeConversationId is async)
+    activeConvRef.current = id;
     setMessages((prev) => ({ ...prev, [id]: [] }));
     return id;
   }, []);
@@ -314,8 +319,12 @@ export default function HomePage({ userId }: HomePageProps) {
             // Voice query from wake word detection — auto-submit to OpenClaw
             if (data.type === "voice-query") {
               console.log(
-                `[VoiceQuery] "${data.query}" (${new Date(data.timestamp).toLocaleTimeString()})`
+                `[VoiceQuery] Received: "${data.query}" (status=${statusRef.current})`
               );
+              if (statusRef.current !== "connected") {
+                console.warn(`[VoiceQuery] Dropping — OpenClaw not connected (status=${statusRef.current})`);
+                return;
+              }
               handleSendRef.current(data.query);
               return;
             }

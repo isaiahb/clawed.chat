@@ -3,7 +3,7 @@ import type { User } from "../session/User";
 import { WakeWordDetector } from "./WakeWordDetector";
 
 interface SSEWriter {
-  write: (data: string) => void;
+  write: (data: string) => void | Promise<void>;
   userId: string;
   close: () => void;
 }
@@ -68,7 +68,13 @@ export class TranscriptionManager {
 
     for (const client of this.sseClients) {
       try {
-        client.write(payload);
+        const result = client.write(payload);
+        // Handle async write failures (stream.writeSSE returns a Promise)
+        if (result && typeof (result as Promise<void>).catch === "function") {
+          (result as Promise<void>).catch(() => {
+            this.sseClients.delete(client);
+          });
+        }
       } catch {
         this.sseClients.delete(client);
       }
@@ -84,10 +90,18 @@ export class TranscriptionManager {
       userId: this.user.userId,
     });
 
+    console.log(`🔊 Broadcasting voice-query to ${this.sseClients.size} SSE client(s)`);
     for (const client of this.sseClients) {
       try {
-        client.write(payload);
-      } catch {
+        const result = client.write(payload);
+        if (result && typeof (result as Promise<void>).catch === "function") {
+          (result as Promise<void>).catch((err) => {
+            console.warn(`🔊 SSE async write failed for client, removing:`, err);
+            this.sseClients.delete(client);
+          });
+        }
+      } catch (err) {
+        console.warn(`🔊 SSE write failed for client, removing:`, err);
         this.sseClients.delete(client);
       }
     }
@@ -106,7 +120,13 @@ export class TranscriptionManager {
     this.sseClients.delete(client);
   }
 
-  /** Tear down listener and drop all SSE clients */
+  /** Detach the SDK transcription listener only — keeps SSE clients and wake word alive */
+  detachSession(): void {
+    this.unsubscribe?.();
+    this.unsubscribe = null;
+  }
+
+  /** Tear down everything — listener, wake word, and all SSE clients */
   destroy(): void {
     this.unsubscribe?.();
     this.unsubscribe = null;

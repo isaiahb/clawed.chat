@@ -19,6 +19,7 @@ const ACTIVATION_PHRASES = [
   "hey claw",     // short variant
   "ok claude",    // alternative trigger
   "okay claude",  // alternative trigger
+  "Hey Klaa"
 ] as const;
 
 /**

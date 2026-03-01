@@ -1166,8 +1166,9 @@ export default function AskPage({ userId }: AskPageProps) {
   // ──────────────────────────────────────────────
   // Handle sending a message
   // ──────────────────────────────────────────────
-  const handleSubmit = useCallback(() => {
-    if (!promptValue.trim() || isThinking) return;
+  const handleSubmit = useCallback((overrideText?: string) => {
+    const text = (overrideText ?? promptValue).trim();
+    if (!text || isThinking) return;
 
     setGenerationError(false);
     setLastFailedPrompt(null);
@@ -1175,7 +1176,7 @@ export default function AskPage({ userId }: AskPageProps) {
     const userMessage: AskMessage = {
       id: `msg-${Date.now()}`,
       role: "user",
-      content: promptValue.trim(),
+      content: text,
       timestamp: new Date().toISOString(),
       context: Array.from(activeChips),
     };
@@ -1197,9 +1198,9 @@ export default function AskPage({ userId }: AskPageProps) {
       const newConv: AskConversation = {
         id: `conv-${Date.now()}`,
         title:
-          promptValue.trim().length > 40
-            ? promptValue.trim().slice(0, 40) + "..."
-            : promptValue.trim(),
+          text.length > 40
+            ? text.slice(0, 40) + "..."
+            : text,
         messages: [userMessage],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -1209,9 +1210,10 @@ export default function AskPage({ userId }: AskPageProps) {
       };
       setConversations((prev) => [newConv, ...prev]);
       setActiveConversationId(newConv.id);
+      // Sync ref immediately so delta handlers see the new conversation
+      activeConversationIdRef.current = newConv.id;
     }
 
-    const messageText = promptValue.trim();
     setPromptValue("");
     setIsThinking(true);
 
@@ -1219,7 +1221,7 @@ export default function AskPage({ userId }: AskPageProps) {
     actionIndicator.start(Array.from(activeChips));
 
     // Send to OpenClaw
-    sendMessage(messageText);
+    sendMessage(text);
   }, [
     promptValue,
     isThinking,
@@ -1253,9 +1255,8 @@ export default function AskPage({ userId }: AskPageProps) {
             const data = JSON.parse(event.data);
             if (data.type === "connected") return;
             if (data.type === "voice-query") {
-              // Auto-submit voice query
-              setPromptValue(data.query);
-              setTimeout(() => handleSubmitRef.current(), 100);
+              // Auto-submit voice query — pass text directly to avoid stale closure
+              handleSubmitRef.current(data.query);
               return;
             }
           } catch {

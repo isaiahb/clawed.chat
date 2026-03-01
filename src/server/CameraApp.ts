@@ -44,8 +44,13 @@ export class CameraApp extends AppServer {
   ): Promise<void> {
     console.log(`👋 Camera session ended for ${userId}: ${reason}`);
     try {
-      sessions.remove(userId);
-      console.log(`Cleaned up session for ${userId}`);
+      // Only clear the glasses session — keep user state (SSE clients, photos, etc.)
+      // alive so the frontend survives a glasses reconnect.
+      const user = sessions.get(userId);
+      if (user) {
+        user.clearAppSession();
+        console.log(`Cleared glasses session for ${userId} (user kept alive)`);
+      }
     } catch (err) {
       console.error(`Error during session cleanup for ${userId}:`, err);
     }

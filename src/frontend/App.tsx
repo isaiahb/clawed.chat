@@ -4,13 +4,27 @@ import { useMentraAuth } from "@mentra/react";
 import { TooltipProvider } from "@frontend/components/ui/tooltip";
 import { Toaster } from "@frontend/components/ui/sonner";
 import { useAppStore } from "@frontend/stores/app-store";
+import { ScrollToTop } from "@frontend/components/shared/ScrollToTop";
+import { IntroSplash } from "@frontend/components/shared/IntroSplash";
 import AppLayout from "@frontend/layouts/AppLayout";
 
+// Lazy-loaded app pages (authenticated)
 const AskPage = lazy(() => import("@frontend/pages/app/AskPage"));
 const ConnectionsPage = lazy(() => import("@frontend/pages/app/ConnectionsPage"));
 const SettingsPage = lazy(() => import("@frontend/pages/app/SettingsPage"));
 
+// Lazy-loaded site pages (public)
+const SiteLayout = lazy(() => import("@frontend/layouts/SiteLayout"));
+const Home = lazy(() => import("@frontend/pages/site/Home"));
+const Pricing = lazy(() => import("@frontend/pages/site/Pricing"));
+const Docs = lazy(() => import("@frontend/pages/site/Docs"));
+const SignIn = lazy(() => import("@frontend/pages/site/SignIn"));
+const NotFound = lazy(() => import("@frontend/pages/site/NotFound"));
+
+// ──────────────────────────────────────────────
 // Theme Context (preserved for backward compatibility)
+// ──────────────────────────────────────────────
+
 interface ThemeContextValue {
   theme: "light" | "dark";
   isDarkMode: boolean;
@@ -27,18 +41,89 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
+// ──────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────
+
 function PageLoader() {
   return (
-    <div className="flex items-center justify-center h-full">
+    <div className="flex items-center justify-center h-full min-h-screen">
       <div className="animate-spin rounded-full h-6 w-6 border-2 border-muted border-t-primary" />
     </div>
   );
 }
 
+// IntroSplash — once per session
+const INTRO_KEY = "clawed-intro-played";
+function shouldShowIntro(): boolean {
+  try { return !sessionStorage.getItem(INTRO_KEY); }
+  catch { return false; }
+}
+function markIntroPlayed(): void {
+  try { sessionStorage.setItem(INTRO_KEY, "1"); }
+  catch {}
+}
+
+// ──────────────────────────────────────────────
+// AuthGate — protects /app routes, handles MentraAuth
+// ──────────────────────────────────────────────
+
+function AuthGate() {
+  const { userId, isLoading, error } = useMentraAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-muted border-t-primary" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center p-8 max-w-md">
+          <h2 className="text-destructive text-lg font-semibold mb-2">
+            Authentication Error
+          </h2>
+          <p className="text-destructive/80 text-sm mb-4">{error}</p>
+          <p className="text-muted-foreground text-xs">
+            Please ensure you are opening this page from the MentraOS app.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const resolvedUserId = userId || "";
+
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route index element={<AskPage userId={resolvedUserId} />} />
+          <Route path="connections" element={<ConnectionsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="*" element={<Navigate to="/app" replace />} />
+        </Route>
+      </Routes>
+    </Suspense>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Main App
+// ──────────────────────────────────────────────
+
 export default function App() {
-  const { userId, isLoading, error, isAuthenticated } = useMentraAuth();
   const storeTheme = useAppStore((s) => s.theme);
   const setStoreTheme = useAppStore((s) => s.setTheme);
+
+  // IntroSplash state
+  const [introComplete, setIntroComplete] = useState(() => !shouldShowIntro());
 
   // Theme state with localStorage persistence
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -63,33 +148,6 @@ export default function App() {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
-  // Sync theme with backend when user authenticates
-  useEffect(() => {
-    if (isAuthenticated && userId) {
-      fetch(`/api/theme-preference?userId=${encodeURIComponent(userId)}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.theme === "dark" || data.theme === "light") {
-            setTheme(data.theme);
-            localStorage.setItem("theme", data.theme);
-            setStoreTheme(data.theme);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [isAuthenticated, userId, setStoreTheme]);
-
-  // Save theme to backend on change
-  useEffect(() => {
-    if (isAuthenticated && userId) {
-      fetch("/api/theme-preference", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, theme }),
-      }).catch(() => {});
-    }
-  }, [theme, isAuthenticated, userId]);
-
   // Keyboard shortcut: Cmd+Shift+D to toggle theme
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -102,58 +160,53 @@ export default function App() {
     return () => document.removeEventListener("keydown", down);
   }, [toggleTheme]);
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-muted border-t-primary" />
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center p-8 max-w-md">
-          <h2 className="text-destructive text-lg font-semibold mb-2">
-            Authentication Error
-          </h2>
-          <p className="text-destructive/80 text-sm mb-4">{error}</p>
-          <p className="text-muted-foreground text-xs">
-            Please ensure you are opening this page from the MentraOS app.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const resolvedUserId = userId || "";
+  const handleIntroComplete = useCallback(() => {
+    markIntroPlayed();
+    setIntroComplete(true);
+  }, []);
 
   return (
     <ThemeContext.Provider
       value={{ theme, isDarkMode: theme === "dark", toggleTheme }}
     >
       <TooltipProvider delayDuration={200}>
-        <BrowserRouter>
-          <div className="font-sans bg-background text-foreground min-h-screen">
+        {/* IntroSplash — once per session */}
+        {!introComplete && <IntroSplash onComplete={handleIntroComplete} />}
+
+        <div
+          className="font-sans bg-background text-foreground min-h-screen"
+          style={{
+            opacity: introComplete ? 1 : 0,
+            transition: "opacity 0.3s ease",
+            pointerEvents: introComplete ? "auto" : "none",
+          }}
+        >
+          <BrowserRouter>
+            <ScrollToTop />
             <Suspense fallback={<PageLoader />}>
               <Routes>
-                <Route path="/" element={<Navigate to="/app" replace />} />
-                <Route path="/app" element={<AppLayout />}>
-                  <Route index element={<AskPage userId={resolvedUserId} />} />
-                  <Route path="connections" element={<ConnectionsPage />} />
-                  <Route path="settings" element={<SettingsPage />} />
+                {/* Public site routes */}
+                <Route element={<SiteLayout />}>
+                  <Route index element={<Home />} />
+                  <Route path="pricing" element={<Pricing />} />
+                  <Route path="docs" element={<Docs />} />
                 </Route>
-                <Route path="*" element={<Navigate to="/app" replace />} />
+
+                {/* Sign-in (no layout chrome) */}
+                <Route path="sign-in" element={<SignIn />} />
+
+                {/* Authenticated app routes */}
+                <Route path="app/*" element={<AuthGate />} />
+
+                {/* 404 catch-all */}
+                <Route element={<SiteLayout />}>
+                  <Route path="*" element={<NotFound />} />
+                </Route>
               </Routes>
             </Suspense>
-          </div>
-          <Toaster />
-        </BrowserRouter>
+            <Toaster />
+          </BrowserRouter>
+        </div>
       </TooltipProvider>
     </ThemeContext.Provider>
   );

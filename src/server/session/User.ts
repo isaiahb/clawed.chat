@@ -47,9 +47,9 @@ export class User {
     console.log(`📸 Camera ready for ${this.userId}`);
   }
 
-  /** Disconnect glasses but keep user alive (photos, SSE clients stay) */
+  /** Disconnect glasses but keep user alive (SSE clients, wake word, photos stay) */
   clearAppSession(): void {
-    this.transcription.destroy();
+    this.transcription.detachSession();
     this.appSession = null;
   }
 
