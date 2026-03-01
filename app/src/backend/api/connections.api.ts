@@ -32,7 +32,7 @@ function getConvex(): ConvexHttpClient {
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const VALID_SERVICES = ["gmail", "googlecalendar", "github", "slack", "notion", "linear"]
+const VALID_SERVICES = ["gmail", "googlecalendar", "github", "slack", "notion", "linear", "googlesheets", "googledrive", "googledocs"]
 
 const DASHBOARD_URL = process.env.PUBLIC_URL || "https://clawed.chat"
 

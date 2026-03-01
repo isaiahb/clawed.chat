@@ -48,6 +48,18 @@ const SERVICE_MAP: Record<string, {toolkit: string; authConfigEnv: string}> = {
     toolkit: "linear",
     authConfigEnv: "COMPOSIO_LINEAR_AUTH_CONFIG",
   },
+  googlesheets: {
+    toolkit: "googlesheets",
+    authConfigEnv: "COMPOSIO_GOOGLESHEETS_AUTH_CONFIG",
+  },
+  googledrive: {
+    toolkit: "googledrive",
+    authConfigEnv: "COMPOSIO_GOOGLEDRIVE_AUTH_CONFIG",
+  },
+  googledocs: {
+    toolkit: "googledocs",
+    authConfigEnv: "COMPOSIO_GOOGLEDOCS_AUTH_CONFIG",
+  },
 }
 
 // ─── Singleton Client ────────────────────────────────────────────────────────

@@ -167,6 +167,45 @@ const SERVICE_CATALOG: ServiceCatalogEntry[] = [
       { action: "Update status", type: "write", description: "Change issue status and assignees" },
     ],
   },
+  {
+    provider: "google-sheets",
+    service: "googlesheets",
+    name: "Google Sheets",
+    icon: "Table",
+    capability: "Read and write data in your spreadsheets",
+    scopes: ["Read sheets", "Write cells", "Create sheets"],
+    permissions: [
+      { action: "Read sheets", type: "read", description: "Access spreadsheet data and formulas" },
+      { action: "Write cells", type: "write", description: "Update cell values and formatting" },
+      { action: "Create sheets", type: "write", description: "Create new spreadsheets and tabs" },
+    ],
+  },
+  {
+    provider: "google-drive",
+    service: "googledrive",
+    name: "Google Drive",
+    icon: "HardDrive",
+    capability: "Search, read, and organize your files",
+    scopes: ["Read files", "Upload files", "Search"],
+    permissions: [
+      { action: "Read files", type: "read", description: "Access and download files from your Drive" },
+      { action: "Upload files", type: "write", description: "Upload new files to your Drive" },
+      { action: "Search", type: "read", description: "Search across your Drive for files and folders" },
+    ],
+  },
+  {
+    provider: "google-docs",
+    service: "googledocs",
+    name: "Google Docs",
+    icon: "FileText",
+    capability: "Read and create documents",
+    scopes: ["Read docs", "Create docs", "Edit docs"],
+    permissions: [
+      { action: "Read docs", type: "read", description: "Access and read your Google Docs content" },
+      { action: "Create docs", type: "write", description: "Create new documents" },
+      { action: "Edit docs", type: "write", description: "Make changes to existing documents" },
+    ],
+  },
 ];
 
 /** Maps backend service name → catalog provider name */
