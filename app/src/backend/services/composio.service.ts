@@ -229,6 +229,53 @@ export async function verifySession(
 }
 
 /**
+ * Verify a connection using Composio's connected_account_id.
+ * This is the format Composio uses in its OAuth callback redirect:
+ *   ?status=success&connected_account_id=ca_xxx
+ */
+export async function verifyConnection(
+  connectedAccountId: string,
+): Promise<VerifiedConnection> {
+  const client = await getClient()
+
+  console.log(`[composio] verifying connection: connectedAccountId=${connectedAccountId}`)
+
+  try {
+    const account = await client.connectedAccounts.get(connectedAccountId)
+
+    const toolkitSlug = (account as any).toolkit?.slug
+      ?? (account as any).appName
+      ?? reverseServiceLookup(account)
+      ?? "unknown"
+
+    const isActive = (account as any).status === "ACTIVE"
+      || (account as any).isDisabled === false
+
+    console.log(
+      `[composio] connection verified: id=${(account as any).id} toolkit=${toolkitSlug} active=${isActive} entity=${(account as any).entityId}`,
+    )
+
+    return {
+      connectionId: (account as any).id ?? connectedAccountId,
+      service: toolkitSlug,
+      userId: (account as any).entityId ?? (account as any).userId ?? "",
+      status: isActive ? "connected" : "error",
+      permissions: extractPermissions(account),
+    }
+  } catch (err: any) {
+    console.error(`[composio] verifyConnection failed: ${err.message}`)
+    return {
+      connectionId: connectedAccountId,
+      service: "unknown",
+      userId: "",
+      status: "error",
+      permissions: [],
+    }
+  }
+}
+
+
+/**
  * Revokes an active connection on Composio's side.
  *
  * @param connectionId - The Composio connected account ID to revoke

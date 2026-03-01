@@ -32,7 +32,7 @@ function getConvex(): ConvexHttpClient {
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const VALID_SERVICES = ["gmail", "googlecalendar", "github"]
+const VALID_SERVICES = ["gmail", "googlecalendar", "github", "slack", "notion", "linear"]
 
 const DASHBOARD_URL = process.env.PUBLIC_URL || "https://clawed.chat"
 
@@ -139,52 +139,74 @@ async function initiateConnection(c: Context) {
  * Finally, redirect the user back to the dashboard.
  */
 async function handleCallback(c: Context) {
+  // Composio redirects with: ?status=success&connected_account_id=ca_xxx
+  // OR legacy format: ?session_id=xxx
+  const connectedAccountId = c.req.query("connected_account_id")
+  const status = c.req.query("status")
   const sessionId = c.req.query("session_id")
 
-  if (!sessionId) {
-    console.error("[connections] callback missing session_id")
-    return c.redirect(`${DASHBOARD_URL}/app/connections?connection=error&reason=missing_session`)
-  }
+  console.log(`[connections] callback received: status=${status} connected_account_id=${connectedAccountId} session_id=${sessionId}`)
 
-  try {
-    // 1. Verify the session with Composio
-    const result = await composioService.verifySession(sessionId)
+  // Handle Composio's actual redirect format
+  if (status === "success" && connectedAccountId) {
+    try {
+      // Verify the connection with Composio using the connected_account_id
+      const result = await composioService.verifyConnection(connectedAccountId)
 
-    // 2. Update the Convex connections table
-    //    We need to find the right user — the session maps back to an entity (our userId).
-    //    For now, we look up by composio_connection_id (the sessionId we stored during initiate).
-    const db = getConvex()
+      if (result.status === "connected") {
+        console.log(`[connections] OAuth verified: service=${result.service} connectionId=${result.connectionId} user=${result.userId}`)
 
-    // Try to find existing pending connection by composio session id
-    // Since we stored the sessionId as composio_connection_id during initiate,
-    // we search all connections. In production, we'd store the mapping more robustly.
-    // For now, upsert by the verified service + use a header/cookie for user identification.
+        // Update Convex with the real connection data
+        const db = getConvex()
+        if (result.userId) {
+          await db.mutation(api.connections.upsert, {
+            user_id: result.userId,
+            service: result.service,
+            composio_connection_id: connectedAccountId,
+            status: "connected" as const,
+            permissions: result.permissions || [],
+            connected_at: Date.now(),
+          })
+        }
 
-    // Note: In the callback flow, we don't have auth context (user is redirected from Composio).
-    // The sessionId is our link back to the user. We stored it as composio_connection_id
-    // in the initiate step, so we can search for it.
+        return c.redirect(
+          `${DASHBOARD_URL}/app/connections?connection=success&service=${result.service}`,
+        )
+      }
 
-    // Update the connection with real Composio data
-    // Since Composio's entity ID is our userId, we can use that
-    if (result.status === "connected") {
-      console.log(`[connections] OAuth verified: service=${result.service} connectionId=${result.connectionId}`)
-
-      // We can't easily query by composio_connection_id without an index,
-      // so we redirect with params and let the frontend trigger the update.
       return c.redirect(
-        `${DASHBOARD_URL}/app/connections?connection=success&service=${result.service}&composio_id=${result.connectionId}`,
+        `${DASHBOARD_URL}/app/connections?connection=error&service=${result.service || "unknown"}`,
+      )
+    } catch (err: any) {
+      console.error("[connections] callback verification error:", err.message)
+      return c.redirect(
+        `${DASHBOARD_URL}/app/connections?connection=error&reason=verification_failed`,
       )
     }
-
-    return c.redirect(
-      `${DASHBOARD_URL}/app/connections?connection=error&service=${result.service}`,
-    )
-  } catch (err: any) {
-    console.error("[connections] callback verification error:", err.message)
-    return c.redirect(
-      `${DASHBOARD_URL}/app/connections?connection=error&reason=verification_failed`,
-    )
   }
+
+  // Legacy: handle session_id format
+  if (sessionId) {
+    try {
+      const result = await composioService.verifySession(sessionId)
+      if (result.status === "connected") {
+        return c.redirect(
+          `${DASHBOARD_URL}/app/connections?connection=success&service=${result.service}`,
+        )
+      }
+      return c.redirect(
+        `${DASHBOARD_URL}/app/connections?connection=error&service=${result.service}`,
+      )
+    } catch (err: any) {
+      console.error("[connections] callback (legacy) error:", err.message)
+      return c.redirect(
+        `${DASHBOARD_URL}/app/connections?connection=error&reason=verification_failed`,
+      )
+    }
+  }
+
+  console.error("[connections] callback missing both connected_account_id and session_id")
+  return c.redirect(`${DASHBOARD_URL}/app/connections?connection=error&reason=missing_params`)
 }
 
 /**
