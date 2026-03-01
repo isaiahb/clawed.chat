@@ -40,6 +40,7 @@
  */
 
 import {Hono} from "hono"
+import {clerkMiddleware} from "@hono/clerk-auth"
 import webhooks from "./webhooks.api"
 import me from "./me.api"
 import keys from "./keys.api"
@@ -53,8 +54,19 @@ import desktop from "./desktop.api"
 
 const api = new Hono()
 
-// Health (standalone, no sub-app needed)
+// Health (standalone, no auth needed)
 api.get("/health", (c) => c.json({status: "ok", timestamp: new Date().toISOString()}))
+
+// Clerk auth middleware — runs before all authenticated routes.
+// This populates c.get("clerkAuth") so getAuth(c) works in route handlers.
+// Routes that don't need auth (webhooks, openclaw outbound) handle their own verification.
+api.use("/me/*", clerkMiddleware())
+api.use("/keys/*", clerkMiddleware())
+api.use("/instances/*", clerkMiddleware())
+api.use("/chat/*", clerkMiddleware())
+api.use("/connections/*", clerkMiddleware())
+api.use("/desktop/*", clerkMiddleware())
+api.use("/glasses/*", clerkMiddleware())
 
 // Feature sub-apps
 api.route("/webhooks", webhooks)
