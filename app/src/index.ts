@@ -64,11 +64,12 @@ const publicPath = `${process.cwd()}/src/public/assets`
 Bun.serve({
   port: PORT,
   idleTimeout: 120, // 2 minutes for SSE connections
-  // development: false → production build (minified, no HMR, no React dev mode)
-  // development: { hmr: true } → local dev with hot reload
+  // Bun 1.3.10 needs the dev bundler pipeline for HTML routes (development !== false).
+  // In production: keep bundler active but disable HMR socket + dev console.
+  // React/Clerk prod mode is controlled by NODE_ENV=production in systemd.
   development: isDevelopment
     ? { hmr: true, console: true }
-    : false,
+    : { hmr: false, console: false },
   routes: {
     // Static assets — checked before the catch-all HTML route
     "/assets/*": (request: Request) => {
