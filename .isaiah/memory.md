@@ -292,23 +292,27 @@ Independent: 05 Desktop, 07 Landing Page
 - ✅ Chat backend (user msg → Convex → OpenClaw gateway → agent response → Convex → frontend)
 - ✅ LLM Proxy (partial — forwards to Anthropic/OpenAI/Google, token verification stubbed)
 - ✅ Frontend route structure, dark mode, design system
+- ✅ `keys.api.ts` — list/add/delete wired to encryption + LLM validation + Convex
+- ✅ `connections.api.ts` — list/initiate/callback/disconnect wired to Composio service + Convex
+- ✅ `me.api.ts` — fetches user profile from Convex, graceful fallback for unsynced users
+- ✅ `desktop.api.ts` — register-local + heartbeat wired to Convex instances
+- ✅ API Keys UI in SettingsPage — list masked keys, add with validation, delete (wired to `/api/keys`)
+- ✅ ConnectionsPage frontend — wired to real `/api/connections` with service catalog merge, OAuth flow, loading states
+- ✅ Browser Use integration — real API calls in `browseruse.service.ts` (create/get/destroy/ensureSession), wired into deploy/start/destroy flows
+- ✅ Browser Use session stored in Convex (`browser_use_session_id` + `browser_use_live_url`) — ChatPage BrowserView reads `live_url`
 
 ### What's still mocked/stubbed:
-- ❌ ConnectionsPage — uses `mockConnections` hardcoded data (needs Composio OAuth wiring)
-- ❌ SettingsPage — all local zustand state, no backend calls
-- ❌ `keys.api.ts` — auth check works, no encryption/validation/Convex calls (services are built, just need connecting)
-- ❌ `connections.api.ts` — returns stub redirects, no Composio calls
-- ❌ `me.api.ts` — returns placeholder user data
-- ❌ `desktop.api.ts` — all Convex calls are TODOs
-- ❌ Browser Use integration — no `live_url` being produced
+- ❌ SettingsPage account/appearance/safety — local zustand state, no backend persistence
+- ❌ Composio SDK calls — `composio.service.ts` has real structure but SDK calls are still TODOs (needs real testing)
 - ❌ End-to-end chat — blocked on OpenClaw running on VM
+- ❌ Browser Use live test — service is wired but needs a real deploy to confirm `live_url` renders in iframe
 
 ### Agent should work on next:
-1. **Wire `keys.api.ts`** — encryption.ts + llm-validation.ts are fully implemented, just connect to routes + Convex
-2. **Wire `connections.api.ts`** — connect to Composio OAuth, replace mock data on ConnectionsPage
-3. **Browser Use integration** — create session, get live_url when instance starts
-4. **Landing page polish** — Home.tsx is big but could use refinements
+1. **End-to-end chat test** — blocked on Isaiah: OpenClaw on VM
+2. **Landing page polish** — Home.tsx is big but could use refinements
+3. **Settings page backend persistence** — save account/preferences to Convex
+4. **Composio SDK calls** — replace stubs with real SDK in `composio.service.ts`
 
 ---
 
-*Last updated: 2026-03-01 (session 3 — design integrated, routes restructured, chat flow wired end-to-end, 3D model fixed, dark mode default)*
+*Last updated: 2026-03-01 (session 4 — wired all remaining APIs to Convex + services, added Keys UI, wired ConnectionsPage frontend, implemented real Browser Use Cloud integration in deploy/start/destroy flows)*

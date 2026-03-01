@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
+import { toast } from "sonner";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import {
   Card,
@@ -44,11 +45,36 @@ import {
   Trash2,
   User,
   KeyRound,
+  Plus,
+  Trash2 as Trash2Icon,
+  Loader2,
+  CheckCircle2 as CheckIcon,
+  XCircle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAppStore } from "../../stores/app-store";
 import { cn } from "../../lib/utils";
 import type { SafetyMode } from "../../types";
 import type { ResponseStyle } from "../../stores/app-store";
+
+// ──────────────────────────────────────────────
+// API Keys types & helpers
+// ──────────────────────────────────────────────
+
+interface StoredKey {
+  provider: string;
+  masked_key: string;
+  is_valid: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
+const PROVIDER_META: Record<string, { label: string; placeholder: string; prefix: string }> = {
+  anthropic: { label: "Anthropic", placeholder: "sk-ant-api03-...", prefix: "sk-ant-" },
+  openai: { label: "OpenAI", placeholder: "sk-proj-...", prefix: "sk-" },
+  google: { label: "Google", placeholder: "AIza...", prefix: "AIza" },
+};
 
 // ──────────────────────────────────────────────
 // Safety mode configuration
@@ -189,6 +215,82 @@ export default function SettingsPage() {
   const [emailValue, setEmailValue] = useState(accountEmail);
   const [accountSaved, setAccountSaved] = useState(false);
 
+  // ─── API Keys State ──────────────────────────────────────────────────
+  const [storedKeys, setStoredKeys] = useState<StoredKey[]>([]);
+  const [keysLoading, setKeysLoading] = useState(true);
+  const [addKeyOpen, setAddKeyOpen] = useState(false);
+  const [addProvider, setAddProvider] = useState("anthropic");
+  const [addKeyValue, setAddKeyValue] = useState("");
+  const [addKeyVisible, setAddKeyVisible] = useState(false);
+  const [addKeySubmitting, setAddKeySubmitting] = useState(false);
+  const [deletingProvider, setDeletingProvider] = useState<string | null>(null);
+
+  const fetchKeys = useCallback(async () => {
+    try {
+      const res = await fetch("/api/keys");
+      if (res.ok) {
+        const data = await res.json();
+        setStoredKeys(data.keys ?? []);
+      }
+    } catch {
+      // silently fail — user will see empty list
+    } finally {
+      setKeysLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchKeys();
+  }, [fetchKeys]);
+
+  async function handleAddKey() {
+    if (!addKeyValue.trim()) return;
+    setAddKeySubmitting(true);
+    try {
+      const res = await fetch("/api/keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: addProvider, api_key: addKeyValue.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to add key", {
+          description: data.detail,
+        });
+        return;
+      }
+      toast.success(`${PROVIDER_META[addProvider]?.label ?? addProvider} key saved`, {
+        description: `Masked: ${data.masked_key}`,
+      });
+      setAddKeyValue("");
+      setAddKeyOpen(false);
+      setAddKeyVisible(false);
+      await fetchKeys();
+    } catch {
+      toast.error("Network error — could not save key");
+    } finally {
+      setAddKeySubmitting(false);
+    }
+  }
+
+  async function handleDeleteKey(provider: string) {
+    setDeletingProvider(provider);
+    try {
+      const res = await fetch(`/api/keys/${provider}`, { method: "DELETE" });
+      if (res.ok) {
+        toast(`${PROVIDER_META[provider]?.label ?? provider} key removed`);
+        await fetchKeys();
+      } else {
+        const data = await res.json();
+        toast.error(data.error ?? "Failed to delete key");
+      }
+    } catch {
+      toast.error("Network error — could not delete key");
+    } finally {
+      setDeletingProvider(null);
+    }
+  }
+
   const agentEndpoint = "https://api.clawed.chat/v1/agent/parth-demo-01";
 
   const handleSaveAccount = () => {
@@ -303,6 +405,190 @@ export default function SettingsPage() {
               )}
             </Button>
           </div>
+        </div>
+      </SettingsSection>
+
+      {/* ── API Keys (BYOK) ── */}
+      <SettingsSection
+        title="API Keys"
+        description="Bring your own LLM provider keys for your agent."
+        icon={KeyRound}
+      >
+        <div className="space-y-4">
+          {keysLoading ? (
+            <div className="flex items-center justify-center py-6 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <span className="text-sm">Loading keys…</span>
+            </div>
+          ) : storedKeys.length === 0 && !addKeyOpen ? (
+            <div className="text-center py-6 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                No API keys stored yet. Add one to deploy your own agent.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5 text-[11px]"
+                onClick={() => setAddKeyOpen(true)}
+              >
+                <Plus className="h-3 w-3" />
+                Add API Key
+              </Button>
+            </div>
+          ) : (
+            <>
+              {/* Existing keys list */}
+              {storedKeys.map((k) => {
+                const meta = PROVIDER_META[k.provider];
+                return (
+                  <div
+                    key={k.provider}
+                    className="flex items-center justify-between gap-3 border border-border p-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={cn(
+                        "flex h-8 w-8 items-center justify-center border text-[10px] font-bold shrink-0",
+                        k.is_valid
+                          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
+                          : "border-destructive/20 bg-destructive/10 text-destructive",
+                      )}>
+                        {k.is_valid ? <CheckIcon className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">
+                          {meta?.label ?? k.provider}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground font-mono truncate">
+                          {k.masked_key}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                      onClick={() => handleDeleteKey(k.provider)}
+                      disabled={deletingProvider === k.provider}
+                    >
+                      {deletingProvider === k.provider ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2Icon className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                  </div>
+                );
+              })}
+
+              {/* Add key form (inline) */}
+              {addKeyOpen ? (
+                <div className="border border-border p-4 space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Provider
+                    </Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {Object.entries(PROVIDER_META).map(([id, meta]) => {
+                        const hasKey = storedKeys.some((k) => k.provider === id);
+                        return (
+                          <button
+                            key={id}
+                            onClick={() => setAddProvider(id)}
+                            disabled={hasKey}
+                            className={cn(
+                              "border-2 p-2 text-center text-[11px] font-medium transition-all",
+                              hasKey
+                                ? "border-border bg-muted/30 text-muted-foreground cursor-not-allowed opacity-50"
+                                : addProvider === id
+                                  ? "border-foreground bg-foreground/[0.03]"
+                                  : "border-border hover:border-foreground/40",
+                            )}
+                          >
+                            {meta.label}
+                            {hasKey && <span className="block text-[9px] text-muted-foreground">saved</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                      API Key
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type={addKeyVisible ? "text" : "password"}
+                        value={addKeyValue}
+                        onChange={(e) => setAddKeyValue(e.target.value)}
+                        placeholder={PROVIDER_META[addProvider]?.placeholder ?? "Enter API key…"}
+                        className="h-9 pr-9 font-mono text-[11px]"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && addKeyValue.trim() && !addKeySubmitting) {
+                            handleAddKey();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setAddKeyVisible(!addKeyVisible)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {addKeyVisible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      Your key is validated, encrypted, and stored securely. We never see the plaintext after encryption.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-[11px]"
+                      onClick={() => {
+                        setAddKeyOpen(false);
+                        setAddKeyValue("");
+                        setAddKeyVisible(false);
+                      }}
+                      disabled={addKeySubmitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-8 gap-1.5 text-[11px]"
+                      onClick={handleAddKey}
+                      disabled={!addKeyValue.trim() || addKeySubmitting}
+                    >
+                      {addKeySubmitting ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Validating…
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-3 w-3" />
+                          Save Key
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 text-[11px] w-full"
+                  onClick={() => setAddKeyOpen(true)}
+                >
+                  <Plus className="h-3 w-3" />
+                  Add API Key
+                </Button>
+              )}
+            </>
+          )}
         </div>
       </SettingsSection>
 

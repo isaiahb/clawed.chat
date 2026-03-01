@@ -31,6 +31,7 @@
 import {ConvexHttpClient} from "convex/browser"
 import {api} from "../../../../convex/_generated/api"
 import * as openclaw from "./openclaw.service"
+import * as browseruse from "./browseruse.service"
 
 // Lazy-load Pulumi — uses node:v8 internally which Bun doesn't support at import time
 const getPulumi = () => import("./instance.pulumi")
@@ -197,6 +198,21 @@ export async function start(instanceId: string): Promise<void> {
     // Wait for the OpenClaw gateway to become reachable
     await openclaw.waitForGateway(instance.ip)
 
+    // Re-create Browser Use session if needed (old one may have expired while stopped)
+    try {
+      const session = await browseruse.ensureSession(instance.browser_use_session_id)
+      if (session.browserId !== instance.browser_use_session_id) {
+        await db.mutation(api.instances.updateDetails, {
+          id: instanceId as any,
+          browser_use_session_id: session.browserId,
+          browser_use_live_url: session.liveUrl,
+        })
+        console.log(`[instance] new Browser Use session on start: browserId=${session.browserId}`)
+      }
+    } catch (buErr: any) {
+      console.warn(`[instance] Browser Use session refresh failed (non-fatal): ${buErr.message}`)
+    }
+
     // Update status to running
     await db.mutation(api.instances.updateStatus, {
       id: instanceId as any,
@@ -239,6 +255,15 @@ export async function destroy(instanceId: string): Promise<void> {
   })
 
   try {
+    // Destroy Browser Use session if one exists (best-effort)
+    if (instance.browser_use_session_id) {
+      try {
+        await browseruse.destroySession(instance.browser_use_session_id)
+      } catch (buErr: any) {
+        console.warn(`[instance] Browser Use cleanup failed (non-fatal): ${buErr.message}`)
+      }
+    }
+
     // Destroy the Pulumi stack (VM + DNS)
     const pulumi = await getPulumi()
     await pulumi.destroyStack(instance.user_id)
@@ -303,6 +328,21 @@ async function provisionAsync(
     gcp_zone: process.env.GCP_ZONE || "us-west1-a",
     status: "running",
   })
+
+  // Step 3: Create a Browser Use session (best-effort — don't fail deploy if this errors)
+  try {
+    const session = await browseruse.createSession("us")
+    console.log(`[instance] Browser Use session created: browserId=${session.browserId} liveUrl=${session.liveUrl}`)
+
+    await db.mutation(api.instances.updateDetails, {
+      id: instanceId as any,
+      browser_use_session_id: session.browserId,
+      browser_use_live_url: session.liveUrl,
+    })
+  } catch (buErr: any) {
+    // Browser Use is a nice-to-have — don't fail the entire deploy
+    console.warn(`[instance] Browser Use session creation failed (non-fatal): ${buErr.message}`)
+  }
 
   // Touch last_active_at
   await db.mutation(api.instances.touch, {id: instanceId as any})

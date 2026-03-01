@@ -101,14 +101,16 @@ These are scaffolding only — route definitions + handler signatures with TODOs
 - [x] **BrowserView** — iframe wrapper for Browser Use `live_url` (integrated into ChatPage as side panel)
 - [x] **Wire dashboard to Convex** — `useQuery` for real-time instance list on AgentsPage, ChatPage subscribes to `chatMessages.listByInstance`
 - [x] **Deploy flow end-to-end** — GitHub Actions CI/CD to GCP VM is fully operational (1m35s deploys)
-- [ ] **Connections page** — currently uses `mockConnections` — needs real Composio OAuth wiring
-- [ ] **Keys page** — list masked keys, add/delete (services are built, just need to connect to routes + Convex)
-- [ ] **Settings page** — currently all local zustand state, no backend calls
+- [x] **Connections page** — wired to real `/api/connections` endpoints with service catalog merge, OAuth initiate/callback handling, loading states
+- [x] **Keys page** — API Keys section added to SettingsPage with list/add/delete wired to `/api/keys`
+- [ ] **Settings page** — account/appearance/safety sections still local zustand state, no backend persistence
 
 ## Ready — Service Wiring
 
-- [ ] **Wire `keys.api.ts`** — connect to Convex `apiKeys` functions + `encryption.ts` + `llm-validation.ts`
-- [ ] **Wire `connections.api.ts`** — connect to Convex `connections` functions + `composio.service.ts`
+- [x] **Wire `keys.api.ts`** — connected to Convex `apiKeys` functions + `encryption.ts` + `llm-validation.ts` (list/add/delete all working)
+- [x] **Wire `connections.api.ts`** — connected to Convex `connections` functions + `composio.service.ts` (list/initiate/callback/disconnect)
+- [x] **Wire `me.api.ts`** — fetches user profile from Convex via `users.getByClerkId`, graceful fallback for unsynced users
+- [x] **Wire `desktop.api.ts`** — register-local creates/updates Convex instance, heartbeat touches `last_active_at`, ownership verification
 - [x] **Wire `chat.api.ts`** — verifies ownership, writes to Convex `chatMessages`, dispatches to OpenClaw gateway, touches last_active_at
 - [x] **Wire `openclaw.api.ts`** — validates token, writes agent response to Convex `chatMessages`, triggers glasses TTS
 - [x] **Wire `instances.api.ts`** — `getInstance` fetches from Convex with ownership verification + deploy/stop/start/destroy via Pulumi service
@@ -129,6 +131,7 @@ These are scaffolding only — route definitions + handler signatures with TODOs
 
 - [ ] **Bake actual GCP image** — need to run `./scripts/bake-image/bake.sh` (all keys ready, just needs to be executed)
 - [ ] **End-to-end chat test** — blocked on local OpenClaw install (`bun i -g openclaw`)
+- [ ] **Test Browser Use session creation** — API key is set, service is wired, just needs a live deploy to verify live_url works
 
 ---
 
@@ -154,6 +157,11 @@ These are scaffolding only — route definitions + handler signatures with TODOs
 - [x] Wired chat flow end-to-end: chat.api → Convex → OpenClaw gateway → openclaw.api → Convex → frontend
 - [x] Fixed 3D claw model (56MB → 263KB), static asset routing, full-height layout
 - [x] Optimized intro splash animation, added `?intro=1` demo param
+- [x] Wired keys.api.ts, connections.api.ts, me.api.ts, desktop.api.ts to Convex + services
+- [x] Added API Keys UI to SettingsPage (list/add/delete with validation + encryption)
+- [x] Wired ConnectionsPage frontend to real /api/connections (service catalog + live merge + OAuth flow)
+- [x] Implemented real Browser Use Cloud API in browseruse.service.ts (create/get/destroy/ensureSession)
+- [x] Wired Browser Use into instance deploy (creates session) + destroy (cleans up session) + start (refreshes expired session)
 
 ---
 
@@ -162,11 +170,10 @@ These are scaffolding only — route definitions + handler signatures with TODOs
 For an agent picking up work, do it in this order:
 
 ```
-1. Wire keys.api.ts (encryption + validation services are built)     ← NEXT
-2. Wire connections.api.ts → Composio OAuth (replace mock data)
-3. Browser Use integration (create session, get live_url)
-4. End-to-end chat test (blocked on Isaiah: OpenClaw on VM)
-5. Landing page polish
+1. End-to-end chat test (blocked on Isaiah: OpenClaw on VM)          ← NEXT
+2. Landing page polish
+3. Settings page backend persistence
+4. Composio SDK calls (replace stubs with real SDK in composio.service.ts)
 ```
 
 ---
@@ -186,4 +193,4 @@ For an agent picking up work, do it in this order:
 
 ---
 
-*Last updated: 2026-03-01 (session 3 — design integrated, routes restructured, chat flow wired end-to-end, 3D model fixed, dark mode default)*
+*Last updated: 2026-03-01 (session 4 — wired all remaining APIs to Convex + services, added Keys UI, wired ConnectionsPage frontend, implemented real Browser Use integration)*

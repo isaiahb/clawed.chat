@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
+import { useSearchParams } from "react-router-dom";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -39,7 +40,6 @@ import {
 } from "lucide-react";
 import { Input } from "../../components/ui/input";
 import { cn } from "../../lib/utils";
-import { mockConnections } from "../../data/mock";
 import type {
   Connection,
   ConnectionStatus,
@@ -67,6 +67,163 @@ const logoMap: Record<string, string> = {
 function getProviderLogo(provider: string): string | null {
   return logoMap[provider] ?? null;
 }
+
+// ─── Service catalog ─────────────────────────────────────────────────────────
+// Static metadata for each supported service. Real connection status is merged
+// from /api/connections at runtime.
+
+interface ServiceCatalogEntry {
+  provider: Connection["provider"];
+  /** Internal service name used by the backend / Composio */
+  service: string;
+  name: string;
+  icon: string;
+  capability: string;
+  scopes: string[];
+  permissions: ConnectionPermission[];
+}
+
+const SERVICE_CATALOG: ServiceCatalogEntry[] = [
+  {
+    provider: "gmail",
+    service: "gmail",
+    name: "Gmail",
+    icon: "Mail",
+    capability: "Read, draft, and send emails on your behalf",
+    scopes: ["Read emails", "Send emails", "Manage drafts", "Manage labels"],
+    permissions: [
+      { action: "Read emails", type: "read", description: "Access your inbox and read email content" },
+      { action: "Manage drafts", type: "write", description: "Create and edit email drafts for your review" },
+      { action: "Manage labels", type: "write", description: "Apply and remove labels to organize your mail" },
+      { action: "Send emails", type: "approval", description: "Sending to new recipients always requires your explicit approval" },
+      { action: "Delete emails", type: "approval", description: "Permanently deleting emails always requires confirmation" },
+    ],
+  },
+  {
+    provider: "google-calendar",
+    service: "googlecalendar",
+    name: "Google Calendar",
+    icon: "Calendar",
+    capability: "Check your schedule and manage calendar events",
+    scopes: ["Read events", "Create events", "Modify events"],
+    permissions: [
+      { action: "Read events", type: "read", description: "View your calendar events and availability" },
+      { action: "Create events", type: "write", description: "Add new events to your calendar" },
+      { action: "Modify events", type: "write", description: "Reschedule or update existing events" },
+      { action: "Delete events", type: "approval", description: "Removing calendar events requires your confirmation" },
+    ],
+  },
+  {
+    provider: "github",
+    service: "github",
+    name: "GitHub",
+    icon: "Github",
+    capability: "Read your repositories, issues, and pull requests",
+    scopes: ["Read repos", "Read issues", "Read PRs"],
+    permissions: [
+      { action: "Read repos", type: "read", description: "View repository contents and metadata" },
+      { action: "Read issues", type: "read", description: "Access issues and their comments" },
+      { action: "Read PRs", type: "read", description: "View pull requests and review status" },
+    ],
+  },
+  {
+    provider: "slack",
+    service: "slack",
+    name: "Slack",
+    icon: "MessageSquare",
+    capability: "Read and send messages across your workspace",
+    scopes: ["Read messages", "Send messages", "Manage DMs", "List channels"],
+    permissions: [
+      { action: "Read messages", type: "read", description: "View messages in channels and DMs you belong to" },
+      { action: "Send messages", type: "write", description: "Post messages to channels and DMs on your behalf" },
+      { action: "Manage DMs", type: "write", description: "Create and archive direct message conversations" },
+      { action: "List channels", type: "read", description: "See available channels and their metadata" },
+      { action: "Send to new channels", type: "approval", description: "Posting to a channel for the first time always requires your OK" },
+    ],
+  },
+  {
+    provider: "notion",
+    service: "notion",
+    name: "Notion",
+    icon: "FileText",
+    capability: "Search and create pages in your workspace",
+    scopes: ["Read pages", "Create pages", "Search"],
+    permissions: [
+      { action: "Read pages", type: "read", description: "Access and read your Notion pages and databases" },
+      { action: "Create pages", type: "write", description: "Create new pages and entries in your workspace" },
+      { action: "Search", type: "read", description: "Search across your Notion workspace content" },
+    ],
+  },
+  {
+    provider: "linear",
+    service: "linear",
+    name: "Linear",
+    icon: "SquareKanban",
+    capability: "Track and manage issues in your projects",
+    scopes: ["Read issues", "Create issues", "Update status"],
+    permissions: [
+      { action: "Read issues", type: "read", description: "View issues, projects, and team boards" },
+      { action: "Create issues", type: "write", description: "File new issues and tasks" },
+      { action: "Update status", type: "write", description: "Change issue status and assignees" },
+    ],
+  },
+];
+
+/** Maps backend service name → catalog provider name */
+const SERVICE_TO_PROVIDER: Record<string, string> = {
+  gmail: "gmail",
+  googlecalendar: "google-calendar",
+  github: "github",
+  slack: "slack",
+  notion: "notion",
+  linear: "linear",
+};
+
+/** Backend API response shape */
+interface ApiConnection {
+  id: string;
+  service: string;
+  status: ConnectionStatus;
+  composio_connection_id: string;
+  connected_at?: number;
+  permissions: string[];
+}
+
+/** Merges the static catalog with live connection data from the backend */
+function mergeConnections(catalog: ServiceCatalogEntry[], live: ApiConnection[]): Connection[] {
+  return catalog.map((entry) => {
+    const match = live.find(
+      (c) => SERVICE_TO_PROVIDER[c.service] === entry.provider || c.service === entry.service,
+    );
+
+    if (match) {
+      return {
+        id: match.id,
+        provider: entry.provider,
+        name: entry.name,
+        status: match.status as ConnectionStatus,
+        connectedAt: match.connected_at ? new Date(match.connected_at).toISOString() : undefined,
+        scopes: entry.scopes,
+        permissions: entry.permissions,
+        icon: entry.icon,
+        lastSync: match.connected_at ? new Date(match.connected_at).toISOString() : undefined,
+        capability: entry.capability,
+      };
+    }
+
+    return {
+      id: `catalog-${entry.service}`,
+      provider: entry.provider,
+      name: entry.name,
+      status: "disconnected" as ConnectionStatus,
+      scopes: entry.scopes,
+      permissions: entry.permissions,
+      icon: entry.icon,
+      capability: entry.capability,
+    };
+  });
+}
+
 
 // ─── Status config ───────────────────────────────────────────────────────────
 
@@ -155,12 +312,16 @@ function ConnectionTile({
   onDisconnect,
   onTest,
   onViewPermissions,
+  connecting = false,
+  disconnecting = false,
 }: {
   connection: Connection;
   onConnect: (c: Connection) => void;
   onDisconnect: (c: Connection) => void;
   onTest: (c: Connection) => void;
   onViewPermissions: (c: Connection) => void;
+  connecting?: boolean;
+  disconnecting?: boolean;
 }) {
   const [testing, setTesting] = useState(false);
   const logo = getProviderLogo(connection.provider);
@@ -308,9 +469,19 @@ function ConnectionTile({
                 size="sm"
                 className="h-7 gap-1.5 text-[11px] text-destructive hover:text-destructive ml-auto"
                 onClick={() => onDisconnect(connection)}
+                disabled={disconnecting}
               >
-                <Unplug className="h-3 w-3" />
-                Disconnect
+                {disconnecting ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Disconnecting…
+                  </>
+                ) : (
+                  <>
+                    <Unplug className="h-3 w-3" />
+                    Disconnect
+                  </>
+                )}
               </Button>
             </>
           ) : isError ? (
@@ -320,17 +491,32 @@ function ConnectionTile({
                 size="sm"
                 className="h-7 gap-1.5 text-[11px] bg-claw-red hover:bg-claw-red-bright text-white"
                 onClick={() => onConnect(connection)}
+                disabled={connecting}
               >
-                <RefreshCw className="h-3 w-3" />
-                Reconnect
+                {connecting ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Connecting…
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-3 w-3" />
+                    Reconnect
+                  </>
+                )}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-7 gap-1.5 text-[11px] text-destructive hover:text-destructive"
                 onClick={() => onDisconnect(connection)}
+                disabled={disconnecting}
               >
-                <Unplug className="h-3 w-3" />
+                {disconnecting ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Unplug className="h-3 w-3" />
+                )}
                 Remove
               </Button>
             </>
@@ -340,10 +526,20 @@ function ConnectionTile({
               size="sm"
               className="h-7 gap-1.5 text-[11px] bg-claw-red hover:bg-claw-red-bright text-white"
               onClick={() => onConnect(connection)}
+              disabled={connecting}
             >
-              <Plug className="h-3 w-3" />
-              Connect
-              <ArrowRight className="h-3 w-3" />
+              {connecting ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Connecting…
+                </>
+              ) : (
+                <>
+                  <Plug className="h-3 w-3" />
+                  Connect
+                  <ArrowRight className="h-3 w-3" />
+                </>
+              )}
             </Button>
           )}
         </div>
@@ -613,7 +809,11 @@ function DisconnectDialog({
 
 export default function ConnectionsPage() {
   useDocumentTitle("Connections");
-  const [connections, setConnections] = useState<Connection[]>(mockConnections);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [connections, setConnections] = useState<Connection[]>(() =>
+    mergeConnections(SERVICE_CATALOG, []),
+  );
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [permissionsConnection, setPermissionsConnection] =
     useState<Connection | null>(null);
@@ -624,43 +824,127 @@ export default function ConnectionsPage() {
   const [filter, setFilter] = useState<"all" | "connected" | "disconnected">(
     "all",
   );
+  const [connectingService, setConnectingService] = useState<string | null>(null);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
 
-  // Handlers
-  const handleConnect = (c: Connection) => {
-    setConnections((prev) =>
-      prev.map((conn) =>
-        conn.id === c.id
-          ? {
-            ...conn,
-            status: "connected" as ConnectionStatus,
-            connectedAt: new Date().toISOString(),
-            lastSync: new Date().toISOString(),
-            error: undefined,
-          }
-          : conn,
-      ),
-    );
-    toast.success(`Connected to ${c.name}`, {
-      description: `Your assistant can now access ${c.name}.`,
-    });
+  // ─── Fetch connections from backend ────────────────────────────────────
+  const fetchConnections = useCallback(async () => {
+    try {
+      const res = await fetch("/api/connections");
+      if (res.ok) {
+        const data = await res.json();
+        const live: ApiConnection[] = data.connections ?? [];
+        setConnections(mergeConnections(SERVICE_CATALOG, live));
+      }
+    } catch {
+      // silently fail — user sees catalog with everything disconnected
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchConnections();
+  }, [fetchConnections]);
+
+  // ─── Handle OAuth callback URL params ──────────────────────────────────
+  useEffect(() => {
+    const connectionResult = searchParams.get("connection");
+    if (!connectionResult) return;
+
+    const service = searchParams.get("service");
+
+    if (connectionResult === "success") {
+      toast.success(service ? `Connected to ${service}` : "Connection successful", {
+        description: "Your assistant can now access this service.",
+      });
+      // Refresh connections to pick up the new one
+      fetchConnections();
+    } else if (connectionResult === "error") {
+      const reason = searchParams.get("reason");
+      toast.error("Connection failed", {
+        description: reason === "missing_session"
+          ? "OAuth session was missing. Please try again."
+          : reason === "verification_failed"
+            ? "Could not verify the connection. Please try again."
+            : `Failed to connect${service ? ` to ${service}` : ""}. Please try again.`,
+      });
+    }
+
+    // Clean up URL params so they don't re-trigger
+    searchParams.delete("connection");
+    searchParams.delete("service");
+    searchParams.delete("composio_id");
+    searchParams.delete("reason");
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, setSearchParams, fetchConnections]);
+
+  // ─── Handlers ──────────────────────────────────────────────────────────
+
+  const handleConnect = async (c: Connection) => {
+    // Find the catalog entry to get the backend service name
+    const catalogEntry = SERVICE_CATALOG.find((e) => e.provider === c.provider);
+    if (!catalogEntry) {
+      toast.error(`Unknown service: ${c.provider}`);
+      return;
+    }
+
+    setConnectingService(catalogEntry.service);
+
+    try {
+      const res = await fetch(`/api/connections/${catalogEntry.service}/connect`, {
+        method: "POST",
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to start connection");
+        return;
+      }
+
+      if (data.redirect_url) {
+        // Navigate to OAuth provider
+        window.location.href = data.redirect_url;
+        return;
+      }
+
+      toast.error("No redirect URL received from server");
+    } catch {
+      toast.error("Network error — could not initiate connection");
+    } finally {
+      setConnectingService(null);
+    }
   };
 
-  const handleDisconnect = (c: Connection) => {
-    setConnections((prev) =>
-      prev.map((conn) =>
-        conn.id === c.id
-          ? {
-            ...conn,
-            status: "disconnected" as ConnectionStatus,
-            connectedAt: undefined,
-            lastSync: undefined,
-          }
-          : conn,
-      ),
-    );
-    toast(`Disconnected from ${c.name}`, {
-      description: `${c.name} access has been revoked.`,
-    });
+  const handleDisconnect = async (c: Connection) => {
+    // Only real (non-catalog) connections can be disconnected
+    if (c.id.startsWith("catalog-")) {
+      // It's not actually connected — just flip local state
+      toast(`${c.name} is not connected`);
+      return;
+    }
+
+    setDisconnectingId(c.id);
+
+    try {
+      const res = await fetch(`/api/connections/${c.id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        toast(`Disconnected from ${c.name}`, {
+          description: `${c.name} access has been revoked.`,
+        });
+        await fetchConnections();
+      } else {
+        const data = await res.json();
+        toast.error(data.error ?? "Failed to disconnect");
+      }
+    } catch {
+      toast.error("Network error — could not disconnect");
+    } finally {
+      setDisconnectingId(null);
+    }
   };
 
   const handleTest = (c: Connection) => {
@@ -780,16 +1064,21 @@ export default function ConnectionsPage() {
       {/* Connection Grid */}
       {filteredConnections.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredConnections.map((connection) => (
-            <ConnectionTile
-              key={connection.id}
-              connection={connection}
-              onConnect={handleConnect}
-              onDisconnect={handleDisconnectClick}
-              onTest={handleTest}
-              onViewPermissions={handleViewPermissions}
-            />
-          ))}
+          {filteredConnections.map((connection) => {
+            const catalogEntry = SERVICE_CATALOG.find((e) => e.provider === connection.provider);
+            return (
+              <ConnectionTile
+                key={connection.id}
+                connection={connection}
+                onConnect={handleConnect}
+                onDisconnect={handleDisconnectClick}
+                onTest={handleTest}
+                onViewPermissions={handleViewPermissions}
+                connecting={connectingService === catalogEntry?.service}
+                disconnecting={disconnectingId === connection.id}
+              />
+            );
+          })}
 
           {/* Add new connection card */}
           <Card className="flex items-center justify-center border-dashed min-h-[200px] transition-colors hover:border-foreground/40 cursor-pointer group">

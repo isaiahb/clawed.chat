@@ -8,7 +8,8 @@
  *
  * Browser Use is the hackathon host — this is a MUST integration.
  *
- * Reference: https://docs.cloud.browser-use.com/guides/browser-api
+ * API Reference: https://docs.browser-use.com/cloud/guides/browser-api
+ * SDK: browser-use-sdk (we use raw fetch for fewer deps)
  */
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -33,7 +34,23 @@ interface BrowserUseCreateResponse {
   live_url: string
 }
 
+interface BrowserUseGetResponse {
+  browser_id: string
+  cdp_url: string
+  live_url: string
+  status?: string
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function assertConfigured(): void {
+  if (!BROWSER_USE_API_KEY) {
+    throw new Error(
+      "[browseruse] BROWSER_USE_API_KEY is not set. " +
+      "Get your key from https://cloud.browser-use.com/settings",
+    )
+  }
+}
 
 function headers(): HeadersInit {
   return {
@@ -49,38 +66,43 @@ function headers(): HeadersInit {
  *
  * Returns the CDP URL (for OpenClaw) and live URL (for dashboard iframe).
  * Proxy defaults to US — can be changed per instance later.
+ *
+ * The created browser session persists until explicitly destroyed or until
+ * it times out on Browser Use's side (typically 15-30 min idle).
  */
 export async function createSession(proxyCountry: string = "us"): Promise<BrowserSession> {
-  // TODO: uncomment when Browser Use API key is configured
-  //
-  // const res = await fetch(`${BROWSER_USE_API}/browsers`, {
-  //   method: "POST",
-  //   headers: headers(),
-  //   body: JSON.stringify({
-  //     proxy_country_code: proxyCountry,
-  //   }),
-  // })
-  //
-  // if (!res.ok) {
-  //   const text = await res.text()
-  //   throw new Error(`[browseruse] failed to create session: ${res.status} ${text}`)
-  // }
-  //
-  // const data: BrowserUseCreateResponse = await res.json()
-  //
-  // console.log(`[browseruse] session created: id=${data.browser_id}`)
-  //
-  // return {
-  //   browserId: data.browser_id,
-  //   cdpUrl: data.cdp_url,
-  //   liveUrl: data.live_url,
-  // }
+  assertConfigured()
 
-  console.log(`[browseruse] createSession: proxy=${proxyCountry} (stub)`)
+  console.log(`[browseruse] creating session with proxy=${proxyCountry}`)
+
+  const res = await fetch(`${BROWSER_USE_API}/browsers`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({
+      proxy_country_code: proxyCountry,
+    }),
+    signal: AbortSignal.timeout(30_000),
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "(no body)")
+    throw new Error(`[browseruse] failed to create session: ${res.status} ${text}`)
+  }
+
+  const data: BrowserUseCreateResponse = await res.json()
+
+  if (!data.browser_id || !data.cdp_url || !data.live_url) {
+    throw new Error(
+      `[browseruse] unexpected response shape: ${JSON.stringify(data)}`,
+    )
+  }
+
+  console.log(`[browseruse] session created: id=${data.browser_id} live_url=${data.live_url}`)
+
   return {
-    browserId: "stub-browser-id",
-    cdpUrl: "wss://stub.browser-use.com/browser?apiKey=stub",
-    liveUrl: "https://stub.browser-use.com/live/stub",
+    browserId: data.browser_id,
+    cdpUrl: data.cdp_url,
+    liveUrl: data.live_url,
   }
 }
 
@@ -89,31 +111,57 @@ export async function createSession(proxyCountry: string = "us"): Promise<Browse
 /**
  * Get details for an existing browser session.
  * Useful for refreshing the live_url or checking session health.
+ *
+ * Returns null if the session doesn't exist (404).
  */
 export async function getSession(browserId: string): Promise<BrowserSession | null> {
-  // TODO: uncomment when Browser Use API key is configured
-  //
-  // const res = await fetch(`${BROWSER_USE_API}/browsers/${browserId}`, {
-  //   headers: headers(),
-  // })
-  //
-  // if (res.status === 404) return null
-  //
-  // if (!res.ok) {
-  //   const text = await res.text()
-  //   throw new Error(`[browseruse] failed to get session ${browserId}: ${res.status} ${text}`)
-  // }
-  //
-  // const data: BrowserUseCreateResponse = await res.json()
-  //
-  // return {
-  //   browserId: data.browser_id,
-  //   cdpUrl: data.cdp_url,
-  //   liveUrl: data.live_url,
-  // }
+  assertConfigured()
 
-  console.log(`[browseruse] getSession: id=${browserId} (stub)`)
-  return null
+  const res = await fetch(`${BROWSER_USE_API}/browsers/${browserId}`, {
+    headers: headers(),
+    signal: AbortSignal.timeout(10_000),
+  })
+
+  if (res.status === 404) {
+    console.log(`[browseruse] session not found: id=${browserId}`)
+    return null
+  }
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "(no body)")
+    throw new Error(`[browseruse] failed to get session ${browserId}: ${res.status} ${text}`)
+  }
+
+  const data: BrowserUseGetResponse = await res.json()
+
+  return {
+    browserId: data.browser_id,
+    cdpUrl: data.cdp_url,
+    liveUrl: data.live_url,
+  }
+}
+
+// ─── Check Session Health ────────────────────────────────────────────────────
+
+/**
+ * Quick health check — does the session still exist and is it reachable?
+ *
+ * Returns true if the session is alive, false if it's gone or errored.
+ * Does NOT throw on failure — always returns a boolean.
+ */
+export async function isSessionAlive(browserId: string): Promise<boolean> {
+  try {
+    assertConfigured()
+
+    const res = await fetch(`${BROWSER_USE_API}/browsers/${browserId}`, {
+      headers: headers(),
+      signal: AbortSignal.timeout(5_000),
+    })
+
+    return res.ok
+  } catch {
+    return false
+  }
 }
 
 // ─── Destroy Session ─────────────────────────────────────────────────────────
@@ -125,21 +173,55 @@ export async function getSession(browserId: string): Promise<BrowserSession | nu
  * Safe to call multiple times — silently succeeds if session already gone.
  */
 export async function destroySession(browserId: string): Promise<void> {
-  // TODO: uncomment when Browser Use API key is configured
-  //
-  // const res = await fetch(`${BROWSER_USE_API}/browsers/${browserId}`, {
-  //   method: "DELETE",
-  //   headers: headers(),
-  // })
-  //
-  // if (!res.ok && res.status !== 404) {
-  //   const text = await res.text()
-  //   throw new Error(`[browseruse] failed to destroy session ${browserId}: ${res.status} ${text}`)
-  // }
-  //
-  // console.log(`[browseruse] session destroyed: id=${browserId}`)
+  assertConfigured()
 
-  console.log(`[browseruse] destroySession: id=${browserId} (stub)`)
+  console.log(`[browseruse] destroying session: id=${browserId}`)
+
+  const res = await fetch(`${BROWSER_USE_API}/browsers/${browserId}`, {
+    method: "DELETE",
+    headers: headers(),
+    signal: AbortSignal.timeout(10_000),
+  })
+
+  if (!res.ok && res.status !== 404) {
+    const text = await res.text().catch(() => "(no body)")
+    throw new Error(`[browseruse] failed to destroy session ${browserId}: ${res.status} ${text}`)
+  }
+
+  console.log(`[browseruse] session destroyed: id=${browserId}`)
+}
+
+// ─── Create or Recycle ───────────────────────────────────────────────────────
+
+/**
+ * Ensures a browser session exists for an instance.
+ *
+ * If an existing browserId is provided and still alive, returns it.
+ * Otherwise, creates a new session. Useful for the deploy/start flow
+ * where we want to be idempotent.
+ *
+ * @param existingBrowserId - Optional existing browser session to check first
+ * @param proxyCountry - Proxy country code for new sessions
+ */
+export async function ensureSession(
+  existingBrowserId?: string | null,
+  proxyCountry: string = "us",
+): Promise<BrowserSession> {
+  // Try to reuse existing session
+  if (existingBrowserId) {
+    try {
+      const existing = await getSession(existingBrowserId)
+      if (existing) {
+        console.log(`[browseruse] reusing existing session: id=${existingBrowserId}`)
+        return existing
+      }
+    } catch (err: any) {
+      console.warn(`[browseruse] failed to check existing session ${existingBrowserId}:`, err.message)
+    }
+  }
+
+  // Create a new session
+  return createSession(proxyCountry)
 }
 
 // ─── Build CDP URL ───────────────────────────────────────────────────────────
