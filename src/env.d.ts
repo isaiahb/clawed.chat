@@ -1,5 +1,9 @@
 declare module "*.css";
 declare module "*.html";
+declare module "*.svg" {
+  const content: string;
+  export default content;
+}
 
 declare namespace NodeJS {
   interface ProcessEnv {

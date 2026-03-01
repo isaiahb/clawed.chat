@@ -1,8 +1,16 @@
-import { useState, useEffect, useCallback, createContext, useContext } from "react";
+import { useState, useEffect, useCallback, createContext, useContext, lazy, Suspense } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useMentraAuth } from "@mentra/react";
-import HomePage from "./pages/home/HomePage";
+import { TooltipProvider } from "@frontend/components/ui/tooltip";
+import { Toaster } from "@frontend/components/ui/sonner";
+import { useAppStore } from "@frontend/stores/app-store";
+import AppLayout from "@frontend/layouts/AppLayout";
 
-// Theme Context
+const AskPage = lazy(() => import("@frontend/pages/app/AskPage"));
+const ConnectionsPage = lazy(() => import("@frontend/pages/app/ConnectionsPage"));
+const SettingsPage = lazy(() => import("@frontend/pages/app/SettingsPage"));
+
+// Theme Context (preserved for backward compatibility)
 interface ThemeContextValue {
   theme: "light" | "dark";
   isDarkMode: boolean;
@@ -19,8 +27,18 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <div className="animate-spin rounded-full h-6 w-6 border-2 border-muted border-t-primary" />
+    </div>
+  );
+}
+
 export default function App() {
   const { userId, isLoading, error, isAuthenticated } = useMentraAuth();
+  const storeTheme = useAppStore((s) => s.theme);
+  const setStoreTheme = useAppStore((s) => s.setTheme);
 
   // Theme state with localStorage persistence
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -28,16 +46,17 @@ export default function App() {
       const saved = localStorage.getItem("theme");
       if (saved === "dark" || saved === "light") return saved;
     }
-    return "light";
+    return storeTheme === "dark" ? "dark" : "light";
   });
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next = prev === "light" ? "dark" : "light";
       localStorage.setItem("theme", next);
+      setStoreTheme(next);
       return next;
     });
-  }, []);
+  }, [setStoreTheme]);
 
   // Apply dark class to document root
   useEffect(() => {
@@ -53,11 +72,12 @@ export default function App() {
           if (data.theme === "dark" || data.theme === "light") {
             setTheme(data.theme);
             localStorage.setItem("theme", data.theme);
+            setStoreTheme(data.theme);
           }
         })
         .catch(() => {});
     }
-  }, [isAuthenticated, userId]);
+  }, [isAuthenticated, userId, setStoreTheme]);
 
   // Save theme to backend on change
   useEffect(() => {
@@ -87,7 +107,7 @@ export default function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-muted border-t-foreground" />
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-muted border-t-primary" />
           <p className="text-sm text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -111,13 +131,30 @@ export default function App() {
     );
   }
 
+  const resolvedUserId = userId || "";
+
   return (
     <ThemeContext.Provider
       value={{ theme, isDarkMode: theme === "dark", toggleTheme }}
     >
-      <div className="font-sans bg-background text-foreground min-h-screen">
-        <HomePage userId={userId || ""} />
-      </div>
+      <TooltipProvider delayDuration={200}>
+        <BrowserRouter>
+          <div className="font-sans bg-background text-foreground min-h-screen">
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Navigate to="/app" replace />} />
+                <Route path="/app" element={<AppLayout />}>
+                  <Route index element={<AskPage userId={resolvedUserId} />} />
+                  <Route path="connections" element={<ConnectionsPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                </Route>
+                <Route path="*" element={<Navigate to="/app" replace />} />
+              </Routes>
+            </Suspense>
+          </div>
+          <Toaster />
+        </BrowserRouter>
+      </TooltipProvider>
     </ThemeContext.Provider>
   );
 }

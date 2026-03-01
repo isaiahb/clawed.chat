@@ -80,6 +80,8 @@ const server = Bun.serve({
   routes: {
     // Serve the React frontend at root
     "/": indexHtml,
+    "/app": indexHtml,
+    "/app/*": indexHtml,
     "/webview": indexHtml,
     "/webview/*": indexHtml,
   },

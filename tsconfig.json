@@ -15,7 +15,8 @@
     "types": ["bun-types"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@frontend/*": ["./src/frontend/*"]
     }
   },
   "include": ["src/**/*"],
