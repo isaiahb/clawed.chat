@@ -94,32 +94,36 @@ These are scaffolding only — route definitions + handler signatures with TODOs
 
 ## Ready — Frontend Dashboard
 
-Currently building. These are the hackathon demo priorities.
-
 - [x] **DeployModal component** — provider selection (Anthropic/OpenAI/Google), API key input, deploy button
 - [x] **InstanceCard component** — status badge, subdomain link, start/stop/destroy controls, chat/watch buttons
-- [ ] **ChatPanel component** — real-time messaging with agent, subscribes to Convex `chat_messages`
-- [ ] **BrowserView component** — Browser Use `live_url` iframe for "watch your agent"
-- [ ] **Wire dashboard to Convex** — use `useQuery` for real-time instance list, `useMutation` for deploy/stop/destroy
+- [x] **AgentsPage** — clean instance list with deploy button, empty state, no feature chip filler
+- [x] **ChatPage** — full-page chat at `/app/chat/:instanceId` with real-time Convex subscription, browser view side panel toggle, back-to-agents link
+- [x] **BrowserView** — iframe wrapper for Browser Use `live_url` (integrated into ChatPage as side panel)
+- [x] **Wire dashboard to Convex** — `useQuery` for real-time instance list on AgentsPage, ChatPage subscribes to `chatMessages.listByInstance`
 - [x] **Deploy flow end-to-end** — GitHub Actions CI/CD to GCP VM is fully operational (1m35s deploys)
-- [ ] **Connections page** — list connected services, connect/disconnect buttons (Composio OAuth)
-- [ ] **Keys page** — list masked keys, add/delete (uses encryption.ts + llm-validation.ts)
+- [ ] **Connections page** — currently uses `mockConnections` — needs real Composio OAuth wiring
+- [ ] **Keys page** — list masked keys, add/delete (services are built, just need to connect to routes + Convex)
+- [ ] **Settings page** — currently all local zustand state, no backend calls
 
 ## Ready — Service Wiring
 
-These connect the API route TODOs to real Convex calls + services. Unblocked now that all keys are obtained.
-
 - [ ] **Wire `keys.api.ts`** — connect to Convex `apiKeys` functions + `encryption.ts` + `llm-validation.ts`
 - [ ] **Wire `connections.api.ts`** — connect to Convex `connections` functions + `composio.service.ts`
-- [ ] **Wire `chat.api.ts`** — connect to Convex `chatMessages:insert` + `openclaw.service.ts`
-- [ ] **Wire `openclaw.api.ts`** — connect outbound handler to Convex `chatMessages:insert` + UserSession TTS
-- [x] **Wire `instances.api.ts`** — connect to Convex `instances` functions + Pulumi service
+- [x] **Wire `chat.api.ts`** — verifies ownership, writes to Convex `chatMessages`, dispatches to OpenClaw gateway, touches last_active_at
+- [x] **Wire `openclaw.api.ts`** — validates token, writes agent response to Convex `chatMessages`, triggers glasses TTS
+- [x] **Wire `instances.api.ts`** — `getInstance` fetches from Convex with ownership verification + deploy/stop/start/destroy via Pulumi service
 - [x] **Wire Pulumi program** — Cloudflare DNS (proxied: true) and GCP VM are fully provisioned and working via CI/CD
 
-## Ready — Integrate Parth's Design
-- [ ] **Extract Parth's branch** — pull his UI/UX mockups into `parth/` folder for reference without touching his branch
-- [ ] **Port styling to app** — systematically move his Tailwind config, global CSS, and Shadcn UI components into our `app/` dashboard
-- [ ] **Update our components** — style DeployModal, InstanceCard, and Dashboard shell to match his cinematic/dark mode mission-control vibe (Docs 03/07)
+## Done — Integrate Parth's Design
+- [x] **Extract Parth's branch** — pulled into `parth/` folder (Vite app, runs standalone on port 5555 for reference)
+- [x] **Port styling to app** — 19 Shadcn UI components, 10 shared components, full `index.css` (~1800 lines), dark mode theme, glassmorphism, animations
+- [x] **Route restructure** — `/app/agents` (instance list), `/app/chat/:id` (chat), `/app/connections`, `/app/settings`. Nav: Agents | Connections | Settings
+- [x] **Header pill** — replaced "Agent Live" dropdown with "Glasses Connected/Offline" (wired to useMentraAuth)
+- [x] **Dark mode default** — flipped theme from "light" to "dark"
+- [x] **3D model fix** — decimated lobster claw (56MB STL → 263KB GLB), switched to useGLTF
+- [x] **Static asset routing** — fixed Bun.serve to serve `/assets/*` before HTML catch-all
+- [x] **Intro splash** — optimized (15fps throttle, slower claw), added `?intro=1` query param for demo replay
+- [x] **Full-height layout** — fixed half-page rendering with `min-h-screen`
 
 ## Blocked on Isaiah
 
@@ -145,6 +149,11 @@ These connect the API route TODOs to real Convex calls + services. Unblocked now
 - [x] Updated Mentra app with ngrok URL `isaiah-tpa.ngrok.app`
 - [x] Scrubbed all keys from `memory.md` and `isaiah.md`
 - [x] Gitignored entire `.isaiah/` folder
+- [x] Ported Parth's full design system into app (Shadcn UI, dark mode, glassmorphism, animations)
+- [x] Restructured routes: `/app/agents`, `/app/chat/:instanceId`, removed "AskPage"
+- [x] Wired chat flow end-to-end: chat.api → Convex → OpenClaw gateway → openclaw.api → Convex → frontend
+- [x] Fixed 3D claw model (56MB → 263KB), static asset routing, full-height layout
+- [x] Optimized intro splash animation, added `?intro=1` demo param
 
 ---
 
@@ -153,11 +162,11 @@ These connect the API route TODOs to real Convex calls + services. Unblocked now
 For an agent picking up work, do it in this order:
 
 ```
-1. Frontend dashboard components (ChatPanel, BrowserView)     ← IN PROGRESS
-2. Wire dashboard to Convex (useQuery/useMutation)
-3. Wire API routes to real Convex calls + services
-4. End-to-end deploy flow testing
-5. Landing page (web/)
+1. Wire keys.api.ts (encryption + validation services are built)     ← NEXT
+2. Wire connections.api.ts → Composio OAuth (replace mock data)
+3. Browser Use integration (create session, get live_url)
+4. End-to-end chat test (blocked on Isaiah: OpenClaw on VM)
+5. Landing page polish
 ```
 
 ---
@@ -177,4 +186,4 @@ For an agent picking up work, do it in this order:
 
 ---
 
-*Last updated: 2026-03-01 (session 2 — Clerk+Convex integration, Composio setup, frontend build started)*
+*Last updated: 2026-03-01 (session 3 — design integrated, routes restructured, chat flow wired end-to-end, 3D model fixed, dark mode default)*

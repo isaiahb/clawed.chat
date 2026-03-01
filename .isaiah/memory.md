@@ -77,29 +77,41 @@ app/ — Single Bun + Hono server (MentraOS Mini App)
 clawed.chat/
 ├── app/                    ← THE product (Bun + Hono MentraOS mini app)
 │   └── src/
-│       ├── index.ts        ← Bun.serve() entry point
+│       ├── index.ts        ← Bun.serve() entry point (static assets + HTML routes + Hono)
 │       ├── backend/
 │       │   ├── ClawedChat.ts       ← AppServer subclass
 │       │   ├── api/                ← Hono routes (<feature>.api.ts)
-│       │   │   ├── index.ts        ← Pure mount table (9 routes)
+│       │   │   ├── index.ts        ← Pure mount table (9 routes + /health)
 │       │   │   ├── webhooks.api.ts, me.api.ts, keys.api.ts
-│       │   │   ├── instances.api.ts, chat.api.ts
-│       │   │   ├── connections.api.ts, openclaw.api.ts
-│       │   │   ├── glasses.api.ts, desktop.api.ts
+│       │   │   ├── instances.api.ts ← WIRED: deploy/stop/start/destroy + getInstance from Convex
+│       │   │   ├── chat.api.ts      ← WIRED: write to Convex + dispatch to OpenClaw gateway
+│       │   │   ├── openclaw.api.ts  ← WIRED: receive agent responses → Convex + glasses TTS
+│       │   │   ├── connections.api.ts (stub), llm-proxy.api.ts (partial)
+│       │   │   ├── glasses.api.ts, desktop.api.ts (stubs)
 │       │   ├── session/            ← glasses-dependent state
 │       │   │   ├── UserSession.ts  ← per-user state (globalThis singleton)
 │       │   │   └── voice.manager.ts
 │       │   └── services/           ← stateless infra logic
-│       │       ├── openclaw.service.ts  ← Gateway RPC via chat.send
+│       │       ├── openclaw.service.ts  ← Gateway RPC via chat.send (fully implemented)
 │       │       ├── encryption.ts        ← AES-256-GCM (fully implemented)
 │       │       ├── llm-validation.ts    ← Per-provider key validation (implemented)
 │       │       ├── composio.service.ts  ← Composio SDK wrapper (stub)
-│       │       ├── instance.pulumi.ts, instance.service.ts
+│       │       ├── instance.pulumi.ts, instance.service.ts ← WIRED: Pulumi + Convex
 │       │       ├── dns.service.ts, browseruse.service.ts
 │       └── frontend/               ← React dashboard
+│           ├── Router.tsx          ← Route structure (site + auth-gated app)
+│           ├── layouts/            ← AppLayout (glasses pill, nav), SiteLayout (header/footer)
+│           ├── pages/app/          ← AgentsPage, ChatPage, ConnectionsPage, SettingsPage
+│           ├── pages/              ← Home, Pricing, Docs, SignIn, NotFound (site pages)
+│           ├── components/ui/      ← Shadcn UI components (19 total)
+│           ├── components/shared/  ← IntroSplash, CommandBar, LobsterClaw3D, etc.
+│           ├── stores/app-store.ts ← Zustand persisted state
+│           ├── types/index.ts      ← Shared TypeScript types
+│           └── data/mock.ts        ← Mock data (connections page still uses this)
 ├── convex/                 ← Schema + server functions
 │   ├── schema.ts           ← 5 tables: users, instances, api_keys, connections, chat_messages
 │   ├── users.ts, instances.ts, apiKeys.ts, connections.ts, chatMessages.ts
+├── parth/                  ← Designer's UI mockups (Vite app, reference only)
 ├── openclaw-channel-clawed/← Custom OpenClaw channel plugin
 │   ├── openclaw.plugin.json, package.json, src/index.ts
 ├── scripts/bake-image/     ← GCP VM image baking (bake.sh, setup-vm.sh, startup-script.sh)
@@ -181,6 +193,9 @@ All corrections from Doc 09 have been applied. ✅
 10. **Keys leaked in git history** — Clerk secret key, MentraOS API key, Pulumi token in old commits. Must rotate + scrub before making repo public.
 11. **No Clerk CLI** — all config is via dashboard or SDK only.
 12. **Composio CLI** — installed at `~/.composio/composio`, logged in as `isaiahballah@gmail.com`. Supports `auth-configs create`, `connected-accounts link`, etc.
+13. **Bun.serve static assets** — `routes: {"/*": indexHtml}` catch-all intercepts everything. Static files must be served via a `/assets/*` route handler *before* the catch-all, not in the `fetch` handler (which only runs for non-route matches).
+14. **Zustand persist + theme** — changing the default theme in code doesn't affect users who already have a persisted value in localStorage. Must clear `localStorage.removeItem("clawed-app-store")` or add a store version migration.
+15. **3D model sizes** — STL files can be huge (56MB+). Always decimate and export as GLB for web. The lobster claw model was reduced from 213K faces → 15K faces (56MB → 263KB) using `fast-simplification` via Python.
 
 ---
 
@@ -204,7 +219,7 @@ Independent: 05 Desktop, 07 Landing Page
 
 ---
 
-## What's Been Done (Sessions 1-2)
+## What's Been Done (Sessions 1-3)
 
 ### Session 1
 - Scaffolded entire monorepo, all config files
@@ -231,24 +246,69 @@ Independent: 05 Desktop, 07 Landing Page
 - Set up all env vars: Browser Use, Cloudflare, Composio, secrets, Anthropic
 - Started building frontend components: DeployModal, InstanceCard
 
+### Session 3 (design integration + chat wiring)
+- **Parth's design integration**: Extracted `origin/parth` branch to `parth/` reference folder. Ported into `app/`:
+  - 19 Shadcn UI components (`components/ui/`)
+  - 10 shared components (IntroSplash, CommandBar, LobsterClaw3D, ParticleField, etc.)
+  - Full `index.css` (~1800 lines — dark mode theme, glassmorphism, animations)
+  - SiteLayout + AppLayout, all site pages (Home, Pricing, Docs, SignIn, NotFound)
+  - Zustand store, custom hooks, TypeScript types, mock data
+  - react-router-dom, @tanstack/react-query, three.js, zustand added to deps
+- **3D model fix**: Decimated lobster claw STL (56MB → 263KB GLB) using trimesh + fast-simplification. Switched `LobsterClaw3D` from STLLoader to useGLTF.
+- **Static asset routing fix**: Moved `/assets/*` handler into Bun.serve `routes` so it takes priority over the `/*` HTML catch-all.
+- **Route restructure**:
+  - `/app/agents` → AgentsPage (instance list, deploy, manage)
+  - `/app/chat/:instanceId` → ChatPage (full-page chat + browser view side panel)
+  - `/app` → redirects to `/app/agents`
+  - Sign-in redirects to `/app/agents`
+  - Nav: Agents | Connections | Settings
+  - Removed old "AskPage" concept
+- **Header pill**: Replaced "Agent Live" status dropdown with "Glasses Connected/Offline" pill (wired to useMentraAuth)
+- **Dark mode default**: Flipped zustand store default from "light" to "dark"
+- **Empty state cleanup**: Removed non-clickable feature chips from agents page, simplified to icon + CTA
+- **Intro splash optimization**: Throttled fish swim animation from 60fps to ~15fps, slowed claw movement (280ms→400ms intervals), smoother transitions. Added `?intro=1` query param to force replay for demos.
+- **Full-height layout fix**: Added `min-h-screen` to main app wrapper to prevent half-page rendering.
+- **Chat flow wired end-to-end**:
+  - `chat.api.ts`: Verifies instance ownership, writes user message to Convex `chatMessages`, dispatches to OpenClaw gateway RPC, touches `last_active_at`
+  - `openclaw.api.ts`: Validates token, writes agent response to Convex `chatMessages` (triggers real-time frontend update), triggers glasses TTS via MentraOS
+  - `instances.api.ts`: `getInstance` now fetches from Convex with ownership verification
+  - ChatPage frontend already subscribes via `useQuery(api.chatMessages.listByInstance)` — messages appear in real-time
+
 ---
 
 ## Next Priorities
 
 ### Isaiah still needs to:
-- OpenClaw local dev install
+- OpenClaw local dev install (`bun i -g openclaw`)
+- Bake GCP VM image (`./scripts/bake-image/bake.sh`)
 - Sponsor credit signups
 - Rotate leaked keys + scrub git history
 
-### Agents currently working on:
-1. **Design Integration (Parth's Branch)** — extracting `origin/parth` to a local `parth/` reference folder without touching his branch.
-2. **UI Overhaul** — systematically porting his Tailwind config, global CSS, and Shadcn UI components into our `app/` dashboard to match his cinematic/dark mode mission-control vibe.
-3. **Frontend Dashboard** — styling DeployModal, InstanceCard, ChatPanel, BrowserView components using the new design system.
+### What's wired and working:
+- ✅ Clerk auth (sign in/out, JWT validation)
+- ✅ Convex real-time DB (schema, all server functions)
+- ✅ Instance deploy/stop/start/destroy (Pulumi → GCP + Cloudflare)
+- ✅ CI/CD (GitHub Actions → GCP VM, 1m35s deploys)
+- ✅ Chat backend (user msg → Convex → OpenClaw gateway → agent response → Convex → frontend)
+- ✅ LLM Proxy (partial — forwards to Anthropic/OpenAI/Google, token verification stubbed)
+- ✅ Frontend route structure, dark mode, design system
 
-### Agents can work on after frontend:
-1. **Service Wiring** — connect API route TODOs to real Convex calls + services
-2. **Landing Page** — `web/` (low priority but independent)
+### What's still mocked/stubbed:
+- ❌ ConnectionsPage — uses `mockConnections` hardcoded data (needs Composio OAuth wiring)
+- ❌ SettingsPage — all local zustand state, no backend calls
+- ❌ `keys.api.ts` — auth check works, no encryption/validation/Convex calls (services are built, just need connecting)
+- ❌ `connections.api.ts` — returns stub redirects, no Composio calls
+- ❌ `me.api.ts` — returns placeholder user data
+- ❌ `desktop.api.ts` — all Convex calls are TODOs
+- ❌ Browser Use integration — no `live_url` being produced
+- ❌ End-to-end chat — blocked on OpenClaw running on VM
+
+### Agent should work on next:
+1. **Wire `keys.api.ts`** — encryption.ts + llm-validation.ts are fully implemented, just connect to routes + Convex
+2. **Wire `connections.api.ts`** — connect to Composio OAuth, replace mock data on ConnectionsPage
+3. **Browser Use integration** — create session, get live_url when instance starts
+4. **Landing page polish** — Home.tsx is big but could use refinements
 
 ---
 
-*Last updated: 2026-03-01 (session 3 — GCP Pulumi deploy successful with HTTPS + CI/CD optimized. Now integrating Parth's UI redesign from a separate branch)*
+*Last updated: 2026-03-01 (session 3 — design integrated, routes restructured, chat flow wired end-to-end, 3D model fixed, dark mode default)*
