@@ -5,9 +5,9 @@
  * and Hono-based AppServer for the backend + MentraOS SDK.
  */
 
-import {ClawedChat} from "./backend/ClawedChat"
-import {api} from "./backend/api"
-import {createMentraAuthRoutes} from "@mentra/sdk"
+import { ClawedChat } from "./backend/ClawedChat"
+import { api } from "./backend/api"
+import { createMentraAuthRoutes } from "@mentra/sdk"
 import indexHtml from "./frontend/index.html"
 
 // Configuration from environment
@@ -60,14 +60,15 @@ const isDevelopment = process.env.NODE_ENV === "development"
 // Serve static assets
 const publicPath = `${process.cwd()}/src/public/assets`
 
-// Start Bun server with HMR support
+// Start Bun server with HTML route bundling
 Bun.serve({
   port: PORT,
   idleTimeout: 120, // 2 minutes for SSE connections
-  development: isDevelopment && {
-    hmr: true,
-    console: true,
-  },
+  // Bun's HTML routes require the development bundling pipeline to serve compiled assets.
+  // HMR is only enabled in actual development mode.
+  development: isDevelopment
+    ? { hmr: true, console: true }
+    : true,
   routes: {
     "/": indexHtml,
     "/dashboard": indexHtml,
