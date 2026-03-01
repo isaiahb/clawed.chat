@@ -1,18 +1,17 @@
 /**
  * deploy/index.ts — Pulumi program for clawed.chat's own infrastructure
  *
- * This deploys OUR backend (the Hono/Bun server) to GCP.
- * This is NOT the per-user provisioning — that lives in
- * app/src/backend/services/instance.pulumi.ts and uses the Automation API.
+ * This creates the backend VM + networking + DNS.
+ * Code deployment happens separately via CI/CD (SSH + rsync).
  *
  * What this creates:
- *   - GCP Compute Engine VM running the clawed.chat Hono/Bun server
- *   - Firewall rules for HTTP/HTTPS/WebSocket traffic
- *   - Cloudflare DNS records pointing clawed.chat to the server
- *   - Static external IP so DNS doesn't change on reboot
+ *   - GCP Compute Engine VM (blank Ubuntu 24.04 — code deployed via CI)
+ *   - Static external IP (survives VM restarts)
+ *   - Firewall rules for HTTP/HTTPS/WebSocket/dev traffic
+ *   - Cloudflare DNS: clawed.chat + *.clawed.chat → server IP
  *
- * Runs via GitHub Actions on push to main:
- *   .github/workflows/deploy.yml → pulumi up
+ * This is NOT the per-user provisioning — that lives in
+ * app/src/backend/services/instance.pulumi.ts
  */
 
 import * as pulumi from "@pulumi/pulumi"
@@ -54,53 +53,33 @@ const firewall = new gcp.compute.Firewall("clawed-chat-firewall", {
 
 // ─── Backend VM ──────────────────────────────────────────────────────────────
 
+// Minimal first-boot script — just installs Bun and creates the app directory.
+// Actual code deployment happens via CI/CD (GitHub Actions → SSH → bun install → restart).
 const startupScript = `#!/bin/bash
 set -euo pipefail
 
-# Install Bun if not present
-if ! command -v bun &> /dev/null; then
-  curl -fsSL https://bun.sh/install | bash
-  export BUN_INSTALL="$HOME/.bun"
-  export PATH="$BUN_INSTALL/bin:$PATH"
+# Only run on first boot (skip if Bun already installed)
+if command -v bun &> /dev/null; then
+  echo "[clawed.chat] Bun already installed, skipping first-boot setup"
+  exit 0
 fi
 
-# Clone or pull latest code
-APP_DIR="/opt/clawed-chat"
-if [ -d "$APP_DIR" ]; then
-  cd "$APP_DIR"
-  git pull origin main
-else
-  git clone https://github.com/BallahTech/clawed.chat.git "$APP_DIR"
-  cd "$APP_DIR"
-fi
+echo "[clawed.chat] First boot — installing Bun..."
+curl -fsSL https://bun.sh/install | bash
+ln -sf /root/.bun/bin/bun /usr/local/bin/bun
+ln -sf /root/.bun/bin/bunx /usr/local/bin/bunx
 
-# Install dependencies
-bun install
+# Install Pulumi CLI (needed for Automation API at runtime)
+curl -fsSL https://get.pulumi.com | bash
+ln -sf /root/.pulumi/bin/pulumi /usr/local/bin/pulumi
 
-# Start the app via systemd
-cat > /etc/systemd/system/clawed-chat.service << 'EOF'
-[Unit]
-Description=clawed.chat Hono/Bun server
-After=network.target
+# Create app directory
+mkdir -p /opt/clawed-chat/app
 
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/opt/clawed-chat/app
-ExecStart=/root/.bun/bin/bun run start
-Restart=always
-RestartSec=5
-EnvironmentFile=/opt/clawed-chat/.env
+# Install basic tools
+apt-get update -qq && apt-get install -y -qq jq git curl unzip
 
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl daemon-reload
-systemctl enable clawed-chat
-systemctl restart clawed-chat
-
-echo "[clawed.chat] backend server started"
+echo "[clawed.chat] First boot complete — waiting for CI/CD to deploy app code"
 `
 
 const server = new gcp.compute.Instance("clawed-chat-server", {
@@ -112,7 +91,7 @@ const server = new gcp.compute.Instance("clawed-chat-server", {
   bootDisk: {
     initializeParams: {
       image: "ubuntu-os-cloud/ubuntu-2404-lts-amd64",
-      size: 20, // 20 GB
+      size: 30,
     },
   },
   networkInterfaces: [{
@@ -121,12 +100,11 @@ const server = new gcp.compute.Instance("clawed-chat-server", {
       natIp: staticIp.address,
     }],
   }],
-  metadata: {
-    "startup-script": startupScript,
-  },
+  metadataStartupScript: startupScript,
   serviceAccount: {
     scopes: ["https://www.googleapis.com/auth/cloud-platform"],
   },
+  allowStoppingForUpdate: true,
 })
 
 // ─── DNS Records ─────────────────────────────────────────────────────────────
