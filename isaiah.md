@@ -155,86 +155,37 @@ PUBLIC_URL=https://<your-static-url>.ngrok-free.app
 
 ---
 
-## ⏳ 7. GCP (VM provisioning) — ~30 min
+## ✅ 7. GCP (VM provisioning) — DONE
 
-⚠️ This is the most involved setup. Do it when you have 30+ minutes.
-✅ **gcloud CLI installed** (v558.0.0). Just need to auth and configure:
+**All set up via `gcloud` CLI.**
 
-```bash
-gcloud auth login
-gcloud config set project <YOUR_PROJECT_ID>
+- **Project ID:** `clawed-chat`
+- **Project Number:** `917234576075`
+- **Billing:** linked to `016120-888B2D-47F90B` (My Billing Account 4)
+- **APIs Enabled:** Compute Engine, Cloud Resource Manager
+- **Service Account:** `pulumi-provisioner@clawed-chat.iam.gserviceaccount.com`
+  - Roles: `roles/compute.admin`, `roles/iam.serviceAccountUser`
+  - Key: `/tmp/clawed-chat-sa-key.json` ⚠️ **move this somewhere safe!**
+    ```bash
+    mkdir -p ~/.config/gcloud
+    mv /tmp/clawed-chat-sa-key.json ~/.config/gcloud/clawed-chat-sa-key.json
+    ```
+- **Firewall Rule:** `allow-openclaw` → tcp:18789,80,443 → tag `openclaw-instance`
+
+Save for `.env`:
+```
+GCP_PROJECT=clawed-chat
+GCP_ZONE=us-west1-a
+GOOGLE_APPLICATION_CREDENTIALS=/Users/isaiah/.config/gcloud/clawed-chat-sa-key.json
 ```
 
-### 7a. Project setup
+### 7d. Pre-baked VM image (hackathon day task) — ❌ not done yet
 
-1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Create a new project: **"clawed-chat"**
-3. Note the **Project ID** (not the display name — the slug like `clawed-chat-123456`)
-4. Enable these APIs (search in the API Library):
-   - **Compute Engine API**
-   - **Cloud Resource Manager API**
-5. Wait for Compute Engine to finish initializing (takes ~60 seconds on first enable)
-
-### 7b. Service account for Pulumi
-
-1. Go to **IAM & Admin → Service Accounts**
-2. Create a service account:
-   - Name: `pulumi-provisioner`
-   - Description: "Provisions per-user VMs and manages lifecycle"
-3. Grant these roles:
-   - `Compute Admin` (roles/compute.admin)
-   - `Service Account User` (roles/iam.serviceAccountUser)
-4. Click into the service account → **Keys** tab → **Add Key** → **Create new key** → JSON
-5. Download the JSON key file
-6. Save for `.env`:
-   ```
-   GCP_PROJECT=clawed-chat-123456
-   GCP_ZONE=us-west1-a
-   GOOGLE_APPLICATION_CREDENTIALS=/path/to/your/service-account-key.json
-   ```
-   Or alternatively, base64-encode the key:
-   ```bash
-   cat service-account-key.json | base64 | tr -d '\n'
-   ```
-   ```
-   GCP_CREDENTIALS_BASE64=<base64_string>
-   ```
-
-### 7c. Firewall rule (allow traffic to OpenClaw instances)
-
-```bash
-gcloud config set project clawed-chat-123456
-
-gcloud compute firewall-rules create allow-openclaw \
-  --direction=INGRESS \
-  --action=ALLOW \
-  --rules=tcp:18789,tcp:80,tcp:443 \
-  --source-ranges=0.0.0.0/0 \
-  --target-tags=openclaw-instance \
-  --description="Allow traffic to OpenClaw gateway and web"
-```
-
-### 7d. Pre-baked VM image (hackathon day task)
-
-This is the image every user VM boots from. Script will be in `scripts/bake-image/`. The idea:
-
-1. Create a base VM (e2-small, Ubuntu 22.04)
-2. SSH in, install: Node.js 22, OpenClaw, configure defaults
-3. Stop the VM
-4. Create an image from its disk:
-   ```bash
-   gcloud compute images create clawed-chat-openclaw-v1 \
-     --source-disk=openclaw-base \
-     --source-disk-zone=us-west1-a \
-     --family=clawed-chat
-   ```
-5. Delete the base VM (you only need the image)
-
-I'll flesh out the full bake script in `scripts/bake-image/` — but you need the GCP project set up first.
+This is the image every user VM boots from. Script will be in `scripts/bake-image/`. An agent can build this now that GCP is set up.
 
 ---
 
-## ❌ 8. Cloudflare (DNS for *.clawed.chat) — ~5 min
+## ⏳ 8. Cloudflare (DNS for *.clawed.chat) — ~5 min
 
 1. Go to [dash.cloudflare.com](https://dash.cloudflare.com)
 2. Make sure `clawed.chat` is added as a zone (you probably already have this)
@@ -335,9 +286,9 @@ CONVEX_URL=https://your-project.convex.cloud
 BROWSER_USE_API_KEY=bu_
 
 # GCP
-GCP_PROJECT=
+GCP_PROJECT=clawed-chat
 GCP_ZONE=us-west1-a
-GOOGLE_APPLICATION_CREDENTIALS=  # path to JSON key file
+GOOGLE_APPLICATION_CREDENTIALS=/Users/isaiah/.config/gcloud/clawed-chat-sa-key.json
 
 # Cloudflare
 CLOUDFLARE_ZONE_ID=
@@ -364,12 +315,13 @@ Once everything is set up, you should be able to:
 - [x] `gcloud version` → 558.0.0 installed
 - [x] `pulumi version` → 3.224.0 installed
 - [x] `convex --version` → 1.32.0 installed
+- [x] GCP project `clawed-chat` created, billing linked, APIs enabled
+- [x] GCP service account + key + firewall rule created
+- [ ] ⚠️ Move SA key: `mv /tmp/clawed-chat-sa-key.json ~/.config/gcloud/`
 - [ ] ngrok static URL set + Mentra app public URL updated
 - [ ] Clerk dashboard shows app with Google OAuth enabled
 - [ ] `bunx convex dev` → connects to your Convex project
 - [ ] `curl` to Browser Use API → returns a browser session
-- [ ] `gcloud auth login` → authed
-- [ ] `gcloud compute instances list` → no errors (GCP project works)
 - [ ] Cloudflare zone has `clawed.chat` with Zone ID noted
-- [ ] `pulumi whoami` → shows your account
+- [ ] `pulumi login` → `pulumi whoami` shows your account
 - [ ] Anthropic API key ready for demo day
