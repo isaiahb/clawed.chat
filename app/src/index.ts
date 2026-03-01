@@ -20,6 +20,7 @@
 import { ClawedChat } from "./backend/ClawedChat"
 import { api } from "./backend/api"
 import { createMentraAuthRoutes } from "@mentra/sdk"
+import { openclawWebSocket } from "./backend/api/openclaw-proxy"
 import indexHtml from "./frontend/index.html"
 
 // Configuration from environment
@@ -76,6 +77,8 @@ Bun.serve({
   port: PORT,
   idleTimeout: 120,
   development: isDevelopment ? { hmr: true, console: true } : false,
+  // WebSocket handlers for the OpenClaw proxy
+  websocket: openclawWebSocket,
   routes: {
     // ── Backend routes (more-specific, matched before "/*") ──────────
     //
@@ -85,7 +88,15 @@ Bun.serve({
     //
     // All backend traffic is forwarded to the Hono app.
 
-    "/api/*": (request: Request) => app.fetch(request),
+    "/api/*": (request: Request, server: any) => {
+      // WebSocket upgrade for the OpenClaw proxy endpoint
+      if (new URL(request.url).pathname === "/api/openclaw-ws") {
+        const upgraded = server.upgrade(request)
+        if (upgraded) return undefined
+        return new Response("WebSocket upgrade failed", { status: 400 })
+      }
+      return app.fetch(request)
+    },
     "/mentra/*": (request: Request) => app.fetch(request),
     "/clerk/*": (request: Request) => app.fetch(request),
 
