@@ -136,6 +136,15 @@ These are scaffolding only — route definitions + handler signatures with TODOs
 
 ---
 
+## Done — Session 5 (production deploy fixes + demo prep)
+
+- [x] **Bun.serve routing fix** — put `/api/*`, `/mentra/*`, `/clerk/*` as explicit routes before `"/*"` SPA catch-all so API traffic goes to Hono while HTML bundler handles SPA
+- [x] **jsxDEV production fix** — `development: false` in prod (not `{ hmr: false }` which is truthy → still emits dev JSX). Earlier theory that `false` broke HTML routes was wrong — crash was caused by missing `@composio/core`
+- [x] **convex-server-stub plugin** — stubs `convex/server` for frontend bundler. Mirrors real `createApi()` proxy with `Symbol.for("functionName")`. Fixes "Unseekable reading file" error on `.bun/` cache symlinks
+- [x] **@composio/core added to package.json** — was installed locally but missing from deps, causing all VM deploys to crash. Also made import lazy as defensive coding
+- [x] **Favicon** — replaced inline 🐾 emoji with Parth's animated claw SVG
+- [x] **CI/CD verified working** — GitHub Actions → GCP VM deploys succeed, `/api/health` returns JSON, site renders at clawed.chat
+
 ## Done
 
 - [x] Clone OpenClaw repo to `.repos/openclaw` for reference
@@ -174,9 +183,10 @@ These are scaffolding only — route definitions + handler signatures with TODOs
 For an agent picking up work, do it in this order:
 
 ```
-1. End-to-end chat test (blocked on Isaiah: OpenClaw on VM)          ← NEXT
-2. Bake GCP image (blocked on Isaiah: run bake.sh)
-3. Test Browser Use + Composio live flows (blocked on deploy)
+1. Demo polish — verify landing page, sign-in, agents, settings, connections all render cleanly on prod
+2. End-to-end chat test (blocked on Isaiah: OpenClaw on VM)
+3. Bake GCP image (blocked on Isaiah: run bake.sh)
+4. Test Browser Use + Composio live flows (blocked on deploy)
 ```
 
 ---
@@ -196,4 +206,4 @@ For an agent picking up work, do it in this order:
 
 ---
 
-*Last updated: 2026-03-01 (session 4 — wired all APIs to Convex + services, Keys UI, ConnectionsPage frontend, Browser Use + Composio SDK, landing page polish, Settings → Clerk profile, zustand cleanup)*
+*Last updated: 2026-03-01 (session 5 — production deploy fixes: Bun.serve routing, jsxDEV fix, convex-server-stub plugin, @composio/core in package.json, favicon, CI/CD verified)*

@@ -246,7 +246,7 @@ Independent: 05 Desktop, 07 Landing Page
 - Set up all env vars: Browser Use, Cloudflare, Composio, secrets, Anthropic
 - Started building frontend components: DeployModal, InstanceCard
 
-### Session 3 (design integration + chat wiring)
+### Session 3 (design integration + chat wiring) — 2026-03-01 02:00–06:00
 - **Parth's design integration**: Extracted `origin/parth` branch to `parth/` reference folder. Ported into `app/`:
   - 19 Shadcn UI components (`components/ui/`)
   - 10 shared components (IntroSplash, CommandBar, LobsterClaw3D, ParticleField, etc.)
@@ -276,6 +276,14 @@ Independent: 05 Desktop, 07 Landing Page
 
 ---
 
+### Session 5 (production deploy fixes + demo prep) — 2026-03-01 06:00–ongoing
+- **Bun.serve routing fix**: Put `/api/*`, `/mentra/*`, `/clerk/*` as explicit routes before `"/*"` SPA catch-all. Bun matches more-specific patterns first, so API traffic goes to Hono while HTML bundler handles everything else (with proper CSS/JS injection).
+- **jsxDEV production fix**: `development: false` in production (not `{ hmr: false }` which is truthy → still emits dev JSX). The earlier theory that `false` broke HTML routes was wrong — the crash was caused by missing `@composio/core`.
+- **convex-server-stub plugin**: Created `plugins/convex-server-stub.ts` — stubs out `convex/server` for the frontend HTML bundler. The generated `convex/_generated/api.js` imports `anyApi` from `convex/server`, which Bun tried to bundle into the frontend, hitting "Unseekable reading file" on `.bun/` cache symlinks. Stub mirrors real Convex `createApi()` proxy with `Symbol.for("functionName")`.
+- **@composio/core missing from package.json**: Was installed locally (in `node_modules/.bun/` cache) but never added to `app/package.json`. Fresh `bun install` on VM couldn't find it. Added properly + made import lazy as defensive coding.
+- **Favicon**: Replaced inline 🐾 emoji with Parth's animated claw SVG (`favicon.svg`)
+- **CI/CD verified working**: GitHub Actions → GCP VM deploys succeed, `/api/health` returns JSON, site renders at clawed.chat
+
 ## Next Priorities
 
 ### Isaiah still needs to:
@@ -285,13 +293,14 @@ Independent: 05 Desktop, 07 Landing Page
 - Rotate leaked keys + scrub git history
 
 ### What's wired and working:
+- ✅ Production deploy — clawed.chat serving HTML + CSS + JS + API correctly
 - ✅ Clerk auth (sign in/out, JWT validation)
 - ✅ Convex real-time DB (schema, all server functions)
 - ✅ Instance deploy/stop/start/destroy (Pulumi → GCP + Cloudflare)
-- ✅ CI/CD (GitHub Actions → GCP VM, 1m35s deploys)
+- ✅ CI/CD (GitHub Actions → GCP VM, deploys succeed)
 - ✅ Chat backend (user msg → Convex → OpenClaw gateway → agent response → Convex → frontend)
 - ✅ LLM Proxy (partial — forwards to Anthropic/OpenAI/Google, token verification stubbed)
-- ✅ Frontend route structure, dark mode, design system
+- ✅ Frontend route structure, dark mode, design system, animated claw favicon
 - ✅ `keys.api.ts` — list/add/delete wired to encryption + LLM validation + Convex
 - ✅ `connections.api.ts` — list/initiate/callback/disconnect wired to Composio service + Convex
 - ✅ `me.api.ts` — fetches user profile from Convex, graceful fallback for unsynced users
@@ -300,7 +309,7 @@ Independent: 05 Desktop, 07 Landing Page
 - ✅ ConnectionsPage frontend — wired to real `/api/connections` with service catalog merge, OAuth flow, loading states
 - ✅ Browser Use integration — real API calls in `browseruse.service.ts` (create/get/destroy/ensureSession), wired into deploy/start/destroy flows
 - ✅ Browser Use session stored in Convex (`browser_use_session_id` + `browser_use_live_url`) — ChatPage BrowserView reads `live_url`
-- ✅ Composio SDK — real `@composio/core` v0.6 calls (link, waitForConnection, delete, list, refresh, getRawComposioTools)
+- ✅ Composio SDK — real `@composio/core` v0.6 calls (lazy-loaded, link, waitForConnection, delete, list, refresh, getRawComposioTools)
 - ✅ Landing page polish — "How It Works" 3-step section, Browser Use + MentraOS hackathon attribution, fixed testimonials
 - ✅ Settings page — Clerk `useUser()` for name/email/avatar, `clerkUser.update()` for name saves, removed hardcoded "Parth", zustand cleanup
 
@@ -310,10 +319,10 @@ Independent: 05 Desktop, 07 Landing Page
 - ❌ Composio OAuth live test — SDK is wired but needs real callback URL to test end-to-end
 
 ### Agent should work on next:
-1. **End-to-end chat test** — blocked on Isaiah: OpenClaw on VM
-2. **Bake GCP image** — blocked on Isaiah: run `bake.sh`
-3. **Test Browser Use + Composio live flows** — blocked on deploy
+1. **Demo polish** — make sure landing page, sign-in, agents, settings, connections all look good
+2. **End-to-end chat test** — blocked on Isaiah: OpenClaw on VM
+3. **Bake GCP image** — blocked on Isaiah: run `bake.sh`
 
 ---
 
-*Last updated: 2026-03-01 (session 4 — wired all remaining APIs to Convex + services, added Keys UI, wired ConnectionsPage frontend, implemented real Browser Use Cloud integration in deploy/start/destroy flows)*
+*Last updated: 2026-03-01 (session 5 — production deploy fixes: Bun.serve routing, jsxDEV fix, convex-server-stub plugin, @composio/core in package.json, favicon)*
