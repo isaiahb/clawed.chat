@@ -15,7 +15,7 @@ logs/
 *.log
 
 # ─── Convex ───────────────────────────────────────────────────────────────────
-convex/_generated/
+# convex/_generated/ — tracked so deploys work (server imports from these)
 
 # ─── Pulumi ───────────────────────────────────────────────────────────────────
 .pulumi/
