@@ -97,7 +97,18 @@ Bun.serve({
       }
       return app.fetch(request)
     },
-    "/mentra/*": (request: Request) => app.fetch(request),
+    "/mentra/*": (request: Request, server: any) => {
+      // Mentra SDK needs WebSocket upgrade for glasses connections
+      if (request.headers.get("upgrade")?.toLowerCase() === "websocket") {
+        const upgraded = server.upgrade(request)
+        if (upgraded) return undefined
+        return new Response("WebSocket upgrade failed", { status: 400 })
+      }
+      return app.fetch(request)
+    },
+    // Mentra SDK webhook — receives session_request from Mentra cloud
+    // Must be routed to Hono before the "/*" SPA catch-all swallows it
+    "/webhook": (request: Request) => app.fetch(request),
     "/clerk/*": (request: Request) => app.fetch(request),
 
     // ── Static assets ────────────────────────────────────────────────
