@@ -88,8 +88,8 @@ export async function sendMessage(config: SendMessageConfig): Promise<SendMessag
     let authenticated = false
     let rpcIdCounter = 1
 
-    // Track pending RPC requests by their ID
-    const pendingRpcs = new Map<number, {
+    // Track pending RPC requests by their string ID
+    const pendingRpcs = new Map<string, {
       resolve: (value: any) => void
       reject: (error: Error) => void
     }>()
@@ -111,36 +111,47 @@ export async function sendMessage(config: SendMessageConfig): Promise<SendMessag
       reject(new Error(`[openclaw] RPC timeout after ${RPC_TIMEOUT_MS}ms`))
     }, RPC_TIMEOUT_MS)
 
-    /** Send a JSON-RPC request and return a promise for the response */
+    /** Send an OpenClaw RPC request and return a promise for the response.
+     * Frame format: {type: "req", id: "<string>", method: "<string>", params: {...}}
+     * Response format: {type: "res", id: "<string>", ok: boolean, payload?: ..., error?: ...}
+     */
     function sendRpc(method: string, params: Record<string, unknown>): Promise<any> {
-      const id = rpcIdCounter++
+      const id = `rpc-${rpcIdCounter++}`
       return new Promise((rpcResolve, rpcReject) => {
         pendingRpcs.set(id, {resolve: rpcResolve, reject: rpcReject})
-        const frame = JSON.stringify({id, method, params})
+        const frame = JSON.stringify({type: "req", id, method, params})
         ws.send(frame)
       })
     }
 
     /** Handle the connect flow after receiving the challenge nonce */
-    async function handleConnect(nonce: string) {
+    async function handleConnect(_nonce: string) {
       try {
-        // Send the connect RPC with nonce + auth token
-        // This mirrors what the OpenClaw client SDK does in sendConnect()
+        // Send the connect RPC with auth token
+        // Frame format validated against OpenClaw source (ConnectParamsSchema):
+        //   - minProtocol/maxProtocol: integer >= 1 (current version is 3)
+        //   - client.id: one of GATEWAY_CLIENT_IDS (e.g. "gateway-client", "webchat", "cli")
+        //   - client.mode: one of GATEWAY_CLIENT_MODES (e.g. "backend", "webchat", "cli")
+        //   - client.version: non-empty string
+        //   - client.platform: non-empty string
+        //   - auth.token: the gateway auth token
+        // The nonce is NOT included in connect params (it's only used for device auth).
+        // The challenge just proves the client received the event before sending connect.
         const connectParams: Record<string, unknown> = {
-          nonce,
+          minProtocol: 3,
+          maxProtocol: 3,
+          client: {
+            id: "gateway-client",
+            displayName: `${source}:${userId}`,
+            version: "0.1.0",
+            platform: "linux",
+            mode: "backend",
+          },
           auth: {
             token,
           },
           role: "operator",
           scopes: ["operator.admin"],
-          signedAtMs: Date.now(),
-          client: {
-            id: userId,
-            displayName: `${source}:${userId}`,
-            type: "clawed-chat",
-          },
-          platform: "linux",
-          supportedEncodings: ["json"],
         }
 
         await sendRpc("connect", connectParams)
@@ -194,8 +205,8 @@ export async function sendMessage(config: SendMessageConfig): Promise<SendMessag
           return
         }
 
-        // ── Handle RPC responses (have an id field) ────────────────────
-        if (typeof data.id === "number") {
+        // ── Handle RPC responses (type: "res" with string id) ──────────
+        if (data.type === "res" && typeof data.id === "string") {
           const pending = pendingRpcs.get(data.id)
           if (!pending) return
 
