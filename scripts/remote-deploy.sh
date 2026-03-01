@@ -66,8 +66,8 @@ fi
 
 log "Installing dependencies..."
 cd "$NEW_DIR"
-# Note: We install ALL deps (not --production) because Bun's serve-time bundler
-# needs devDependencies like tailwindcss and bun-plugin-tailwind to compile the frontend.
+# Install ALL deps — devDependencies needed at runtime for Bun's lazy bundler
+# (tailwindcss, bun-plugin-tailwind configured in bunfig.toml)
 bun install 2>&1 | tail -3
 
 # ─── Step 4: Fix env vars for server context ─────────────────────────────────

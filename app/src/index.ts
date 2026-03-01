@@ -1,14 +1,18 @@
 /**
  * clawed.chat — Fullstack Entry Point
  *
- * Uses Bun.serve() with HTML imports for the frontend
- * and Hono-based AppServer for the backend + MentraOS SDK.
+ * Dev:  bun dev        → runtime bundling + HMR
+ * Prod: bun run start  → development: false, lazy cached minified bundles
+ * Static: bun run build → bun build index.html to dist/ for CDN/static hosting
+ *
+ * The server always runs from source (Bun handles TS natively).
+ * bunfig.toml configures plugins (tailwind, react-dedupe) and env inlining.
  */
 
 import { ClawedChat } from "./backend/ClawedChat"
 import { api } from "./backend/api"
 import { createMentraAuthRoutes } from "@mentra/sdk"
-import indexHtml from "./frontend/index.html"
+import index from "./frontend/index.html"
 
 // Configuration from environment
 const PORT = parseInt(process.env.PORT || "80", 10)
@@ -52,39 +56,51 @@ app.route("/api", api)
 // Start the SDK app (registers SDK routes, checks version)
 await app.start()
 
-console.log(`clawed.chat running at http://localhost:${PORT}`)
-
-// Determine environment
 const isDevelopment = process.env.NODE_ENV === "development"
 
-// Serve static assets — resolved once at startup
-const publicPath = `${process.cwd()}/src/public/assets`
+console.log(`clawed.chat running at http://localhost:${PORT} (${isDevelopment ? "development" : "production"})`)
 
-// Start Bun server with HTML route bundling
+// Start Bun server
 Bun.serve({
   port: PORT,
-  idleTimeout: 120, // 2 minutes for SSE connections
-  // Bun 1.3.10 needs the dev bundler pipeline for HTML routes (development !== false).
-  // In production: keep bundler active but disable HMR socket + dev console.
-  // React/Clerk prod mode is controlled by NODE_ENV=production in systemd.
-  development: isDevelopment
-    ? { hmr: true, console: true }
-    : { hmr: false, console: false },
-  routes: {
-    // Static assets — checked before the catch-all HTML route
-    "/assets/*": (request: Request) => {
-      const url = new URL(request.url)
-      const filePath = `${publicPath}${url.pathname.replace("/assets", "")}`
-      const file = Bun.file(filePath)
-      return new Response(file)
-    },
-    "/*": indexHtml,
+  idleTimeout: 120,
+  development: isDevelopment && {
+    hmr: true,
+    console: true,
   },
-  fetch(request) {
-    // Handle all other requests through Hono app
-    return app.fetch(request)
+  routes: {
+    // Serve bundled index.html at root.
+    // Can't use "/*" here — it would swallow /api/* before fetch() sees them.
+    "/": index,
+  },
+  async fetch(request) {
+    const url = new URL(request.url)
+
+    // API, SDK, and Mentra routes → Hono
+    if (
+      url.pathname.startsWith("/api/") ||
+      url.pathname.startsWith("/mentra/") ||
+      url.pathname.startsWith("/clerk/")
+    ) {
+      return app.fetch(request)
+    }
+
+    // Try Hono for any other registered backend routes
+    const response = await app.fetch(request)
+    if (response.status !== 404) {
+      return response
+    }
+
+    // SPA fallback — serve the same bundled index.html for all other paths.
+    // The `index` import is a Response-like object from Bun's HTML bundler.
+    // Clone it so it can be served multiple times.
+    return new Response(Bun.file(import.meta.dir + "/frontend/index.html"))
   },
 })
+
+if (isDevelopment) {
+  console.log("  → HMR enabled")
+}
 
 // Graceful shutdown
 const shutdown = async () => {
