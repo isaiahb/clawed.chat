@@ -1,17 +1,28 @@
 import {BrowserWindow, Updater} from "electrobun/bun"
 
-const DEV_SERVER_PORT = 5173
-const DEV_SERVER_URL = `http://localhost:${DEV_SERVER_PORT}`
+const defaultHmrUrl = "http://localhost:5174"
 
 async function getMainViewUrl(): Promise<string> {
   const channel = await Updater.localInfo.channel()
-  if (channel === "dev") {
+  const requestedHmrUrl = process.env.CLAWED_DESKTOP_HMR_URL || ""
+
+  if (channel === "dev" && requestedHmrUrl) {
     try {
-      await fetch(DEV_SERVER_URL, {method: "HEAD"})
-      console.log(`[desktop] HMR enabled at ${DEV_SERVER_URL}`)
-      return DEV_SERVER_URL
+      await fetch(requestedHmrUrl, {method: "HEAD"})
+      console.log(`[desktop] HMR enabled at ${requestedHmrUrl}`)
+      return requestedHmrUrl
     } catch {
-      console.log("[desktop] Vite dev server not running, falling back to bundled view")
+      console.log(`[desktop] HMR URL not reachable: ${requestedHmrUrl}`)
+    }
+  }
+
+  if (channel === "dev" && process.env.CLAWED_DESKTOP_AUTO_HMR === "1") {
+    try {
+      await fetch(defaultHmrUrl, {method: "HEAD"})
+      console.log(`[desktop] Auto HMR enabled at ${defaultHmrUrl}`)
+      return defaultHmrUrl
+    } catch {
+      console.log("[desktop] Auto HMR port not reachable, using bundled view")
     }
   }
 
@@ -24,8 +35,8 @@ new BrowserWindow({
   title: "Clawed Desktop Mock",
   url,
   frame: {
-    width: 1320,
-    height: 860,
+    width: 1220,
+    height: 820,
     x: 120,
     y: 80,
   },
