@@ -27,8 +27,12 @@ log() {
 
 # ─── Step 0: Ensure prerequisites ────────────────────────────────────────────
 
-log "Installing prerequisites..."
-apt-get update -qq && apt-get install -y -qq unzip jq curl git 2>&1 | tail -1
+if ! command -v unzip &> /dev/null; then
+  log "Installing prerequisites..."
+  apt-get update -qq && apt-get install -y -qq unzip jq curl git 2>&1 | tail -1
+else
+  log "Prerequisites already installed, skipping"
+fi
 
 # ─── Step 1: Install Bun ─────────────────────────────────────────────────────
 
@@ -109,7 +113,8 @@ Environment=PATH=/root/.bun/bin:/root/.pulumi/bin:/usr/local/bin:/usr/bin:/bin
 EnvironmentFile=/opt/clawed-chat/app/.env
 
 # Security
-NoNewPrivileges=true
+NoNewPrivileges=false
+AmbientCapabilities=CAP_NET_BIND_SERVICE
 ProtectSystem=strict
 ReadWritePaths=/opt/clawed-chat /tmp /root/.pulumi
 PrivateTmp=true
@@ -134,8 +139,8 @@ MAX_ATTEMPTS=20
 SLEEP_INTERVAL=3
 
 for i in $(seq 1 $MAX_ATTEMPTS); do
-  if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
-    HEALTH=$(curl -sf http://localhost:3000/api/health)
+  if curl -sf http://localhost:80/api/health > /dev/null 2>&1; then
+    HEALTH=$(curl -sf http://localhost:80/api/health)
     log "Server is healthy! $HEALTH"
     rm -rf "$OLD_DIR"
     log "Deploy complete!"

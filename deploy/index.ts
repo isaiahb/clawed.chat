@@ -43,12 +43,12 @@ const firewall = new gcp.compute.Firewall("clawed-chat-firewall", {
   allows: [
     {
       protocol: "tcp",
-      ports: ["80", "443", "3000"],
+      ports: ["80", "443"],
     },
   ],
   sourceRanges: ["0.0.0.0/0"],
   targetTags: ["clawed-chat-server"],
-  description: "Allow HTTP, HTTPS, and dev server traffic to clawed.chat backend",
+  description: "Allow HTTP and HTTPS traffic to clawed.chat backend",
 })
 
 // ─── Backend VM ──────────────────────────────────────────────────────────────
@@ -115,8 +115,8 @@ const rootDns = new cloudflare.Record("clawed-chat-root-dns", {
   name: "@",
   type: "A",
   content: staticIp.address,
-  ttl: 60,
-  proxied: false, // DNS only — we handle TLS ourselves or use Cloudflare later
+  ttl: 1, // Auto — Cloudflare manages when proxied
+  proxied: true, // Cloudflare terminates TLS, forwards HTTP to origin
 })
 
 // Wildcard — *.clawed.chat → server IP
@@ -126,8 +126,8 @@ const wildcardDns = new cloudflare.Record("clawed-chat-wildcard-dns", {
   name: "*",
   type: "A",
   content: staticIp.address,
-  ttl: 60,
-  proxied: false,
+  ttl: 1,
+  proxied: true,
 })
 
 // ─── Exports ─────────────────────────────────────────────────────────────────

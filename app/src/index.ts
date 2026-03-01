@@ -11,7 +11,7 @@ import { createMentraAuthRoutes } from "@mentra/sdk"
 import indexHtml from "./frontend/index.html"
 
 // Configuration from environment
-const PORT = parseInt(process.env.PORT || "3000", 10)
+const PORT = parseInt(process.env.PORT || "80", 10)
 const PACKAGE_NAME = process.env.PACKAGE_NAME
 const API_KEY = process.env.MENTRAOS_API_KEY
 const COOKIE_SECRET = process.env.COOKIE_SECRET || API_KEY
