@@ -1,26 +1,26 @@
-# clawed-chat desktop mock (ElectroBun)
+# clawed-chat desktop installer (ElectroBun)
 
-Demo-first desktop companion UI for showing "OpenClaw auto-configures on your Mac/Mac mini".
+Desktop companion focused on installing and connecting local OpenClaw on macOS.
 
-This implementation is intentionally a full UX mock inside `desktop/` only:
-- Mock Clerk browser sign-in + deep-link callback
-- Mock local OpenClaw detection/config/plugin install
-- Mock backend registration + heartbeat loop
-- Live desktop console panel for demo narration
+Current implementation in `desktop/` provides:
+- Clerk browser sign-in + deep-link callback stage
+- Guided OpenClaw installation and configuration pipeline
+- Local instance registration + heartbeat lifecycle in the installer console
+- Runtime state transitions (connected/offline/resume)
 
 ## Run
 
 ```bash
 cd desktop
 bun install
-bun run dev:hmr
+bun run dev
 ```
 
-If you do not want HMR:
+For HMR:
 
 ```bash
 cd desktop
-bun run dev
+bun run dev:hmr
 ```
 
 Build:
@@ -30,24 +30,24 @@ cd desktop
 bun run build
 ```
 
-## Demo flow (implemented)
+## Installer flow (implemented)
 
-1. Open app -> "Connect and Auto-Configure"
-2. Simulated Clerk auth callback (`clawed-chat://auth?...`)
-3. Setup pipeline runs with visible step states
-4. Local instance registration appears as success
-5. Heartbeat loop continues and logs to console
-6. Failure scenario button demonstrates retry UX
+1. Link account from desktop
+2. Install prerequisites and runtimes (Bun + Node 22)
+3. Install and onboard OpenClaw
+4. Write auth profiles and install channel plugin
+5. Verify gateway reachability
+6. Register local instance and start heartbeat lifecycle
 
 ## Files
 
 - `src/bun/index.ts`: ElectroBun window bootstrap
-- `src/mainview/App.tsx`: full mock orchestration + UI
-- `src/mainview/index.css`: clawed-style visual language (dark glass + claw red)
+- `src/mainview/App.tsx`: installer orchestration + UI
+- `src/mainview/index.css`: installer visual system
 
 ## Outside-desktop handoff spec (for another agent)
 
-The following should be implemented outside `desktop/` to make this fully real:
+The following should be implemented outside `desktop/` to make this fully live:
 
 1. Add desktop token exchange endpoint.
 - File(s): backend auth routes in `app/src/backend/api/`
@@ -95,12 +95,11 @@ The following should be implemented outside `desktop/` to make this fully real:
   - heartbeat success/stale/offline transitions
 
 8. Optional API for desktop console stream.
-- `GET /api/desktop/events` (SSE/WebSocket) to surface real backend events directly in the desktop console panel.
+- `GET /api/desktop/events` (SSE/WebSocket) to surface backend events in the installer console panel.
 
 ## Notes
 
-- This mock is demo-safe and deterministic.
-- It intentionally avoids changing any non-`desktop/` source to prevent merge conflicts with parallel agent work.
+- The installer intentionally avoids changes outside `desktop/` to prevent merge conflicts with parallel work.
 
 ## CI/CD Spec
 

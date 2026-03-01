@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from "react"
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 const BACKEND_URL = "https://clawed.chat"
+const CLERK_SIGN_IN_URL = "https://clawed.chat/sign-in"
 const HEARTBEAT_INTERVAL_MS = 30_000
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -126,7 +127,8 @@ function ProgressScreen({
   currentStep: number
   done: boolean
 }) {
-  const pct = done ? 100 : Math.round((currentStep / steps.length) * 100)
+  const waitingForAuth = currentStep < 0
+  const pct = done ? 100 : waitingForAuth ? 0 : Math.round((currentStep / steps.length) * 100)
 
   return (
     <div className="animate-in w-full max-w-md mx-auto flex flex-col gap-6">
@@ -134,10 +136,14 @@ function ProgressScreen({
       <div className="text-center flex flex-col items-center gap-2">
         <ClawLogo className="w-8 h-8 rounded-lg" />
         <h2 className="text-xl font-bold tracking-tight text-gray-900">
-          {done ? "All set!" : "Setting up your agent…"}
+          {done ? "All set!" : waitingForAuth ? "Waiting for sign-in…" : "Setting up your agent…"}
         </h2>
         <p className="text-xs text-gray-400 tracking-wide">
-          {done ? "Your agent is ready." : `Step ${Math.min(currentStep + 1, steps.length)} of ${steps.length}`}
+          {done
+            ? "Your agent is ready."
+            : waitingForAuth
+              ? "Complete sign-in in your browser"
+              : `Step ${Math.min(currentStep + 1, steps.length)} of ${steps.length}`}
         </p>
       </div>
 
@@ -152,8 +158,9 @@ function ProgressScreen({
       {/* Steps */}
       <div className="rounded-2xl border border-gray-200/80 bg-white shadow-sm overflow-hidden divide-y divide-gray-100">
         {steps.map((step, i) => {
-          const status =
-            i < currentStep ? "done" : i === currentStep && !done ? "running" : done ? "done" : "pending"
+          const status = waitingForAuth
+            ? "pending"
+            : i < currentStep ? "done" : i === currentStep && !done ? "running" : done ? "done" : "pending"
 
           return (
             <div
@@ -292,7 +299,8 @@ export default function App() {
     }, HEARTBEAT_INTERVAL_MS)
   }, [])
 
-  const handleSignIn = useCallback(() => {
+  // Run the fake install progress, then register for real
+  const runSetupSequence = useCallback(() => {
     setScreen("progress")
     setCurrentStep(0)
     setSetupDone(false)
@@ -315,9 +323,25 @@ export default function App() {
       setTimeout(runNextStep, step.durationMs)
     }
 
-    // Small delay simulating auth callback
-    setTimeout(runNextStep, 800)
+    setTimeout(runNextStep, 400)
   }, [registerInstance, startHeartbeat])
+
+  const handleSignIn = useCallback(() => {
+    // Open real Clerk sign-in in the user's browser
+    window.open(CLERK_SIGN_IN_URL, "_blank")
+
+    // Switch to a "waiting for sign-in" state, then after a short
+    // delay (simulating the OAuth callback) proceed with setup.
+    // In production this would listen for a real auth callback via
+    // a localhost server or deep link.
+    setScreen("progress")
+    setCurrentStep(-1) // -1 = "Signing in..." before steps start
+
+    // Wait for user to complete browser auth, then start setup
+    setTimeout(() => {
+      runSetupSequence()
+    }, 3000)
+  }, [runSetupSequence])
 
   const handleOpenDashboard = useCallback(() => {
     window.open(`${BACKEND_URL}/app/agents`, "_blank")

@@ -32,14 +32,14 @@ async function getMainViewUrl(): Promise<string> {
 const url = await getMainViewUrl()
 
 new BrowserWindow({
-  title: "Clawed Desktop Mock",
+  title: "Clawed",
   url,
   frame: {
-    width: 1220,
-    height: 820,
-    x: 120,
-    y: 80,
+    width: 520,
+    height: 680,
+    x: 200,
+    y: 100,
   },
 })
 
-console.log("[desktop] Clawed desktop mock launched")
+console.log("[desktop] Clawed desktop app launched")

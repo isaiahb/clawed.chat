@@ -5,7 +5,7 @@ This spec defines desktop artifact build and distribution for `desktop/`.
 ## Goals
 
 1. Build macOS desktop binaries from `desktop/` only.
-2. Produce demo-ready download artifact (`.dmg`).
+2. Produce desktop download artifact (`.dmg`).
 3. Publish artifacts to:
 - GitHub Releases (immediate fallback)
 - Cloudflare R2 (preferred download origin)
