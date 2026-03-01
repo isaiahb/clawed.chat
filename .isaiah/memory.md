@@ -241,8 +241,9 @@ Independent: 05 Desktop, 07 Landing Page
 - Rotate leaked keys + scrub git history
 
 ### Agents currently working on:
-1. **Frontend Dashboard** — building DeployModal, InstanceCard, ChatPanel, BrowserView components
-2. Next: wire Convex queries into dashboard for real-time instance updates
+1. **Design Integration (Parth's Branch)** — extracting `origin/parth` to a local `parth/` reference folder without touching his branch.
+2. **UI Overhaul** — systematically porting his Tailwind config, global CSS, and Shadcn UI components into our `app/` dashboard to match his cinematic/dark mode mission-control vibe.
+3. **Frontend Dashboard** — styling DeployModal, InstanceCard, ChatPanel, BrowserView components using the new design system.
 
 ### Agents can work on after frontend:
 1. **Service Wiring** — connect API route TODOs to real Convex calls + services
@@ -250,4 +251,4 @@ Independent: 05 Desktop, 07 Landing Page
 
 ---
 
-*Last updated: 2026-03-01 (session 2 — Clerk+Convex integration, Composio setup, frontend build started)*
+*Last updated: 2026-03-01 (session 3 — GCP Pulumi deploy successful with HTTPS + CI/CD optimized. Now integrating Parth's UI redesign from a separate branch)*
