@@ -1,5 +1,6 @@
 import type { AppSession, TranscriptionData } from "@mentra/sdk";
 import type { User } from "../session/User";
+import { WakeWordDetector } from "./WakeWordDetector";
 
 interface SSEWriter {
   write: (data: string) => void;
@@ -13,8 +14,19 @@ interface SSEWriter {
 export class TranscriptionManager {
   private sseClients: Set<SSEWriter> = new Set();
   private unsubscribe: (() => void) | null = null;
+  private wakeWord: WakeWordDetector;
 
-  constructor(private user: User) {}
+  constructor(private user: User) {
+    this.wakeWord = new WakeWordDetector({
+      onQueryReady: (query) => {
+        console.log(
+          `🔊 [${this.user.userId}] Voice query ready: "${query}"`,
+        );
+        // TODO: wire to OpenClaw chat when ready
+      },
+      silenceTimeoutMs: 2000,
+    });
+  }
 
   /** Wire up the transcription listener on the glasses session */
   setup(session: AppSession): void {
@@ -25,6 +37,8 @@ export class TranscriptionManager {
             `✅ Final transcription (${this.user.userId}): ${data.text}`,
           );
         }
+        // Feed every transcription into wake word detection
+        this.wakeWord.process(data.text, data.isFinal);
         this.broadcast(data.text, data.isFinal);
       },
     );
@@ -60,6 +74,7 @@ export class TranscriptionManager {
   destroy(): void {
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.wakeWord.destroy();
     this.sseClients.clear();
   }
 }
