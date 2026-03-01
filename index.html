@@ -63,12 +63,9 @@
                     );
                     var theme = (store.state && store.state.theme) || "dark";
                     if (theme === "system") {
-                        theme = window.matchMedia(
-                            "(prefers-color-scheme: dark)",
-                        ).matches
-                            ? "dark"
-                            : "light";
+                        theme = "dark";
                     }
+
                     document.documentElement.classList.add(theme);
                     document.documentElement.style.colorScheme = theme;
                 } catch (e) {
@@ -89,7 +86,7 @@
             }
             html.dark,
             html.dark body {
-                background: #111111;
+                background: #141416;
                 color: #ededed;
             }
             html.light,

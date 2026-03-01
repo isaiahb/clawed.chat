@@ -146,9 +146,9 @@ export default function App() {
             closeButton
             toastOptions={{
               style: {
-                background: "oklch(0.1 0.008 15)",
-                borderColor: "oklch(0.2 0.02 15)",
-                color: "oklch(0.95 0.01 15)",
+                background: "oklch(0.16 0.004 260)",
+                borderColor: "oklch(0.24 0.006 260)",
+                color: "oklch(0.94 0.005 260)",
               },
             }}
           />

@@ -60,8 +60,8 @@ export const useAppStore = create<AppState>()(
       toggleCommandBar: () =>
         set((s) => ({ commandBarOpen: !s.commandBarOpen })),
 
-      // Theme
-      theme: "system",
+      // Theme — dark by default
+      theme: "dark",
       setTheme: (theme) => set({ theme }),
 
       // Onboarding
@@ -73,13 +73,11 @@ export const useAppStore = create<AppState>()(
 
       // Glasses
       glassesConnected: false,
-      setGlassesConnected: (connected) =>
-        set({ glassesConnected: connected }),
+      setGlassesConnected: (connected) => set({ glassesConnected: connected }),
 
       // Quiet hours
       quietHoursEnabled: false,
-      setQuietHoursEnabled: (enabled) =>
-        set({ quietHoursEnabled: enabled }),
+      setQuietHoursEnabled: (enabled) => set({ quietHoursEnabled: enabled }),
       quietHoursStart: "22:00",
       quietHoursEnd: "07:00",
       setQuietHours: (start, end) =>
@@ -96,6 +94,6 @@ export const useAppStore = create<AppState>()(
         quietHoursStart: state.quietHoursStart,
         quietHoursEnd: state.quietHoursEnd,
       }),
-    }
-  )
+    },
+  ),
 );

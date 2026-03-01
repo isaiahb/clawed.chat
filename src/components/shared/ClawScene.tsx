@@ -908,8 +908,8 @@ export const ClawScene = memo(function ClawScene({
             />
           )}
 
-          {/* Fog for depth */}
-          <fog attach="fog" args={["#0a0000", 10, 22]} />
+          {/* Fog for depth — matched to dark grey background */}
+          <fog attach="fog" args={["#1a1a1f", 10, 22]} />
         </Canvas>
       </ErrorBoundary3D>
     </div>

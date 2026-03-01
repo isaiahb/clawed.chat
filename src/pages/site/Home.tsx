@@ -41,6 +41,7 @@ import {
   Check,
   X,
   MousePointer,
+  ChevronRight,
 } from "lucide-react";
 import { useAppStore } from "@/stores/app-store";
 import { useEffect, useState, type ReactNode } from "react";
@@ -56,6 +57,7 @@ function ThemeToggle() {
     const root = document.documentElement;
     const applyTheme = (isDark: boolean) => {
       root.classList.toggle("dark", isDark);
+      root.classList.toggle("light", !isDark);
       root.style.colorScheme = isDark ? "dark" : "light";
     };
 
@@ -79,13 +81,13 @@ function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="fixed bottom-5 right-5 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-900 border border-neutral-800 shadow-2xl shadow-black/60 transition-all hover:scale-110 hover:border-claw-red/40 active:scale-95"
+      className="fixed bottom-5 right-5 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-[oklch(0.18_0.004_260)] border border-[oklch(0.28_0.006_260)] shadow-2xl shadow-black/40 transition-all hover:scale-110 hover:border-claw-red/40 active:scale-95 backdrop-blur-xl"
       aria-label="Toggle theme"
     >
       {isDark ? (
         <Sun className="h-4 w-4 text-neutral-300" />
       ) : (
-        <Moon className="h-4 w-4 text-neutral-300" />
+        <Moon className="h-4 w-4 text-neutral-500" />
       )}
     </button>
   );
@@ -110,16 +112,16 @@ function Tag({
   );
 }
 
-function Divider() {
+function SectionDivider() {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="h-px bg-neutral-800/50" />
+      <div className="h-px bg-gradient-to-r from-transparent via-[oklch(0.28_0.006_260)] to-transparent" />
     </div>
   );
 }
 
 // ──────────────────────────────────────────────
-// 1 · Hero — Cinematic, centered, full-impact
+// 1 · Hero — Split layout: left copy, right 3D claw
 // ──────────────────────────────────────────────
 
 function Hero() {
@@ -127,129 +129,156 @@ function Hero() {
     <section className="relative overflow-hidden">
       {/* Background atmosphere */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-[20%] left-1/2 -translate-x-1/2 h-[600px] w-[900px] rounded-full bg-claw-red/[0.035] blur-[150px]" />
-        <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-background to-transparent" />
+        <div className="absolute top-[10%] right-[20%] h-[600px] w-[600px] rounded-full bg-claw-red/[0.04] blur-[150px]" />
+        <div className="absolute bottom-[10%] left-[10%] h-[400px] w-[400px] rounded-full bg-claw-red/[0.02] blur-[120px]" />
+        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-background to-transparent" />
       </div>
 
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col items-center text-center pt-20 sm:pt-28 lg:pt-36 pb-8">
-          {/* Badge */}
-          <div className="mb-8 animate-fade-in">
-            <span className="inline-flex items-center gap-2 rounded-full bg-claw-red/8 border border-claw-red/15 px-4 py-1.5 text-[12px] font-semibold text-claw-red backdrop-blur-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-claw-red opacity-40" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-claw-red" />
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-4 items-center min-h-[calc(100vh-5rem)] py-16 sm:py-20 lg:py-0">
+          {/* Left — Content */}
+          <div className="flex flex-col max-w-xl lg:max-w-lg xl:max-w-xl order-2 lg:order-1">
+            {/* Badge */}
+            <div className="mb-6 animate-fade-in">
+              <span className="inline-flex items-center gap-2 rounded-full bg-claw-red/8 border border-claw-red/15 px-4 py-1.5 text-[12px] font-semibold text-claw-red backdrop-blur-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-claw-red opacity-40" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-claw-red" />
+                </span>
+                Now in Beta
               </span>
-              Now in Beta
-            </span>
+            </div>
+
+            {/* Headline */}
+            <h1 className="text-[clamp(2.2rem,5vw,3.75rem)] font-black leading-[1.08] tracking-tight animate-slide-up">
+              <span className="text-foreground">Your AI agent,</span>
+              <br />
+              <span className="text-gradient-red">deployed in</span>
+              <br />
+              <span className="text-gradient-red">30 seconds.</span>
+            </h1>
+
+            {/* Sub */}
+            <p className="mt-5 text-[16px] sm:text-[17px] leading-relaxed text-neutral-400 animate-fade-in [animation-delay:200ms]">
+              Clawed Chat gives you a fully deployed{" "}
+              <a
+                href="https://github.com/openclaw/openclaw"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-claw-red hover:text-claw-red-bright transition-colors underline underline-offset-[3px] decoration-claw-red/30 hover:decoration-claw-red/60"
+              >
+                OpenClaw
+              </a>{" "}
+              agent — on your hardware or in the cloud. Watch it work live. Talk
+              to it from smart glasses. Control it from anywhere.
+            </p>
+
+            {/* CTAs */}
+            <div className="mt-8 flex flex-col sm:flex-row items-start gap-3 animate-fade-in [animation-delay:400ms]">
+              <Button
+                size="lg"
+                asChild
+                className="gap-2 px-7 h-12 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[15px] rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_30px_rgba(200,0,0,0.15)] hover:shadow-[0_0_40px_rgba(200,0,0,0.25)]"
+              >
+                <Link to="/sign-in">
+                  Deploy your agent
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="gap-2 px-7 h-12 rounded-xl border-[oklch(0.28_0.006_260)] hover:border-[oklch(0.35_0.008_260)] text-neutral-300 hover:text-white hover:bg-white/[0.03] font-semibold text-[15px] transition-all"
+              >
+                <Link to="/glasses">
+                  <Glasses className="h-4 w-4 text-claw-red" />
+                  Try glasses demo
+                </Link>
+              </Button>
+            </div>
+
+            {/* Trust line */}
+            <div className="mt-6 flex items-center gap-4 text-[12px] text-neutral-500 animate-fade-in [animation-delay:600ms]">
+              <span className="flex items-center gap-1.5">
+                <Check className="h-3 w-3 text-claw-red/60" />
+                Free tier available
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="h-3 w-3 text-claw-red/60" />
+                Smart glasses included
+              </span>
+              <span className="hidden sm:flex items-center gap-1.5">
+                <Check className="h-3 w-3 text-claw-red/60" />
+                No DevOps required
+              </span>
+            </div>
           </div>
 
-          {/* Headline — big, centered, dramatic */}
-          <h1 className="max-w-4xl text-[clamp(2.5rem,6vw,4.5rem)] font-black leading-[1.05] tracking-tight animate-slide-up">
-            <span className="text-foreground">Your AI agent,</span>
-            <br />
-            <span className="text-gradient-red animate-text-glow inline-block">
-              deployed in 30 seconds.
-            </span>
-          </h1>
+          {/* Right — 3D Claw */}
+          <div className="relative flex items-center justify-center order-1 lg:order-2 animate-fade-in-scale [animation-delay:300ms]">
+            {/* Ambient glow behind claw */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="h-[300px] w-[300px] sm:h-[400px] sm:w-[400px] rounded-full bg-claw-red/[0.05] blur-[80px] animate-pulse-subtle" />
+            </div>
 
-          {/* Sub — tight, clear */}
-          <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-neutral-400 animate-fade-in [animation-delay:200ms]">
-            Clawed Chat gives you a fully deployed{" "}
-            <a
-              href="https://github.com/openclaw/openclaw"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-claw-red hover:text-claw-red-bright transition-colors underline underline-offset-[3px] decoration-claw-red/30 hover:decoration-claw-red/60"
-            >
-              OpenClaw
-            </a>{" "}
-            agent — on your hardware or in the cloud. Watch it work live. Talk
-            to it from smart glasses. Control it from anywhere.
-          </p>
+            {/* Orbit ring */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <svg
+                viewBox="0 0 500 500"
+                className="w-[260px] h-[260px] sm:w-[360px] sm:h-[360px] lg:w-[420px] lg:h-[420px] animate-spin-slow"
+                style={{ animationDuration: "60s" }}
+              >
+                <circle
+                  cx="250"
+                  cy="250"
+                  r="210"
+                  fill="none"
+                  stroke="var(--claw-red)"
+                  strokeWidth="0.5"
+                  opacity="0.08"
+                  strokeDasharray="4 16"
+                />
+                <circle
+                  cx="250"
+                  cy="250"
+                  r="170"
+                  fill="none"
+                  stroke="var(--claw-red)"
+                  strokeWidth="0.3"
+                  opacity="0.05"
+                  strokeDasharray="2 20"
+                />
+                <circle
+                  cx="40"
+                  cy="250"
+                  r="2"
+                  fill="var(--claw-red)"
+                  opacity="0.15"
+                />
+                <circle
+                  cx="460"
+                  cy="250"
+                  r="1.5"
+                  fill="var(--claw-red)"
+                  opacity="0.1"
+                />
+              </svg>
+            </div>
 
-          {/* CTAs */}
-          <div className="mt-10 flex flex-col sm:flex-row items-center gap-3 animate-fade-in [animation-delay:400ms]">
-            <Button
-              size="lg"
-              asChild
-              className="gap-2 px-8 h-12 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[15px] rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_24px_rgba(200,0,0,0.15)] hover:shadow-[0_0_32px_rgba(200,0,0,0.25)]"
-            >
-              <Link to="/sign-in">
-                Deploy your agent
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              asChild
-              className="gap-2 px-8 h-12 rounded-xl border-neutral-800 hover:border-neutral-700 text-neutral-300 hover:text-white hover:bg-white/[0.03] font-semibold text-[15px] transition-all"
-            >
-              <Link to="/glasses">
-                <Glasses className="h-4 w-4 text-claw-red" />
-                Try the glasses demo
-              </Link>
-            </Button>
+            <ClawScene
+              className="w-[280px] h-[280px] sm:w-[380px] sm:h-[380px] lg:w-[460px] lg:h-[460px] xl:w-[520px] xl:h-[520px]"
+              scale={0.055}
+              showParticles={true}
+              showRing={false}
+              showShadow={true}
+              showControls={false}
+              autoRotate={true}
+              rotationSpeed={0.005}
+              cameraPosition={[0, 0.8, 4.2]}
+              cameraFov={40}
+            />
           </div>
-
-          <p className="mt-5 text-[12px] text-neutral-600 animate-fade-in [animation-delay:600ms]">
-            Free tier available · Smart glasses included · No DevOps required
-          </p>
-        </div>
-
-        {/* 3D Claw — hero visual */}
-        <div className="relative flex items-center justify-center pb-12 sm:pb-16 animate-fade-in-scale [animation-delay:300ms]">
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="h-[320px] w-[320px] sm:h-[400px] sm:w-[400px] rounded-full bg-claw-red/[0.04] blur-[80px] animate-pulse-subtle" />
-          </div>
-
-          {/* Orbit ring */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <svg
-              viewBox="0 0 500 500"
-              className="w-[280px] h-[280px] sm:w-[380px] sm:h-[380px] lg:w-[440px] lg:h-[440px] animate-spin-slow"
-              style={{ animationDuration: "50s" }}
-            >
-              <circle
-                cx="250"
-                cy="250"
-                r="200"
-                fill="none"
-                stroke="var(--claw-red)"
-                strokeWidth="0.4"
-                opacity="0.1"
-                strokeDasharray="6 14"
-              />
-              <circle
-                cx="50"
-                cy="250"
-                r="2"
-                fill="var(--claw-red)"
-                opacity="0.2"
-              />
-              <circle
-                cx="450"
-                cy="250"
-                r="2"
-                fill="var(--claw-red)"
-                opacity="0.15"
-              />
-            </svg>
-          </div>
-
-          <ClawScene
-            className="w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] lg:w-[480px] lg:h-[480px]"
-            scale={0.055}
-            showParticles={true}
-            showRing={false}
-            showShadow={true}
-            showControls={false}
-            autoRotate={true}
-            rotationSpeed={0.005}
-            cameraPosition={[0, 0.8, 4.2]}
-            cameraFov={40}
-          />
         </div>
       </div>
     </section>
@@ -279,10 +308,10 @@ function ProblemSolution() {
           </p>
         </div>
 
-        {/* Comparison — two columns, clean contrast */}
+        {/* Comparison */}
         <div className="grid md:grid-cols-2 gap-5">
           {/* Without */}
-          <div className="rounded-2xl bg-neutral-950 border border-neutral-800/50 p-8 sm:p-10">
+          <div className="rounded-2xl bg-[oklch(0.11_0.004_260)] border border-[oklch(0.22_0.006_260)] p-8 sm:p-10">
             <div className="flex items-center gap-2.5 mb-8">
               <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
               <span className="text-[13px] font-bold text-red-400 uppercase tracking-wider">
@@ -290,7 +319,6 @@ function ProblemSolution() {
               </span>
             </div>
 
-            {/* Terminal lines */}
             <div className="space-y-2 mb-8">
               {[
                 { text: "$ git clone openclaw && cd openclaw", ok: true },
@@ -302,7 +330,7 @@ function ProblemSolution() {
                   key={i}
                   className={`font-mono text-[12px] px-4 py-2.5 rounded-lg ${
                     line.ok
-                      ? "bg-neutral-900/80 text-neutral-500"
+                      ? "bg-[oklch(0.14_0.003_260)] text-neutral-500"
                       : "bg-red-950/30 text-red-400/80 border border-red-900/20"
                   }`}
                 >
@@ -330,8 +358,7 @@ function ProblemSolution() {
           </div>
 
           {/* With */}
-          <div className="rounded-2xl bg-neutral-950 border border-neutral-800/50 p-8 sm:p-10 relative overflow-hidden">
-            {/* Subtle glow */}
+          <div className="rounded-2xl bg-[oklch(0.11_0.004_260)] border border-[oklch(0.22_0.006_260)] p-8 sm:p-10 relative overflow-hidden">
             <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-emerald-500/[0.06] blur-[60px]" />
 
             <div className="flex items-center gap-2.5 mb-8 relative z-10">
@@ -341,8 +368,7 @@ function ProblemSolution() {
               </span>
             </div>
 
-            {/* Live status */}
-            <div className="rounded-xl bg-black/60 border border-neutral-800/40 px-5 py-4 mb-8 relative z-10">
+            <div className="rounded-xl bg-[oklch(0.09_0.003_260)] border border-[oklch(0.20_0.005_260)] px-5 py-4 mb-8 relative z-10">
               <div className="flex items-center gap-2.5 text-emerald-400 font-mono text-[13px]">
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 Your OpenClaw agent is live.
@@ -417,13 +443,13 @@ function Pillars() {
           {pillars.map((p, i) => (
             <div
               key={p.title}
-              className="group rounded-2xl bg-neutral-950 border border-neutral-800/50 p-8 transition-all duration-300 hover:border-neutral-700/80 hover:bg-neutral-950/80"
+              className="group rounded-2xl bg-[oklch(0.15_0.004_260)] border border-[oklch(0.24_0.006_260)] p-8 transition-all duration-300 hover:border-[oklch(0.30_0.008_260)] hover:bg-[oklch(0.16_0.005_260)]"
             >
               <div className="flex items-center gap-4 mb-6">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/12 group-hover:border-claw-red/20 transition-colors">
                   <p.icon className="h-5 w-5 text-claw-red" />
                 </div>
-                <span className="text-[48px] font-black text-neutral-900 leading-none select-none group-hover:text-neutral-800 transition-colors">
+                <span className="text-[48px] font-black text-[oklch(0.20_0.004_260)] leading-none select-none group-hover:text-[oklch(0.24_0.005_260)] transition-colors">
                   {String(i + 1).padStart(2, "0")}
                 </span>
               </div>
@@ -475,9 +501,9 @@ function HowItWorks() {
   ];
 
   return (
-    <section className="relative py-24 sm:py-32 bg-neutral-950/40">
-      <Divider />
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32">
+    <section className="relative py-24 sm:py-32">
+      <div className="absolute inset-0 bg-[oklch(0.11_0.003_260)]" />
+      <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <Tag icon={MousePointer}>5 steps</Tag>
           <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
@@ -486,10 +512,9 @@ function HowItWorks() {
           </h2>
         </div>
 
-        {/* Steps — horizontal on desktop */}
         <div className="relative">
-          {/* Connecting line (desktop only) */}
-          <div className="hidden md:block absolute top-6 left-[10%] right-[10%] h-px bg-gradient-to-r from-neutral-800 via-claw-red/20 to-neutral-800" />
+          {/* Connecting line */}
+          <div className="hidden md:block absolute top-6 left-[10%] right-[10%] h-px bg-gradient-to-r from-[oklch(0.22_0.005_260)] via-claw-red/20 to-[oklch(0.22_0.005_260)]" />
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 md:gap-4">
             {steps.map((step, i) => (
@@ -498,7 +523,7 @@ function HowItWorks() {
                 className="flex flex-col items-center text-center"
               >
                 <div className="relative mb-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-900 border border-neutral-800 relative z-10 group-hover:border-claw-red/30">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[oklch(0.16_0.004_260)] border border-[oklch(0.26_0.006_260)] relative z-10">
                     <step.icon className="h-5 w-5 text-claw-red" />
                   </div>
                   <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-claw-red text-white text-[10px] font-bold z-20">
@@ -588,7 +613,7 @@ function Capabilities() {
           {capabilities.map((cap) => (
             <div
               key={cap.title}
-              className="group flex items-start gap-4 rounded-xl bg-neutral-950 border border-neutral-800/40 p-5 transition-all duration-200 hover:border-neutral-700/60 hover:bg-neutral-900/40"
+              className="group flex items-start gap-4 rounded-xl bg-[oklch(0.15_0.004_260)] border border-[oklch(0.22_0.005_260)] p-5 transition-all duration-200 hover:border-[oklch(0.30_0.008_260)] hover:bg-[oklch(0.17_0.005_260)]"
             >
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-claw-red/8 border border-claw-red/10 group-hover:bg-claw-red/12 transition-colors">
                 <cap.icon className="h-4 w-4 text-claw-red" />
@@ -615,9 +640,9 @@ function Capabilities() {
 
 function DeploymentOptions() {
   return (
-    <section className="relative py-24 sm:py-32 bg-neutral-950/40">
-      <Divider />
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32">
+    <section className="relative py-24 sm:py-32">
+      <div className="absolute inset-0 bg-[oklch(0.11_0.003_260)]" />
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <Tag icon={Server}>Deploy your way</Tag>
           <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
@@ -628,7 +653,7 @@ function DeploymentOptions() {
 
         <div className="grid md:grid-cols-2 gap-5">
           {/* Cloud */}
-          <div className="group rounded-2xl bg-neutral-950 border border-neutral-800/50 overflow-hidden transition-all duration-300 hover:border-neutral-700/80">
+          <div className="group rounded-2xl bg-[oklch(0.14_0.004_260)] border border-[oklch(0.24_0.006_260)] overflow-hidden transition-all duration-300 hover:border-[oklch(0.30_0.008_260)]">
             <div className="p-8 sm:p-10">
               <div className="flex items-center gap-4 mb-5">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-claw-red/8 border border-claw-red/10">
@@ -649,7 +674,7 @@ function DeploymentOptions() {
                 Automatic updates, backups, and scaling — all handled.
               </p>
             </div>
-            <div className="grid grid-cols-3 border-t border-neutral-800/50">
+            <div className="grid grid-cols-3 border-t border-[oklch(0.22_0.005_260)]">
               {[
                 { icon: Zap, label: "30s deploy" },
                 { icon: Monitor, label: "Live stream" },
@@ -657,7 +682,7 @@ function DeploymentOptions() {
               ].map((item, i) => (
                 <div
                   key={item.label}
-                  className={`flex flex-col items-center gap-2 py-5 ${i < 2 ? "border-r border-neutral-800/50" : ""}`}
+                  className={`flex flex-col items-center gap-2 py-5 ${i < 2 ? "border-r border-[oklch(0.22_0.005_260)]" : ""}`}
                 >
                   <item.icon className="h-4 w-4 text-claw-red" />
                   <span className="text-[11px] text-neutral-500 font-medium">
@@ -669,7 +694,7 @@ function DeploymentOptions() {
           </div>
 
           {/* Mac */}
-          <div className="group rounded-2xl bg-neutral-950 border border-neutral-800/50 overflow-hidden transition-all duration-300 hover:border-neutral-700/80">
+          <div className="group rounded-2xl bg-[oklch(0.14_0.004_260)] border border-[oklch(0.24_0.006_260)] overflow-hidden transition-all duration-300 hover:border-[oklch(0.30_0.008_260)]">
             <div className="p-8 sm:p-10">
               <div className="flex items-center gap-4 mb-5">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-claw-red/8 border border-claw-red/10">
@@ -690,7 +715,7 @@ function DeploymentOptions() {
                 Your data never leaves your hardware.
               </p>
             </div>
-            <div className="grid grid-cols-3 border-t border-neutral-800/50">
+            <div className="grid grid-cols-3 border-t border-[oklch(0.22_0.005_260)]">
               {[
                 { icon: Lock, label: "Fully local" },
                 { icon: Cpu, label: "Your GPU" },
@@ -698,7 +723,7 @@ function DeploymentOptions() {
               ].map((item, i) => (
                 <div
                   key={item.label}
-                  className={`flex flex-col items-center gap-2 py-5 ${i < 2 ? "border-r border-neutral-800/50" : ""}`}
+                  className={`flex flex-col items-center gap-2 py-5 ${i < 2 ? "border-r border-[oklch(0.22_0.005_260)]" : ""}`}
                 >
                   <item.icon className="h-4 w-4 text-claw-red" />
                   <span className="text-[11px] text-neutral-500 font-medium">
@@ -715,7 +740,7 @@ function DeploymentOptions() {
 }
 
 // ──────────────────────────────────────────────
-// 7 · Glasses — The wow section
+// 7 · Glasses Section
 // ──────────────────────────────────────────────
 
 function GlassesSection() {
@@ -725,14 +750,13 @@ function GlassesSection() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Left — Glasses Mockup */}
           <div className="relative flex items-center justify-center order-2 lg:order-1">
-            {/* Ambient glow */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="h-[300px] w-[300px] rounded-full bg-claw-red/[0.03] blur-[80px]" />
             </div>
 
             <div className="relative w-full max-w-sm">
               {/* Lens */}
-              <div className="relative overflow-hidden w-full aspect-[2/1] rounded-[50%/40%] bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-950 border border-white/[0.06] shadow-[0_0_80px_rgba(0,0,0,0.5),inset_0_2px_0_rgba(255,255,255,0.02)]">
+              <div className="relative overflow-hidden w-full aspect-[2/1] rounded-[50%/40%] bg-gradient-to-br from-[oklch(0.16_0.004_260)] via-[oklch(0.14_0.003_260)] to-[oklch(0.11_0.003_260)] border border-white/[0.06] shadow-[0_0_80px_rgba(0,0,0,0.4),inset_0_2px_0_rgba(255,255,255,0.02)]">
                 {/* Scan lines */}
                 <div
                   className="absolute inset-0 pointer-events-none opacity-[0.015]"
@@ -766,7 +790,7 @@ function GlassesSection() {
                 </div>
               </div>
               {/* Nose bridge */}
-              <div className="mx-auto -mt-1 w-8 h-3 bg-neutral-800 rounded-b-full border-x border-b border-white/[0.03]" />
+              <div className="mx-auto -mt-1 w-8 h-3 bg-[oklch(0.18_0.004_260)] rounded-b-full border-x border-b border-white/[0.03]" />
             </div>
           </div>
 
@@ -802,7 +826,7 @@ function GlassesSection() {
               ].map((item) => (
                 <span
                   key={item.label}
-                  className="inline-flex items-center gap-2 rounded-full bg-neutral-900 border border-neutral-800/60 px-4 py-2 text-[12px] text-neutral-400 font-medium"
+                  className="inline-flex items-center gap-2 rounded-full bg-[oklch(0.16_0.004_260)] border border-[oklch(0.24_0.006_260)] px-4 py-2 text-[12px] text-neutral-400 font-medium"
                 >
                   <item.icon className="h-3.5 w-3.5 text-claw-red" />
                   {item.label}
@@ -855,9 +879,9 @@ const testimonials = [
 
 function Testimonials() {
   return (
-    <section className="relative py-24 sm:py-32 bg-neutral-950/40">
-      <Divider />
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32">
+    <section className="relative py-24 sm:py-32">
+      <div className="absolute inset-0 bg-[oklch(0.11_0.003_260)]" />
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <Tag icon={Quote}>Community</Tag>
           <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
@@ -870,12 +894,11 @@ function Testimonials() {
           </p>
         </div>
 
-        {/* Masonry-ish: 2 cols on md, 3 on lg */}
         <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
           {testimonials.map((t, i) => (
             <div
               key={i}
-              className="break-inside-avoid rounded-2xl bg-neutral-950 border border-neutral-800/40 p-6 transition-all duration-200 hover:border-neutral-700/60"
+              className="break-inside-avoid rounded-2xl bg-[oklch(0.15_0.004_260)] border border-[oklch(0.22_0.005_260)] p-6 transition-all duration-200 hover:border-[oklch(0.28_0.007_260)]"
             >
               <p className="text-[14px] text-neutral-300 leading-relaxed mb-5">
                 "{t.text}"
@@ -900,7 +923,7 @@ function Testimonials() {
 }
 
 // ──────────────────────────────────────────────
-// 9 · Why the Claw — Story
+// 9 · Why the Claw — Origin Story
 // ──────────────────────────────────────────────
 
 function WhyTheClaw() {
@@ -979,7 +1002,7 @@ function WhyTheClaw() {
                 variant="outline"
                 size="sm"
                 asChild
-                className="gap-1.5 rounded-lg border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50 text-[13px] font-semibold text-neutral-300 h-9"
+                className="gap-1.5 rounded-lg border-[oklch(0.26_0.006_260)] hover:border-[oklch(0.32_0.008_260)] hover:bg-[oklch(0.16_0.004_260)] text-[13px] font-semibold text-neutral-300 h-9"
               >
                 <a
                   href="https://github.com/openclaw/openclaw"
@@ -995,7 +1018,7 @@ function WhyTheClaw() {
                 variant="outline"
                 size="sm"
                 asChild
-                className="gap-1.5 rounded-lg border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50 text-[13px] font-semibold text-neutral-300 h-9"
+                className="gap-1.5 rounded-lg border-[oklch(0.26_0.006_260)] hover:border-[oklch(0.32_0.008_260)] hover:bg-[oklch(0.16_0.004_260)] text-[13px] font-semibold text-neutral-300 h-9"
               >
                 <a
                   href="https://openclaw.ai/blog/introducing-openclaw"
@@ -1009,7 +1032,7 @@ function WhyTheClaw() {
               </Button>
             </div>
 
-            <p className="mt-6 text-[11px] text-neutral-700">
+            <p className="mt-6 text-[11px] text-neutral-600">
               3D model: CC-BY · ScroffyToffee · Thingiverse
             </p>
           </div>
@@ -1020,7 +1043,7 @@ function WhyTheClaw() {
 }
 
 // ──────────────────────────────────────────────
-// 10 · CTA — Final push
+// 10 · CTA — Final push with waitlist
 // ──────────────────────────────────────────────
 
 function BetaCTA() {
@@ -1033,29 +1056,39 @@ function BetaCTA() {
   };
 
   return (
-    <section className="relative py-24 sm:py-32 bg-neutral-950/40">
-      <Divider />
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32">
+    <section className="relative py-28 sm:py-36 overflow-hidden">
+      {/* Dramatic background */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-[oklch(0.10_0.004_260)]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[700px] rounded-full bg-claw-red/[0.04] blur-[150px]" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-claw-red/20 to-transparent" />
+      </div>
+
+      <div className="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          {/* Glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[400px] w-[600px] rounded-full bg-claw-red/[0.03] blur-[120px] pointer-events-none" />
+          {/* Icon */}
+          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-claw-red/10 border border-claw-red/15">
+            <Sparkles className="h-6 w-6 text-claw-red" />
+          </div>
 
-          <Tag icon={Sparkles}>Get Started</Tag>
-
-          <h2 className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.1] text-foreground relative z-10">
-            Ready to deploy your lobster? 🦞
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.08] text-foreground">
+            Ready to deploy
+            <br />
+            <span className="text-gradient-red">your lobster?</span>{" "}
+            <span className="inline-block">🦞</span>
           </h2>
-          <p className="mt-5 text-neutral-400 max-w-md mx-auto leading-relaxed relative z-10">
+
+          <p className="mt-5 text-neutral-400 max-w-md mx-auto leading-relaxed text-[16px]">
             Deploy your own OpenClaw agent in 30 seconds, watch it work from
             anywhere, and talk to it from your smart glasses.
           </p>
 
           {/* Buttons */}
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 relative z-10">
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button
               size="lg"
               asChild
-              className="gap-2 px-8 h-12 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[15px] rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_24px_rgba(200,0,0,0.15)] hover:shadow-[0_0_32px_rgba(200,0,0,0.25)]"
+              className="gap-2 px-8 h-13 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[16px] rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(200,0,0,0.2)] hover:shadow-[0_0_60px_rgba(200,0,0,0.3)]"
             >
               <Link to="/sign-in">
                 Deploy your agent
@@ -1066,53 +1099,58 @@ function BetaCTA() {
               size="lg"
               variant="outline"
               asChild
-              className="gap-2 px-8 h-12 rounded-xl border-neutral-800 hover:border-neutral-700 text-neutral-300 hover:text-white hover:bg-white/[0.03] font-semibold text-[15px] transition-all"
+              className="gap-2 px-8 h-13 rounded-xl border-[oklch(0.28_0.006_260)] hover:border-[oklch(0.35_0.008_260)] text-neutral-300 hover:text-white hover:bg-white/[0.03] font-semibold text-[16px] transition-all"
             >
               <Link to="/pricing">
                 View pricing
-                <ArrowRight className="h-4 w-4 opacity-40" />
+                <ChevronRight className="h-4 w-4 opacity-40" />
               </Link>
             </Button>
           </div>
 
           {/* Waitlist */}
-          <div className="mt-16 relative z-10">
-            <div className="h-px bg-neutral-800/50 mb-10" />
-            <p className="text-[12px] text-neutral-500 mb-5 uppercase tracking-[0.15em] font-semibold">
-              Or join the waitlist for early access
-            </p>
+          <div className="mt-20">
+            <div className="h-px bg-gradient-to-r from-transparent via-[oklch(0.26_0.006_260)] to-transparent mb-12" />
 
-            {submitted ? (
-              <div className="rounded-xl bg-claw-red/5 border border-claw-red/15 px-6 py-5 max-w-sm mx-auto animate-fade-in-scale">
-                <p className="text-[15px] font-bold text-claw-red-bright">
-                  You're on the list! 🦞
+            <div className="max-w-md mx-auto">
+              <div className="rounded-2xl bg-[oklch(0.14_0.004_260)] border border-[oklch(0.24_0.006_260)] p-8">
+                <p className="text-[13px] text-neutral-400 mb-1 font-semibold">
+                  Not ready to deploy yet?
                 </p>
-                <p className="mt-1 text-[13px] text-neutral-500">
-                  We'll reach out when your spot opens up.
+                <p className="text-[12px] text-neutral-500 mb-6">
+                  Join the waitlist. We'll let you know when your spot opens.
                 </p>
+
+                {submitted ? (
+                  <div className="rounded-xl bg-claw-red/5 border border-claw-red/15 px-6 py-5 animate-fade-in-scale">
+                    <p className="text-[15px] font-bold text-claw-red-bright">
+                      You're on the list! 🦞
+                    </p>
+                    <p className="mt-1 text-[13px] text-neutral-500">
+                      We'll reach out when your spot opens up.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="flex gap-2">
+                    <input
+                      type="email"
+                      required
+                      placeholder="you@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="flex-1 h-11 rounded-xl border border-[oklch(0.24_0.006_260)] bg-[oklch(0.11_0.003_260)] px-4 text-[14px] text-foreground placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-claw-red/25 focus:border-claw-red/30 transition-all"
+                    />
+                    <Button
+                      type="submit"
+                      className="h-11 px-5 bg-claw-red hover:bg-claw-red-bright text-white font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
+                    >
+                      Join
+                      <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                    </Button>
+                  </form>
+                )}
               </div>
-            ) : (
-              <form
-                onSubmit={handleSubmit}
-                className="flex gap-2 max-w-sm mx-auto"
-              >
-                <input
-                  type="email"
-                  required
-                  placeholder="you@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 h-11 rounded-xl border border-neutral-800 bg-neutral-950 px-4 text-[14px] text-foreground placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-claw-red/25 focus:border-claw-red/30 transition-all"
-                />
-                <Button
-                  type="submit"
-                  className="h-11 px-5 bg-claw-red hover:bg-claw-red-bright text-white font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0"
-                >
-                  Join
-                  <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                </Button>
-              </form>
-            )}
+            </div>
           </div>
         </div>
       </div>
@@ -1143,9 +1181,9 @@ function NotClaude() {
         ) : (
           <div className="animate-fade-in-scale space-y-5">
             <div className="flex items-center gap-4 justify-center">
-              <div className="h-px w-16 bg-neutral-800" />
+              <div className="h-px w-16 bg-[oklch(0.24_0.006_260)]" />
               <span className="text-xl">🦞</span>
-              <div className="h-px w-16 bg-neutral-800" />
+              <div className="h-px w-16 bg-[oklch(0.24_0.006_260)]" />
             </div>
 
             <h3 className="text-lg font-black text-foreground">
@@ -1174,10 +1212,10 @@ function NotClaude() {
             </div>
 
             {/* Comparison table */}
-            <div className="mt-8 rounded-xl overflow-hidden border border-neutral-800/50 text-[12px] max-w-sm mx-auto">
-              <div className="grid grid-cols-3 bg-neutral-950 border-b border-neutral-800/50">
+            <div className="mt-8 rounded-xl overflow-hidden border border-[oklch(0.22_0.005_260)] text-[12px] max-w-sm mx-auto">
+              <div className="grid grid-cols-3 bg-[oklch(0.14_0.004_260)] border-b border-[oklch(0.22_0.005_260)]">
                 <div className="px-4 py-3 text-left" />
-                <div className="px-4 py-3 text-center font-bold text-neutral-400 border-x border-neutral-800/40">
+                <div className="px-4 py-3 text-center font-bold text-neutral-400 border-x border-[oklch(0.20_0.005_260)]">
                   Claude
                 </div>
                 <div className="px-4 py-3 text-center font-bold text-claw-red">
@@ -1199,12 +1237,12 @@ function NotClaude() {
               ].map(([label, claude, claw], i) => (
                 <div
                   key={i}
-                  className={`grid grid-cols-3 ${i % 2 === 0 ? "bg-neutral-950/80" : "bg-neutral-900/20"}`}
+                  className={`grid grid-cols-3 ${i % 2 === 0 ? "bg-[oklch(0.13_0.004_260)]" : "bg-[oklch(0.15_0.004_260)]"}`}
                 >
                   <div className="px-4 py-2.5 text-left text-neutral-500">
                     {label}
                   </div>
-                  <div className="px-4 py-2.5 text-center text-neutral-600 border-x border-neutral-800/30">
+                  <div className="px-4 py-2.5 text-center text-neutral-600 border-x border-[oklch(0.20_0.005_260)]">
                     {claude}
                   </div>
                   <div className="px-4 py-2.5 text-center text-neutral-300">
@@ -1214,7 +1252,7 @@ function NotClaude() {
               ))}
             </div>
 
-            <p className="text-[11px] text-neutral-700 pt-2">
+            <p className="text-[11px] text-neutral-600 pt-2">
               No AIs were harmed in the making of this disclaimer. Several fish
               were.
             </p>
@@ -1240,17 +1278,17 @@ export default function Home() {
     <>
       <ThemeToggle />
       <Hero />
-      <Divider />
+      <SectionDivider />
       <ProblemSolution />
-      <Divider />
+      <SectionDivider />
       <Pillars />
       <HowItWorks />
       <Capabilities />
       <DeploymentOptions />
-      <Divider />
+      <SectionDivider />
       <GlassesSection />
       <Testimonials />
-      <Divider />
+      <SectionDivider />
       <WhyTheClaw />
       <BetaCTA />
       <NotClaude />
