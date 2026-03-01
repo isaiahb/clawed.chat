@@ -34,7 +34,7 @@ const quickLinks = [
     description:
       "Pair your smart glasses, configure voice commands, and talk to your agent hands-free.",
     icon: Glasses,
-    href: "/glasses",
+    href: "/docs",
   },
   {
     title: "Live Desktop Stream",
@@ -48,7 +48,7 @@ const quickLinks = [
     description:
       "Your agent connects to WhatsApp, Telegram, Slack, Discord, Signal, iMessage, Teams, and 15+ more channels.",
     icon: Plug,
-    href: "/glasses",
+    href: "/docs",
   },
 ];
 

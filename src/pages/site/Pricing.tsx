@@ -29,7 +29,21 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { PricingTier } from "@/types";
+interface PricingTier {
+  id: string;
+  name: string;
+  price: string;
+  description: string;
+  features: string[];
+  limits: {
+    devices: number | "unlimited";
+    connections: number | "unlimited";
+    approvalsPerDay: number | "unlimited";
+    retentionDays: number | "unlimited";
+  };
+  cta: string;
+  highlighted?: boolean;
+}
 
 // ──────────────────────────────────────────────
 // Tier Data
@@ -570,7 +584,7 @@ export default function Pricing() {
                     What's included
                   </p>
                   <ul className="space-y-2.5">
-                    {tier.features.map((feature) => (
+                    {tier.features.map((feature: string) => (
                       <li
                         key={feature}
                         className="flex items-start gap-2.5 text-sm"
@@ -588,7 +602,7 @@ export default function Pricing() {
                         Not included
                       </p>
                       <ul className="space-y-2.5">
-                        {tier.notIncluded.map((feature) => (
+                        {tier.notIncluded.map((feature: string) => (
                           <li
                             key={feature}
                             className="flex items-start gap-2.5 text-sm text-muted-foreground"
@@ -775,7 +789,7 @@ export default function Pricing() {
               </Link>
             </Button>
             <Button variant="outline" size="lg" asChild>
-              <Link to="/how-it-works">See how it works</Link>
+              <Link to="/docs">See how it works</Link>
             </Button>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">

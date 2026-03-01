@@ -21,7 +21,29 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { TimelineEntry, TimelineStatus } from "@/types";
+
+// ---------------------------------------------------------------------------
+// Types (self-contained — no longer depends on removed global types)
+// ---------------------------------------------------------------------------
+
+export type ReceiptStatus = "completed" | "failed" | "pending" | "undone";
+
+export interface ReceiptDetails {
+  what: string;
+  where: string;
+  dataUsed: string;
+  undoAvailable: boolean;
+  error?: string;
+}
+
+export interface ReceiptEntry {
+  id: string;
+  action: string;
+  tool: string;
+  status: ReceiptStatus;
+  timestamp: string; // ISO 8601
+  details: ReceiptDetails;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -49,7 +71,7 @@ function formatAbsoluteTime(iso: string): string {
 }
 
 const statusConfig: Record<
-  TimelineStatus,
+  ReceiptStatus,
   { icon: typeof CheckCircle; label: string; className: string }
 > = {
   completed: {
@@ -65,7 +87,7 @@ const statusConfig: Record<
   pending: {
     icon: Clock,
     label: "Pending",
-    className: "text-warning",
+    className: "text-amber-500",
   },
   undone: {
     icon: Undo2,
@@ -79,7 +101,7 @@ const statusConfig: Record<
 // ---------------------------------------------------------------------------
 
 interface ReceiptCardProps {
-  entry: TimelineEntry;
+  entry: ReceiptEntry;
   onUndo?: (id: string) => void;
   className?: string;
   defaultExpanded?: boolean;
@@ -98,9 +120,9 @@ export function ReceiptCard({
   return (
     <Card
       className={cn(
-        "group transition-colors hover:border-muted-foreground/20",
+        "group transition-colors",
         entry.status === "failed" && "border-destructive/30",
-        className
+        className,
       )}
     >
       <CardContent className="p-4">
@@ -109,8 +131,8 @@ export function ReceiptCard({
           {/* Status icon */}
           <div
             className={cn(
-              "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted",
-              status.className
+              "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center bg-muted",
+              status.className,
             )}
           >
             <StatusIcon className="h-4 w-4" />
@@ -143,10 +165,7 @@ export function ReceiptCard({
               </Badge>
               <Badge
                 variant="outline"
-                className={cn(
-                  "text-xs font-normal",
-                  status.className
-                )}
+                className={cn("text-xs font-normal", status.className)}
               >
                 {status.label}
               </Badge>
@@ -154,7 +173,7 @@ export function ReceiptCard({
 
             {/* Error message (always visible if present) */}
             {entry.details.error && (
-              <div className="mt-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              <div className="mt-2 bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
                 {entry.details.error}
               </div>
             )}
@@ -164,7 +183,7 @@ export function ReceiptCard({
         {/* ── Expand toggle ─────────────────────────────────── */}
         <button
           onClick={() => setExpanded((prev) => !prev)}
-          className="mt-3 flex w-full items-center justify-center gap-1 rounded-md py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="mt-3 flex w-full items-center justify-center gap-1 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           {expanded ? (
             <>

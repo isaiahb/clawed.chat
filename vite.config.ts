@@ -16,8 +16,6 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Heavy 3D vendor libs in their own chunk — only loaded when needed
-          "vendor-three": ["three", "@react-three/fiber", "@react-three/drei"],
           // React core
           "vendor-react": ["react", "react-dom", "react-router-dom"],
           // UI primitives
@@ -28,6 +26,4 @@ export default defineConfig({
       },
     },
   },
-  // Allow importing .stl files as URLs
-  assetsInclude: ["**/*.stl"],
 });

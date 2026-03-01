@@ -1,29 +1,28 @@
 import { useState, useEffect } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
-  Inbox,
+  NavLink,
+  Outlet,
+  useLocation,
+  Link,
+  useNavigate,
+} from "react-router-dom";
+import {
   MessageSquare,
-  ShieldCheck,
-  Clock,
   Plug,
-  Glasses,
   Settings,
-  PanelLeftClose,
-  PanelLeft,
-  Command,
-  Search,
-  Moon,
   Sun,
   Monitor,
   ChevronDown,
   LogOut,
   User,
+  Search,
+  Command,
+  Loader2,
   Zap,
-  LayoutDashboard,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -41,49 +40,190 @@ import {
 import { useAppStore } from "@/stores/app-store";
 import { cn } from "@/lib/utils";
 import { CommandBar } from "@/components/shared/CommandBar";
+import type { ActionIndicatorPhase } from "@/types";
 
-const navItems = [
-  { label: "Dashboard", href: "/app", icon: LayoutDashboard },
-  { label: "Inbox", href: "/app/inbox", icon: Inbox, badge: 3 },
-  { label: "Ask", href: "/app/ask", icon: MessageSquare },
-  { label: "Approvals", href: "/app/approvals", icon: ShieldCheck, badge: 5 },
-  { label: "Timeline", href: "/app/timeline", icon: Clock },
-  { label: "Connections", href: "/app/connections", icon: Plug },
-  { label: "Devices", href: "/app/devices", icon: Glasses },
-  { label: "Settings", href: "/app/settings", icon: Settings },
-];
+// ── Agent status config ──
+const agentStatusConfig = {
+  live: {
+    label: "Agent Live",
+    dotClass: "bg-emerald-500",
+    pillClass: "border-emerald-300 bg-emerald-50 text-emerald-700",
+  },
+  idle: {
+    label: "Agent Idle",
+    dotClass: "bg-gray-400",
+    pillClass: "border-border bg-muted text-muted-foreground",
+  },
+  provisioning: {
+    label: "Provisioning",
+    dotClass: "bg-amber-500 animate-pulse",
+    pillClass: "border-amber-300 bg-amber-50 text-amber-700",
+  },
+  offline: {
+    label: "Agent Offline",
+    dotClass: "bg-gray-300",
+    pillClass: "border-border bg-muted text-muted-foreground",
+  },
+  error: {
+    label: "Agent Error",
+    dotClass: "bg-red-500",
+    pillClass: "border-red-300 bg-red-50 text-red-700",
+  },
+} as const;
 
-const safetyModeConfig = {
-  "read-only": {
-    label: "Read Only",
-    color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-    icon: "🔒",
-  },
-  "draft-first": {
-    label: "Draft First",
-    color:
-      "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-    icon: "📝",
-  },
-  assisted: {
-    label: "Assisted",
-    color:
-      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-    icon: "⚡",
-  },
-};
+// ── Claw Logo SVG — sharp, no rounded corners ──
+function ClawLogo({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="-14 -14 28 28"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={cn("h-7 w-7", className)}
+    >
+      {/* Bottom jaw */}
+      <path
+        d="M-8 1.5 C-8 1.5,-5 6,1.5 7.5 C5 8,9 6,10.5 3 C10.5 3,7.5 4.5,4.5 3.5 C1.5 2.5,-3 1.5,-8 1.5Z"
+        fill="#8B0000"
+        stroke="#aa0000"
+        strokeWidth="0.4"
+      />
+      {/* Top jaw */}
+      <path
+        d="M-8 -0.5 C-8 -0.5,-5 -6,1.5 -7.5 C5 -8,9 -4.5,10.5 -1.5 C10.5 -1.5,7.5 -3.5,4.5 -3 C1.5 -2,-3 -0.5,-8 -0.5Z"
+        fill="#cc0000"
+        stroke="#ee2222"
+        strokeWidth="0.4"
+      >
+        <animateTransform
+          attributeName="transform"
+          type="rotate"
+          values="0 -8 0;-6 -8 0;0 -8 0"
+          dur="1.8s"
+          repeatCount="indefinite"
+          keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
+          calcMode="spline"
+        />
+      </path>
+      {/* Joint */}
+      <circle
+        cx={-8}
+        cy={0.5}
+        r={2.2}
+        fill="#550000"
+        stroke="#770000"
+        strokeWidth="0.4"
+      />
+      {/* Highlight */}
+      <path
+        d="M-5 -4 C-3 -6, 2 -7, 5 -5"
+        fill="none"
+        stroke="#ff4444"
+        strokeWidth="0.3"
+        opacity="0.4"
+      />
+    </svg>
+  );
+}
+
+// ── Agent Status Pill ──
+function AgentStatusPill() {
+  const { agentStatus, setAgentStatus } = useAppStore();
+  const config = agentStatusConfig[agentStatus];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className={cn(
+            "status-pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.04em] border cursor-pointer transition-all hover:opacity-80",
+            config.pillClass,
+          )}
+        >
+          <span
+            className={cn("h-1.5 w-1.5 rounded-full shrink-0", config.dotClass)}
+          />
+          {config.label}
+          <ChevronDown className="h-3 w-3 opacity-50 ml-0.5" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="center" className="w-44">
+        <DropdownMenuLabel className="text-xs">Agent Status</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {(
+          Object.entries(agentStatusConfig) as [
+            keyof typeof agentStatusConfig,
+            (typeof agentStatusConfig)[keyof typeof agentStatusConfig],
+          ][]
+        ).map(([key, cfg]) => (
+          <DropdownMenuItem
+            key={key}
+            onClick={() => setAgentStatus(key)}
+            className={cn("gap-2 text-xs", agentStatus === key && "bg-accent")}
+          >
+            <span className={cn("h-1.5 w-1.5 rounded-full", cfg.dotClass)} />
+            {cfg.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+// ── Top Bar Action Indicator Pill ──
+// Shows what the assistant is doing, persistent in top bar next to agent status
+function ActionIndicatorPill() {
+  const { actionIndicatorPhase, actionIndicatorLabel } = useAppStore();
+
+  if (actionIndicatorPhase === "idle") return null;
+
+  const phaseConfig: Record<
+    ActionIndicatorPhase,
+    { icon: React.ReactNode; pillClass: string }
+  > = {
+    idle: { icon: null, pillClass: "" },
+    thinking: {
+      icon: <Loader2 className="h-3 w-3 animate-spin" />,
+      pillClass: "border-amber-300 bg-amber-50 text-amber-700",
+    },
+    acting: {
+      icon: <Zap className="h-3 w-3 animate-pulse" />,
+      pillClass: "border-claw-red/30 bg-red-50 text-claw-red",
+    },
+    done: {
+      icon: <CheckCircle2 className="h-3 w-3" />,
+      pillClass: "border-emerald-300 bg-emerald-50 text-emerald-700",
+    },
+    error: {
+      icon: <AlertTriangle className="h-3 w-3" />,
+      pillClass: "border-red-300 bg-red-50 text-red-700",
+    },
+  };
+
+  const config = phaseConfig[actionIndicatorPhase] ?? phaseConfig.thinking;
+
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-[0.03em] border transition-all",
+        config.pillClass,
+      )}
+    >
+      {config.icon}
+      <span className="max-w-[120px] truncate">{actionIndicatorLabel}</span>
+    </div>
+  );
+}
 
 export default function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const {
-    sidebarOpen,
-    toggleSidebar,
     commandBarOpen,
     setCommandBarOpen,
     theme,
     setTheme,
-    safetyMode,
-    setSafetyMode,
+    accountName,
+    accountEmail,
   } = useAppStore();
 
   const [isMobile, setIsMobile] = useState(false);
@@ -111,284 +251,211 @@ export default function AppLayout() {
   // Apply theme to document
   useEffect(() => {
     const root = document.documentElement;
+    root.classList.remove("dark", "light");
     if (theme === "dark") {
       root.classList.add("dark");
     } else if (theme === "light") {
-      root.classList.remove("dark");
+      root.classList.add("light");
     } else {
       const prefersDark = window.matchMedia(
         "(prefers-color-scheme: dark)",
       ).matches;
       root.classList.toggle("dark", prefersDark);
+      root.classList.toggle("light", !prefersDark);
     }
   }, [theme]);
 
-  const modeConfig = safetyModeConfig[safetyMode];
-  const collapsed = !sidebarOpen && !isMobile;
+  // Nav link helper
+  const navLinkClass = (path: string) => {
+    const isActive =
+      path === "/app"
+        ? location.pathname === "/app" || location.pathname === "/app/"
+        : path === "/app/connections"
+          ? location.pathname.startsWith("/app/connections")
+          : path === "/app/settings"
+            ? location.pathname.startsWith("/app/settings")
+            : false;
+
+    return cn(
+      "flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.04em] border transition-all",
+      isActive
+        ? "border-foreground bg-foreground text-background"
+        : "border-border text-muted-foreground hover:border-foreground hover:text-foreground",
+    );
+  };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* ── Sidebar ── */}
-      <aside
-        className={cn(
-          "flex flex-col border-r border-claw-red/10 bg-claw-black transition-all duration-200 ease-in-out",
-          collapsed ? "w-16" : "w-64",
-          isMobile && !sidebarOpen && "-translate-x-full absolute z-50 h-full",
-          isMobile && sidebarOpen && "absolute z-50 h-full w-64",
-        )}
-      >
-        {/* Logo / Brand */}
-        <div className="flex h-14 items-center gap-2 border-b border-claw-red/10 px-4">
-          {!collapsed && (
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-claw-red/15 border border-claw-red/20 shrink-0 glow-red-sm">
-                <svg viewBox="-14 -14 28 28" className="h-5 w-5">
-                  <path
-                    d="M-8 1.5 C-8 1.5,-5 6,1.5 7.5 C5 8,9 6,10.5 3 C10.5 3,7.5 4.5,4.5 3.5 C1.5 2.5,-3 1.5,-8 1.5Z"
-                    fill="#8B0000"
-                  />
-                  <path
-                    d="M-8 -0.5 C-8 -0.5,-5 -6,1.5 -7.5 C5 -8,9 -4.5,10.5 -1.5 C10.5 -1.5,7.5 -3.5,4.5 -3 C1.5 -2,-3 -0.5,-8 -0.5Z"
-                    fill="#cc0000"
-                  />
-                  <circle cx="-8" cy="0.5" r="2.2" fill="#550000" />
-                </svg>
-              </div>
-              <span
-                className="font-extrabold text-foreground truncate tracking-tight"
-                style={{
-                  background:
-                    "linear-gradient(135deg, #ff2200, #cc0000, #880000)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      {/* ── Top Navigation Bar ── */}
+      <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-card px-4">
+        {/* Left — Logo */}
+        <Link to="/app" className="group flex items-center gap-2">
+          <ClawLogo className="transition-transform group-hover:scale-105" />
+          <span
+            className="text-sm font-black tracking-tight hidden sm:inline"
+            style={{
+              background: "linear-gradient(135deg, #ff2200, #cc0000, #880000)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            Clawed
+          </span>
+        </Link>
+
+        {/* Center — Agent Status Pill + Action Indicator */}
+        <div className="absolute left-1/2 -translate-x-1/2 hidden sm:flex items-center gap-2">
+          <AgentStatusPill />
+          <ActionIndicatorPill />
+        </div>
+
+        {/* Right — Nav links + Actions */}
+        <div className="flex items-center gap-2">
+          {/* Mobile agent status */}
+          <div className="sm:hidden">
+            <AgentStatusPill />
+          </div>
+
+          {/* Chat link */}
+          {!isMobile && (
+            <NavLink to="/app" className={navLinkClass("/app")}>
+              <MessageSquare className="h-3 w-3" />
+              Chat
+            </NavLink>
+          )}
+
+          {/* Search trigger */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={() => setCommandBarOpen(true)}
               >
-                Clawed
+                <Search className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span className="flex items-center gap-1.5">
+                Search
+                <kbd className="inline-flex h-4 items-center gap-0.5 border bg-muted px-1 font-mono text-[10px]">
+                  <Command className="h-2.5 w-2.5" />K
+                </kbd>
               </span>
-            </div>
-          )}
-          {collapsed && (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-claw-red/15 border border-claw-red/20 mx-auto glow-red-sm">
-              <svg viewBox="-14 -14 28 28" className="h-5 w-5">
-                <path
-                  d="M-8 1.5 C-8 1.5,-5 6,1.5 7.5 C5 8,9 6,10.5 3 C10.5 3,7.5 4.5,4.5 3.5 C1.5 2.5,-3 1.5,-8 1.5Z"
-                  fill="#8B0000"
-                />
-                <path
-                  d="M-8 -0.5 C-8 -0.5,-5 -6,1.5 -7.5 C5 -8,9 -4.5,10.5 -1.5 C10.5 -1.5,7.5 -3.5,4.5 -3 C1.5 -2,-3 -0.5,-8 -0.5Z"
-                  fill="#cc0000"
-                />
-                <circle cx="-8" cy="0.5" r="2.2" fill="#550000" />
-              </svg>
-            </div>
-          )}
-        </div>
+            </TooltipContent>
+          </Tooltip>
 
-        {/* Safety Mode Indicator */}
-        <div className="px-3 py-3">
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div
-                  className={cn(
-                    "flex h-8 w-8 mx-auto items-center justify-center rounded-md text-xs cursor-pointer",
-                    modeConfig.color,
-                  )}
-                >
-                  {modeConfig.icon}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Mode: {modeConfig.label}</p>
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors hover:opacity-80",
-                    modeConfig.color,
-                  )}
-                >
-                  <Zap className="h-3.5 w-3.5" />
-                  <span>{modeConfig.label}</span>
-                  <ChevronDown className="ml-auto h-3 w-3 opacity-60" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
-                <DropdownMenuLabel className="text-xs">
-                  Safety Mode
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {(
-                  Object.entries(safetyModeConfig) as [
-                    typeof safetyMode,
-                    (typeof safetyModeConfig)[typeof safetyMode],
-                  ][]
-                ).map(([key, config]) => (
-                  <DropdownMenuItem
-                    key={key}
-                    onClick={() => setSafetyMode(key)}
-                    className={cn("gap-2", safetyMode === key && "bg-accent")}
-                  >
-                    <span>{config.icon}</span>
-                    <span>{config.label}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-
-        <Separator />
-
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-2">
-          <ul className="space-y-1">
-            {navItems.map((item) => {
-              const isActive =
-                item.href === "/app"
-                  ? location.pathname === "/app"
-                  : location.pathname.startsWith(item.href);
-              return (
-                <li key={item.href}>
-                  {collapsed ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <NavLink
-                          to={item.href}
-                          className={cn(
-                            "flex h-9 w-9 mx-auto items-center justify-center rounded-md transition-colors",
-                            isActive
-                              ? "bg-accent text-accent-foreground"
-                              : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                          )}
-                        >
-                          <item.icon className="h-4 w-4" />
-                        </NavLink>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        side="right"
-                        className="flex items-center gap-2"
-                      >
-                        {item.label}
-                        {item.badge && (
-                          <Badge
-                            variant="secondary"
-                            className="h-4 px-1 text-[10px]"
-                          >
-                            {item.badge}
-                          </Badge>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <NavLink
-                      to={item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-accent text-accent-foreground"
-                          : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                      )}
-                    >
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{item.label}</span>
-                      {item.badge && (
-                        <Badge
-                          variant="secondary"
-                          className="ml-auto h-5 px-1.5 text-[10px]"
-                        >
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </NavLink>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        {/* Sidebar Footer */}
-        <div className="border-t border-border px-3 py-3 space-y-2">
-          {/* Command bar trigger */}
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 mx-auto"
-                  onClick={() => setCommandBarOpen(true)}
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Search (⌘K)</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2 text-muted-foreground h-9 text-xs"
-              onClick={() => setCommandBarOpen(true)}
+          {/* Connections link */}
+          {!isMobile && (
+            <NavLink
+              to="/app/connections"
+              className={navLinkClass("/app/connections")}
             >
-              <Search className="h-3.5 w-3.5" />
-              <span>Search…</span>
-              <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                <Command className="h-2.5 w-2.5" />K
-              </kbd>
-            </Button>
+              <Plug className="h-3 w-3" />
+              Connections
+            </NavLink>
           )}
 
-          {/* User menu */}
+          {/* Settings link */}
+          {!isMobile && (
+            <NavLink
+              to="/app/settings"
+              className={navLinkClass("/app/settings")}
+            >
+              <Settings className="h-3 w-3" />
+              Settings
+            </NavLink>
+          )}
+
+          {/* Mobile nav icons */}
+          {isMobile && (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <NavLink
+                    to="/app"
+                    end
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center border transition-all",
+                      location.pathname === "/app" ||
+                        location.pathname === "/app/"
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border text-muted-foreground hover:border-foreground hover:text-foreground",
+                    )}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                  </NavLink>
+                </TooltipTrigger>
+                <TooltipContent>Chat</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <NavLink
+                    to="/app/connections"
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center border transition-all",
+                      location.pathname.startsWith("/app/connections")
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border text-muted-foreground hover:border-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Plug className="h-3.5 w-3.5" />
+                  </NavLink>
+                </TooltipTrigger>
+                <TooltipContent>Connections</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <NavLink
+                    to="/app/settings"
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center border transition-all",
+                      location.pathname.startsWith("/app/settings")
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border text-muted-foreground hover:border-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                  </NavLink>
+                </TooltipTrigger>
+                <TooltipContent>Settings</TooltipContent>
+              </Tooltip>
+            </>
+          )}
+
+          {/* Account menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
-                className={cn(
-                  "flex items-center gap-2 rounded-md w-full transition-colors hover:bg-accent/50 p-1.5",
-                  collapsed && "justify-center",
-                )}
-              >
-                <Avatar className="h-7 w-7">
-                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                    P
+              <button className="flex h-8 w-8 items-center justify-center border border-border transition-all hover:border-foreground">
+                <Avatar className="h-6 w-6">
+                  <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-semibold">
+                    {accountName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                {!collapsed && (
-                  <div className="flex-1 text-left min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">
-                      Parth
-                    </p>
-                    <p className="text-[10px] text-muted-foreground truncate">
-                      parth@example.com
-                    </p>
-                  </div>
-                )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align={collapsed ? "center" : "end"}
-              side="top"
-              className="w-48"
-            >
+            <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">Parth</p>
+                  <p className="text-sm font-medium">{accountName}</p>
                   <p className="text-xs text-muted-foreground">
-                    parth@example.com
+                    {accountEmail}
                   </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+
               <DropdownMenuItem asChild>
                 <NavLink to="/app/settings" className="gap-2 cursor-pointer">
                   <User className="h-3.5 w-3.5" />
                   Profile & Settings
                 </NavLink>
               </DropdownMenuItem>
+
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                 Theme
@@ -401,81 +468,30 @@ export default function AppLayout() {
                 Light
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => setTheme("dark")}
-                className={cn("gap-2", theme === "dark" && "bg-accent")}
-              >
-                <Moon className="h-3.5 w-3.5" />
-                Dark
-              </DropdownMenuItem>
-              <DropdownMenuItem
                 onClick={() => setTheme("system")}
                 className={cn("gap-2", theme === "system" && "bg-accent")}
               >
                 <Monitor className="h-3.5 w-3.5" />
                 System
               </DropdownMenuItem>
+
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive">
+              <DropdownMenuItem
+                className="gap-2 text-destructive focus:text-destructive"
+                onClick={() => navigate("/login")}
+              >
                 <LogOut className="h-3.5 w-3.5" />
                 Sign out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </aside>
+      </header>
 
-      {/* ── Mobile overlay ── */}
-      {isMobile && sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50"
-          onClick={toggleSidebar}
-        />
-      )}
-
-      {/* ── Main Content Area ── */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top bar */}
-        <header className="flex h-14 items-center gap-3 border-b border-claw-red/10 bg-claw-black/90 backdrop-blur-sm px-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            onClick={toggleSidebar}
-          >
-            {sidebarOpen ? (
-              <PanelLeftClose className="h-4 w-4" />
-            ) : (
-              <PanelLeft className="h-4 w-4" />
-            )}
-          </Button>
-
-          {/* Breadcrumb / Page title */}
-          <div className="flex-1 min-w-0">
-            <h1 className="text-sm font-semibold text-foreground truncate capitalize">
-              {location.pathname.split("/").pop()?.replace(/-/g, " ") ||
-                "Dashboard"}
-            </h1>
-          </div>
-
-          {/* Quick actions */}
-          <div className="flex items-center gap-1">
-            <div
-              className={cn(
-                "hidden sm:flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium",
-                modeConfig.color,
-              )}
-            >
-              <span>{modeConfig.icon}</span>
-              <span>{modeConfig.label}</span>
-            </div>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
-          <Outlet />
-        </main>
-      </div>
+      {/* ── Page Content ── */}
+      <main className="flex-1 overflow-y-auto">
+        <Outlet />
+      </main>
 
       {/* ── Command Bar ── */}
       <CommandBar open={commandBarOpen} onOpenChange={setCommandBarOpen} />

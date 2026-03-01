@@ -1,19 +1,25 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { ActionIndicatorPhase } from "@/types";
+import type { AskConversation } from "@/types";
 
 export type SafetyMode = "read-only" | "draft-first" | "assisted";
 
 export type Theme = "light" | "dark" | "system";
 
+export type ResponseStyle = "short" | "medium" | "verbose";
+
+export type AgentStatus =
+  | "live"
+  | "idle"
+  | "provisioning"
+  | "offline"
+  | "error";
+
 interface AppState {
   // Safety mode
   safetyMode: SafetyMode;
   setSafetyMode: (mode: SafetyMode) => void;
-
-  // Sidebar
-  sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
-  toggleSidebar: () => void;
 
   // Command bar
   commandBarOpen: boolean;
@@ -24,22 +30,35 @@ interface AppState {
   theme: Theme;
   setTheme: (theme: Theme) => void;
 
-  // Onboarding
-  onboardingComplete: boolean;
-  setOnboardingComplete: (complete: boolean) => void;
-  onboardingStep: number;
-  setOnboardingStep: (step: number) => void;
+  // Response style
+  responseStyle: ResponseStyle;
+  setResponseStyle: (style: ResponseStyle) => void;
 
-  // Glasses connection
-  glassesConnected: boolean;
-  setGlassesConnected: (connected: boolean) => void;
+  // Agent status
+  agentStatus: AgentStatus;
+  setAgentStatus: (status: AgentStatus) => void;
 
-  // Quiet hours
-  quietHoursEnabled: boolean;
-  setQuietHoursEnabled: (enabled: boolean) => void;
-  quietHoursStart: string;
-  quietHoursEnd: string;
-  setQuietHours: (start: string, end: string) => void;
+  // Demo mode
+  demoMode: boolean;
+  setDemoMode: (enabled: boolean) => void;
+
+  // Action indicator — persistent pill in top bar
+  actionIndicatorPhase: ActionIndicatorPhase;
+  actionIndicatorLabel: string;
+  setActionIndicator: (phase: ActionIndicatorPhase, label: string) => void;
+  clearActionIndicator: () => void;
+
+  // Session persistence
+  savedSessions: AskConversation[];
+  setSavedSessions: (sessions: AskConversation[]) => void;
+  activeSessionId: string | null;
+  setActiveSessionId: (id: string | null) => void;
+
+  // Account info (basic)
+  accountName: string;
+  setAccountName: (name: string) => void;
+  accountEmail: string;
+  setAccountEmail: (email: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -49,50 +68,62 @@ export const useAppStore = create<AppState>()(
       safetyMode: "draft-first",
       setSafetyMode: (mode) => set({ safetyMode: mode }),
 
-      // Sidebar — open by default on desktop
-      sidebarOpen: true,
-      setSidebarOpen: (open) => set({ sidebarOpen: open }),
-      toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-
       // Command bar
       commandBarOpen: false,
       setCommandBarOpen: (open) => set({ commandBarOpen: open }),
       toggleCommandBar: () =>
         set((s) => ({ commandBarOpen: !s.commandBarOpen })),
 
-      // Theme — dark by default
-      theme: "dark",
+      // Theme — light by default for MVP
+      theme: "light",
       setTheme: (theme) => set({ theme }),
 
-      // Onboarding
-      onboardingComplete: false,
-      setOnboardingComplete: (complete) =>
-        set({ onboardingComplete: complete }),
-      onboardingStep: 0,
-      setOnboardingStep: (step) => set({ onboardingStep: step }),
+      // Response style — medium by default
+      responseStyle: "medium",
+      setResponseStyle: (style) => set({ responseStyle: style }),
 
-      // Glasses
-      glassesConnected: false,
-      setGlassesConnected: (connected) => set({ glassesConnected: connected }),
+      // Agent status
+      agentStatus: "live",
+      setAgentStatus: (status) => set({ agentStatus: status }),
 
-      // Quiet hours
-      quietHoursEnabled: false,
-      setQuietHoursEnabled: (enabled) => set({ quietHoursEnabled: enabled }),
-      quietHoursStart: "22:00",
-      quietHoursEnd: "07:00",
-      setQuietHours: (start, end) =>
-        set({ quietHoursStart: start, quietHoursEnd: end }),
+      // Demo mode
+      demoMode: false,
+      setDemoMode: (enabled) => set({ demoMode: enabled }),
+
+      // Action indicator — top bar pill
+      actionIndicatorPhase: "idle" as ActionIndicatorPhase,
+      actionIndicatorLabel: "",
+      setActionIndicator: (phase, label) =>
+        set({ actionIndicatorPhase: phase, actionIndicatorLabel: label }),
+      clearActionIndicator: () =>
+        set({
+          actionIndicatorPhase: "idle" as ActionIndicatorPhase,
+          actionIndicatorLabel: "",
+        }),
+
+      // Session persistence — stored in localStorage
+      savedSessions: [],
+      setSavedSessions: (sessions) => set({ savedSessions: sessions }),
+      activeSessionId: null,
+      setActiveSessionId: (id) => set({ activeSessionId: id }),
+
+      // Account info
+      accountName: "Parth",
+      setAccountName: (name) => set({ accountName: name }),
+      accountEmail: "parth@example.com",
+      setAccountEmail: (email) => set({ accountEmail: email }),
     }),
     {
       name: "clawed-app-store",
       partialize: (state) => ({
         safetyMode: state.safetyMode,
         theme: state.theme,
-        onboardingComplete: state.onboardingComplete,
-        onboardingStep: state.onboardingStep,
-        quietHoursEnabled: state.quietHoursEnabled,
-        quietHoursStart: state.quietHoursStart,
-        quietHoursEnd: state.quietHoursEnd,
+        responseStyle: state.responseStyle,
+        demoMode: state.demoMode,
+        savedSessions: state.savedSessions,
+        activeSessionId: state.activeSessionId,
+        accountName: state.accountName,
+        accountEmail: state.accountEmail,
       }),
     },
   ),

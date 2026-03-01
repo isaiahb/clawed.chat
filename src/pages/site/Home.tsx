@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Button } from "@/components/ui/button";
-import { ClawScene } from "@/components/shared/ClawScene";
+
 import {
   ArrowRight,
   Glasses,
@@ -191,9 +191,9 @@ function Hero() {
                 asChild
                 className="gap-2 px-7 h-12 text-muted-foreground hover:text-foreground font-semibold text-[15px] transition-all"
               >
-                <Link to="/glasses">
+                <Link to="/app">
                   <Glasses className="h-4 w-4 text-claw-red" />
-                  Try glasses demo
+                  Try the demo
                 </Link>
               </Button>
             </div>
@@ -266,18 +266,54 @@ function Hero() {
               </svg>
             </div>
 
-            <ClawScene
-              className="w-[280px] h-[280px] sm:w-[380px] sm:h-[380px] lg:w-[460px] lg:h-[460px] xl:w-[520px] xl:h-[520px]"
-              scale={0.055}
-              showParticles={true}
-              showRing={false}
-              showShadow={true}
-              showControls={false}
-              autoRotate={true}
-              rotationSpeed={0.005}
-              cameraPosition={[0, 0.8, 4.2]}
-              cameraFov={40}
-            />
+            <div className="w-[280px] h-[280px] sm:w-[380px] sm:h-[380px] lg:w-[460px] lg:h-[460px] xl:w-[520px] xl:h-[520px] flex items-center justify-center">
+              <svg
+                viewBox="-24 -24 48 48"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-3/4 h-3/4 drop-shadow-2xl"
+              >
+                <g transform="scale(1.5)">
+                  <path
+                    d="M-10 2 C-10 2, -6 8, 2 10 C6 11, 12 8, 14 4 C14 4, 10 6, 6 5 C2 4, -4 2, -10 2Z"
+                    fill="#8B0000"
+                    stroke="#aa0000"
+                    strokeWidth="0.5"
+                  />
+                  <path
+                    d="M-10 -1 C-10 -1, -6 -8, 2 -10 C6 -11, 12 -6, 14 -2 C14 -2, 10 -5, 6 -4 C2 -3, -4 -1, -10 -1Z"
+                    fill="#cc0000"
+                    stroke="#ee2222"
+                    strokeWidth="0.5"
+                  >
+                    <animateTransform
+                      attributeName="transform"
+                      type="rotate"
+                      values="0 -10 0;-8 -10 0;0 -10 0"
+                      dur="1.5s"
+                      repeatCount="indefinite"
+                      keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
+                      calcMode="spline"
+                    />
+                  </path>
+                  <circle
+                    cx={-10}
+                    cy={0.5}
+                    r={3}
+                    fill="#550000"
+                    stroke="#770000"
+                    strokeWidth="0.5"
+                  />
+                  <path
+                    d="M-6 -5 C-4 -7, 2 -8, 6 -6"
+                    fill="none"
+                    stroke="#ff4444"
+                    strokeWidth="0.4"
+                    opacity="0.5"
+                  />
+                </g>
+              </svg>
+            </div>
           </div>
         </div>
       </div>
@@ -938,19 +974,54 @@ function WhyTheClaw() {
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="h-[280px] w-[280px] bg-claw-red/[0.04] blur-[60px] animate-pulse-subtle" />
             </div>
-            <ClawScene
-              className="w-[260px] h-[260px] sm:w-[320px] sm:h-[320px]"
-              scale={0.048}
-              showParticles={false}
-              showRing={false}
-              showShadow={true}
-              showControls={false}
-              autoRotate={true}
-              rotationSpeed={0.003}
-              cameraPosition={[0, 0.6, 4.5]}
-              cameraFov={38}
-              useOriginalMaterials={true}
-            />
+            <div className="w-[260px] h-[260px] sm:w-[320px] sm:h-[320px] flex items-center justify-center">
+              <svg
+                viewBox="-24 -24 48 48"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-3/4 h-3/4 drop-shadow-xl"
+              >
+                <g transform="scale(1.5)">
+                  <path
+                    d="M-10 2 C-10 2, -6 8, 2 10 C6 11, 12 8, 14 4 C14 4, 10 6, 6 5 C2 4, -4 2, -10 2Z"
+                    fill="#8B0000"
+                    stroke="#aa0000"
+                    strokeWidth="0.5"
+                  />
+                  <path
+                    d="M-10 -1 C-10 -1, -6 -8, 2 -10 C6 -11, 12 -6, 14 -2 C14 -2, 10 -5, 6 -4 C2 -3, -4 -1, -10 -1Z"
+                    fill="#cc0000"
+                    stroke="#ee2222"
+                    strokeWidth="0.5"
+                  >
+                    <animateTransform
+                      attributeName="transform"
+                      type="rotate"
+                      values="0 -10 0;-8 -10 0;0 -10 0"
+                      dur="1.5s"
+                      repeatCount="indefinite"
+                      keySplines="0.4 0 0.2 1;0.4 0 0.2 1"
+                      calcMode="spline"
+                    />
+                  </path>
+                  <circle
+                    cx={-10}
+                    cy={0.5}
+                    r={3}
+                    fill="#550000"
+                    stroke="#770000"
+                    strokeWidth="0.5"
+                  />
+                  <path
+                    d="M-6 -5 C-4 -7, 2 -8, 6 -6"
+                    fill="none"
+                    stroke="#ff4444"
+                    strokeWidth="0.4"
+                    opacity="0.5"
+                  />
+                </g>
+              </svg>
+            </div>
           </div>
 
           {/* Right — story */}

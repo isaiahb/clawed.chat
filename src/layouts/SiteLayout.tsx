@@ -18,7 +18,6 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app-store";
 
 const navItems = [
-  { label: "Glasses", href: "/glasses" },
   { label: "Pricing", href: "/pricing" },
   { label: "Docs", href: "/docs" },
 ];
@@ -268,7 +267,6 @@ function SiteFooter() {
     { label: string; href: string; external?: boolean }[]
   > = {
     Product: [
-      { label: "Smart Glasses", href: "/glasses" },
       { label: "Pricing", href: "/pricing" },
       { label: "Documentation", href: "/docs" },
       { label: "Changelog", href: "/docs" },

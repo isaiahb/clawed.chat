@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Button } from "@/components/ui/button";
@@ -20,19 +20,24 @@ import {
   StickyNote,
   Hash,
   Sparkles,
-  User,
-  ShieldCheck,
   Loader2,
-  Pin,
-  PinOff,
   Trash2,
   MoreHorizontal,
   Copy,
   Bookmark,
-  ChevronRight,
   Clock,
   Search,
   ArrowRight,
+  X,
+  CheckCircle2,
+  FileText,
+  Zap,
+  Play,
+  Edit3,
+  Receipt,
+  AlertTriangle,
+  WifiOff,
+  RotateCcw,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -43,7 +48,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { mockConversations } from "@/data/mock";
-import type { AskConversation, AskMessage, AskContextChip } from "@/types";
+import type {
+  AskConversation,
+  AskMessage,
+  AskContextChip,
+  ChatCardType,
+  ActionIndicatorStep,
+} from "@/types";
+import { ACTION_SEQUENCES } from "@/types";
+import { useAppStore } from "@/stores/app-store";
 
 // ──────────────────────────────────────────────
 // Context chip definitions
@@ -63,40 +76,35 @@ const contextChips: ContextChipDef[] = [
     label: "Email",
     icon: Mail,
     color: "text-muted-foreground border-border",
-    activeColor:
-      "text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-950/40 dark:border-blue-800",
+    activeColor: "text-blue-700 bg-blue-50 border-blue-200",
   },
   {
     id: "calendar",
     label: "Calendar",
     icon: Calendar,
     color: "text-muted-foreground border-border",
-    activeColor:
-      "text-violet-700 bg-violet-50 border-violet-200 dark:text-violet-400 dark:bg-violet-950/40 dark:border-violet-800",
+    activeColor: "text-violet-700 bg-violet-50 border-violet-200",
   },
   {
     id: "web",
     label: "Web",
     icon: Globe,
     color: "text-muted-foreground border-border",
-    activeColor:
-      "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/40 dark:border-emerald-800",
+    activeColor: "text-emerald-700 bg-emerald-50 border-emerald-200",
   },
   {
     id: "notes",
     label: "Notes",
     icon: StickyNote,
     color: "text-muted-foreground border-border",
-    activeColor:
-      "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/40 dark:border-amber-800",
+    activeColor: "text-amber-700 bg-amber-50 border-amber-200",
   },
   {
     id: "slack",
     label: "Slack",
     icon: Hash,
     color: "text-muted-foreground border-border",
-    activeColor:
-      "text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-400 dark:bg-rose-950/40 dark:border-rose-800",
+    activeColor: "text-rose-700 bg-rose-50 border-rose-200",
   },
 ];
 
@@ -141,24 +149,46 @@ const suggestedPrompts = [
     chips: ["slack"] as AskContextChip[],
   },
   {
-    prompt: "Find flights from SFO to NYC next Thursday",
-    chips: ["web"] as AskContextChip[],
-  },
-  {
     prompt: "Draft a follow-up email to Acme Corp",
     chips: ["email"] as AskContextChip[],
-  },
-  {
-    prompt: "What action items did I capture this week?",
-    chips: ["notes"] as AskContextChip[],
   },
 ];
 
 // ──────────────────────────────────────────────
-// Message bubble component
+// Card type config
 // ──────────────────────────────────────────────
 
-function MessageBubble({
+const cardTypeConfig: Record<
+  ChatCardType,
+  { label: string; icon: LucideIcon; accentClass: string }
+> = {
+  answer: {
+    label: "Answer",
+    icon: Sparkles,
+    accentClass: "border-l-emerald-500",
+  },
+  action: {
+    label: "Action Suggestion",
+    icon: Zap,
+    accentClass: "border-l-amber-500",
+  },
+  draft: {
+    label: "Draft",
+    icon: Edit3,
+    accentClass: "border-l-blue-500",
+  },
+  receipt: {
+    label: "Receipt",
+    icon: Receipt,
+    accentClass: "border-l-violet-500",
+  },
+};
+
+// ──────────────────────────────────────────────
+// Chat Card (block card, NOT bubble)
+// ──────────────────────────────────────────────
+
+function ChatCard({
   message,
   isLast,
 }: {
@@ -166,106 +196,30 @@ function MessageBubble({
   isLast: boolean;
 }) {
   const isUser = message.role === "user";
+  const cardType = message.cardType || "answer";
+  const config = cardTypeConfig[cardType];
 
-  return (
-    <div
-      className={cn(
-        "flex gap-3",
-        isUser ? "flex-row-reverse" : "flex-row",
-        isLast && "animate-in fade-in-0 slide-in-from-bottom-2 duration-300",
-      )}
-    >
-      {/* Avatar */}
+  if (isUser) {
+    return (
       <div
         className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-gradient-to-br from-amber-100 to-amber-200 text-amber-700 dark:from-amber-900 dark:to-amber-800 dark:text-amber-300",
+          "border border-border bg-card p-4",
+          isLast && "animate-in fade-in-0 slide-in-from-bottom-2 duration-300",
         )}
       >
-        {isUser ? (
-          <User className="h-4 w-4" />
-        ) : (
-          <Sparkles className="h-4 w-4" />
-        )}
-      </div>
-
-      {/* Content */}
-      <div
-        className={cn(
-          "flex max-w-[80%] flex-col gap-1",
-          isUser ? "items-end" : "items-start",
-        )}
-      >
-        <div
-          className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-            isUser
-              ? "bg-primary text-primary-foreground rounded-tr-sm"
-              : "bg-muted rounded-tl-sm",
-          )}
-        >
-          {/* Render markdown-like content */}
-          {message.content.split("\n").map((line, i) => {
-            if (line.startsWith("**") && line.endsWith("**")) {
-              return (
-                <p key={i} className="font-semibold">
-                  {line.replace(/\*\*/g, "")}
-                </p>
-              );
-            }
-            if (line.startsWith("> ")) {
-              return (
-                <blockquote
-                  key={i}
-                  className={cn(
-                    "border-l-2 pl-3 my-1 italic",
-                    isUser
-                      ? "border-primary-foreground/40 text-primary-foreground/80"
-                      : "border-muted-foreground/30 text-muted-foreground",
-                  )}
-                >
-                  {line.replace(/^>\s*/, "")}
-                </blockquote>
-              );
-            }
-            if (line.startsWith("- ") || line.startsWith("• ")) {
-              return (
-                <div key={i} className="flex items-start gap-1.5">
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-current opacity-60" />
-                  <span>{line.replace(/^[-•]\s*/, "")}</span>
-                </div>
-              );
-            }
-            if (line.match(/^\d+\.\s/)) {
-              return (
-                <p key={i} className="ml-1">
-                  {line}
-                </p>
-              );
-            }
-            if (line.trim() === "") {
-              return <div key={i} className="h-2" />;
-            }
-            // Handle inline bold
-            const parts = line.split(/(\*\*[^*]+\*\*)/g);
-            return (
-              <p key={i}>
-                {parts.map((part, j) => {
-                  if (part.startsWith("**") && part.endsWith("**")) {
-                    return <strong key={j}>{part.replace(/\*\*/g, "")}</strong>;
-                  }
-                  return <span key={j}>{part}</span>;
-                })}
-              </p>
-            );
-          })}
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            You
+          </span>
+          <span className="text-[10px] text-muted-foreground">
+            {formatTime(message.timestamp)}
+          </span>
         </div>
-
-        {/* Context chips on assistant messages */}
-        {!isUser && message.context && message.context.length > 0 && (
-          <div className="flex items-center gap-1 mt-0.5">
+        <p className="text-sm leading-relaxed text-foreground">
+          {message.content}
+        </p>
+        {message.context && message.context.length > 0 && (
+          <div className="flex items-center gap-1 mt-3">
             {message.context.map((chipId) => {
               const chip = contextChips.find((c) => c.id === chipId);
               if (!chip) return null;
@@ -283,29 +237,137 @@ function MessageBubble({
             })}
           </div>
         )}
+      </div>
+    );
+  }
 
-        {/* Suggested action */}
-        {!isUser && message.suggestedAction && (
-          <div className="mt-1.5 flex items-center gap-2">
-            <Button size="sm" className="h-7 text-xs gap-1.5 rounded-full">
-              <ShieldCheck className="h-3 w-3" />
-              {message.suggestedAction.label}
-            </Button>
-            {message.suggestedAction.type === "approval" && (
-              <Badge
-                variant="secondary"
-                className="text-[10px] h-5 font-normal"
-              >
-                Requires approval
-              </Badge>
-            )}
-          </div>
-        )}
+  // Assistant card — block style with left accent
+  const CardIcon = config.icon;
 
-        {/* Timestamp */}
-        <span className="text-[10px] text-muted-foreground mt-0.5 px-1">
+  return (
+    <div
+      className={cn(
+        "border border-border bg-card border-l-[3px]",
+        config.accentClass,
+        isLast && "animate-in fade-in-0 slide-in-from-bottom-2 duration-300",
+      )}
+    >
+      {/* Card header */}
+      <div className="flex items-center justify-between px-4 pt-3 pb-2">
+        <div className="flex items-center gap-2">
+          <CardIcon className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            {config.label}
+          </span>
+        </div>
+        <span className="text-[10px] text-muted-foreground">
           {formatTime(message.timestamp)}
         </span>
+      </div>
+
+      {/* Card body */}
+      <div className="px-4 pb-3">
+        <div className="text-sm leading-relaxed text-foreground space-y-1.5">
+          {message.content.split("\n").map((line, i) => {
+            if (line.startsWith("**") && line.endsWith("**")) {
+              return (
+                <p key={i} className="font-semibold">
+                  {line.replace(/\*\*/g, "")}
+                </p>
+              );
+            }
+            if (line.startsWith("> ")) {
+              return (
+                <blockquote
+                  key={i}
+                  className="border-l-2 border-border pl-3 my-1.5 text-muted-foreground italic"
+                >
+                  {line.replace(/^>\s*/, "")}
+                </blockquote>
+              );
+            }
+            if (line.startsWith("- ") || line.startsWith("• ")) {
+              return (
+                <div key={i} className="flex items-start gap-1.5 pl-1">
+                  <span className="mt-2 h-1 w-1 shrink-0 bg-muted-foreground" />
+                  <span>{line.replace(/^[-•]\s*/, "")}</span>
+                </div>
+              );
+            }
+            if (line.match(/^\d+\.\s/)) {
+              return (
+                <p key={i} className="pl-1">
+                  {line}
+                </p>
+              );
+            }
+            if (line.trim() === "") {
+              return <div key={i} className="h-1.5" />;
+            }
+            // Handle inline bold
+            const parts = line.split(/(\*\*[^*]+\*\*)/g);
+            return (
+              <p key={i}>
+                {parts.map((part, j) => {
+                  if (part.startsWith("**") && part.endsWith("**")) {
+                    return <strong key={j}>{part.replace(/\*\*/g, "")}</strong>;
+                  }
+                  return <span key={j}>{part}</span>;
+                })}
+              </p>
+            );
+          })}
+        </div>
+
+        {/* Context chips */}
+        {message.context && message.context.length > 0 && (
+          <div className="flex items-center gap-1 mt-3">
+            {message.context.map((chipId) => {
+              const chip = contextChips.find((c) => c.id === chipId);
+              if (!chip) return null;
+              const Icon = chip.icon;
+              return (
+                <Badge
+                  key={chipId}
+                  variant="outline"
+                  className="text-[10px] h-5 gap-1 font-normal px-1.5"
+                >
+                  <Icon className="h-2.5 w-2.5" />
+                  {chip.label}
+                </Badge>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Card footer actions */}
+      <div className="flex items-center gap-1.5 px-4 pb-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-[11px] gap-1 text-muted-foreground hover:text-foreground px-2"
+        >
+          <Copy className="h-3 w-3" />
+          Copy
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-[11px] gap-1 text-muted-foreground hover:text-foreground px-2"
+        >
+          <Bookmark className="h-3 w-3" />
+          Save
+        </Button>
+        {message.suggestedAction && (
+          <Button
+            size="sm"
+            className="h-7 text-[11px] gap-1 ml-auto bg-claw-red hover:bg-claw-red-bright text-white px-3"
+          >
+            <CheckCircle2 className="h-3 w-3" />
+            {message.suggestedAction.label}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -315,145 +377,329 @@ function MessageBubble({
 // Thinking indicator
 // ──────────────────────────────────────────────
 
-function ThinkingIndicator() {
+// ──────────────────────────────────────────────
+// Action Indicator — required feature per spec
+// State machine: idle → thinking → acting → done | error
+// Shows what the assistant is actively doing
+// ──────────────────────────────────────────────
+
+function ActionIndicator({
+  steps,
+  currentStepIndex,
+  onCancel,
+}: {
+  steps: ActionIndicatorStep[];
+  currentStepIndex: number;
+  onCancel: () => void;
+}) {
+  const currentStep = steps[currentStepIndex] ?? steps[0];
+  const phase = currentStep?.phase ?? "thinking";
+
+  const phaseConfig = {
+    thinking: {
+      icon: <Loader2 className="h-3.5 w-3.5 animate-spin text-claw-red" />,
+      dotClass: "bg-amber-500 animate-pulse",
+    },
+    acting: {
+      icon: <Zap className="h-3.5 w-3.5 text-claw-red animate-pulse" />,
+      dotClass: "bg-claw-red animate-pulse",
+    },
+    done: {
+      icon: <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />,
+      dotClass: "bg-emerald-500",
+    },
+    error: {
+      icon: <AlertTriangle className="h-3.5 w-3.5 text-destructive" />,
+      dotClass: "bg-destructive",
+    },
+    idle: {
+      icon: null,
+      dotClass: "bg-muted-foreground/40",
+    },
+  };
+
+  const config = phaseConfig[phase] ?? phaseConfig.thinking;
+
   return (
-    <div className="flex gap-3 animate-in fade-in-0 duration-300">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-100 to-amber-200 text-amber-700 dark:from-amber-900 dark:to-amber-800 dark:text-amber-300">
-        <Sparkles className="h-4 w-4" />
-      </div>
-      <div className="rounded-2xl rounded-tl-sm bg-muted px-4 py-3">
+    <div className="border border-border bg-card p-4 animate-in fade-in-0 duration-300">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Thinking…</span>
+          {config.icon}
+          <span className="text-sm text-muted-foreground font-medium">
+            {currentStep?.label ?? "Thinking…"}
+          </span>
+        </div>
+        {phase !== "done" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] gap-1 text-muted-foreground hover:text-destructive px-2"
+            onClick={onCancel}
+          >
+            <X className="h-3 w-3" />
+            Cancel
+          </Button>
+        )}
+      </div>
+
+      {/* Step progress dots */}
+      {steps.length > 1 && (
+        <div className="flex items-center gap-1.5 mt-3">
+          {steps.map((step, idx) => (
+            <div key={idx} className="flex items-center gap-1.5">
+              <div
+                className={cn(
+                  "h-1.5 w-1.5 transition-all duration-300",
+                  idx < currentStepIndex
+                    ? "bg-emerald-500"
+                    : idx === currentStepIndex
+                      ? config.dotClass
+                      : "bg-border",
+                )}
+              />
+              {idx < steps.length - 1 && (
+                <div
+                  className={cn(
+                    "h-px w-4 transition-all duration-300",
+                    idx < currentStepIndex ? "bg-emerald-500" : "bg-border",
+                  )}
+                />
+              )}
+            </div>
+          ))}
+          <span className="ml-2 text-[10px] text-muted-foreground">
+            {currentStepIndex + 1}/{steps.length}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Error states for chat
+// ──────────────────────────────────────────────
+
+function MessageErrorState({
+  onRetry,
+  onCopyPrompt,
+  lastPrompt,
+}: {
+  onRetry: () => void;
+  onCopyPrompt?: () => void;
+  lastPrompt?: string;
+}) {
+  return (
+    <div className="border border-red-200 bg-red-50 p-4 animate-in fade-in-0 duration-300">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-red-800">
+            Something went wrong
+          </p>
+          <p className="text-xs text-red-600 mt-0.5">
+            The assistant couldn't generate a response. Please try again.
+          </p>
+          <div className="flex items-center gap-2 mt-3">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-[11px] gap-1.5 border-red-200 text-red-700 hover:bg-red-100"
+              onClick={onRetry}
+            >
+              <RotateCcw className="h-3 w-3" />
+              Try again
+            </Button>
+            {lastPrompt && onCopyPrompt && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-[11px] gap-1.5 text-red-600"
+                onClick={onCopyPrompt}
+              >
+                <Copy className="h-3 w-3" />
+                Copy last prompt
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
+function OfflineBanner() {
+  return (
+    <div className="flex items-center gap-2 bg-amber-50 border-b border-amber-200 px-4 py-2">
+      <WifiOff className="h-3.5 w-3.5 text-amber-600" />
+      <span className="text-xs font-medium text-amber-700">
+        You're offline. Messages will be sent when you reconnect.
+      </span>
+    </div>
+  );
+}
+
 // ──────────────────────────────────────────────
-// Conversation list sidebar item
+// Session box component
 // ──────────────────────────────────────────────
 
-function ConversationItem({
+function SessionBox({
   conversation,
   isActive,
   onClick,
-  onPin,
   onDelete,
+  isHovered,
+  onHover,
+  onLeave,
 }: {
   conversation: AskConversation;
   isActive: boolean;
   onClick: () => void;
-  onPin: () => void;
   onDelete: () => void;
+  isHovered: boolean;
+  onHover: () => void;
+  onLeave: () => void;
 }) {
   const lastMessage = conversation.messages[conversation.messages.length - 1];
 
   return (
     <button
       onClick={onClick}
+      onMouseEnter={onHover}
+      onMouseLeave={onLeave}
       className={cn(
-        "group flex w-full items-start gap-3 rounded-lg p-3 text-left transition-colors",
-        isActive ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
+        "group relative w-full text-left border transition-all p-3",
+        isActive
+          ? "border-foreground bg-card"
+          : "border-border bg-card hover:border-foreground/40",
       )}
     >
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-        <MessageSquare className="h-4 w-4" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h4 className="truncate text-sm font-medium">{conversation.title}</h4>
-          {conversation.pinned && (
-            <Pin className="h-3 w-3 shrink-0 text-primary/60" />
+      {/* Title row */}
+      <div className="flex items-start justify-between gap-2">
+        <h4 className="text-sm font-semibold truncate pr-6 text-foreground leading-snug">
+          {conversation.title}
+        </h4>
+
+        {/* Status icon */}
+        <div className="shrink-0 mt-0.5">
+          {conversation.status === "running" ? (
+            <Play className="h-3 w-3 text-emerald-500 fill-emerald-500" />
+          ) : conversation.status === "completed" ? (
+            <CheckCircle2 className="h-3 w-3 text-muted-foreground" />
+          ) : (
+            <Clock className="h-3 w-3 text-muted-foreground/50" />
           )}
         </div>
-        {lastMessage && (
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">
-            {lastMessage.content.slice(0, 60)}
-            {lastMessage.content.length > 60 ? "…" : ""}
-          </p>
-        )}
+      </div>
+
+      {/* Timestamp + mode tag */}
+      <div className="flex items-center gap-2 mt-1">
         <span className="text-[10px] text-muted-foreground">
           {formatRelativeTime(conversation.updatedAt)}
         </span>
+        {conversation.modeTag && (
+          <Badge variant="outline" className="text-[9px] h-4 px-1 font-normal">
+            {conversation.modeTag}
+          </Badge>
+        )}
       </div>
 
-      {/* Quick actions */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <div
-            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-all"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+      {/* Summary */}
+      {conversation.summary && (
+        <p className="mt-1.5 text-[11px] text-muted-foreground leading-snug line-clamp-1">
+          {conversation.summary}
+        </p>
+      )}
+
+      {/* Hover preview — faint last assistant card */}
+      {isHovered &&
+        !isActive &&
+        lastMessage &&
+        lastMessage.role === "assistant" && (
+          <div className="mt-2 p-2 bg-muted/50 border border-border text-[10px] text-muted-foreground leading-relaxed line-clamp-2 transition-all">
+            {lastMessage.content.slice(0, 120)}
+            {lastMessage.content.length > 120 ? "…" : ""}
           </div>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              onPin();
-            }}
-            className="gap-2"
-          >
-            {conversation.pinned ? (
-              <PinOff className="h-3.5 w-3.5" />
-            ) : (
-              <Pin className="h-3.5 w-3.5" />
-            )}
-            {conversation.pinned ? "Unpin" : "Pin"}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="gap-2 text-destructive focus:text-destructive"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        )}
+
+      {/* Right-click actions (shown as dropdown on hover) */}
+      <div
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <div className="flex h-6 w-6 items-center justify-center border border-border bg-card hover:bg-muted cursor-pointer transition-colors">
+              <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-36">
+            <DropdownMenuItem className="gap-2 text-xs">
+              <Edit3 className="h-3 w-3" />
+              Rename
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 text-xs">
+              <FileText className="h-3 w-3" />
+              Archive
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => onDelete()}
+              className="gap-2 text-xs text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-3 w-3" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </button>
   );
 }
 
 // ──────────────────────────────────────────────
-// Empty state / new conversation
+// Empty state with lobster personality
 // ──────────────────────────────────────────────
 
-function EmptyConversation({
+function EmptyState({
   onSelectPrompt,
 }: {
   onSelectPrompt: (prompt: string, chips: AskContextChip[]) => void;
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-8">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 text-primary mb-6">
-        <Sparkles className="h-8 w-8" />
+      {/* Lobster claw watermark */}
+      <div className="relative mb-6">
+        <svg
+          viewBox="-20 -20 40 40"
+          className="h-20 w-20 text-claw-red/10"
+          fill="currentColor"
+        >
+          <path d="M-10 2 C-10 2, -6 8, 2 10 C6 11, 12 8, 14 4 C14 4, 10 6, 6 5 C2 4, -4 2, -10 2Z" />
+          <path d="M-10 -1 C-10 -1, -6 -8, 2 -10 C6 -11, 12 -6, 14 -2 C14 -2, 10 -5, 6 -4 C2 -3, -4 -1, -10 -1Z" />
+          <circle cx={-10} cy={0.5} r={3} />
+        </svg>
       </div>
-      <h2 className="text-xl font-semibold text-center">
-        What can I help with?
+
+      <h2 className="text-lg font-bold text-foreground text-center">
+        No sessions yet
       </h2>
-      <p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
-        Ask me anything — I can read your email, check your calendar, search the
-        web, and take actions (with your approval).
+      <p className="mt-1.5 text-sm text-muted-foreground text-center max-w-sm">
+        Create your first session — ask anything and your crustacean will get to
+        work.
       </p>
 
-      {/* Suggested prompts grid */}
-      <div className="mt-8 grid w-full max-w-lg gap-2 sm:grid-cols-2">
+      {/* Suggested prompts */}
+      <div className="mt-8 grid w-full max-w-md gap-2 sm:grid-cols-2">
         {suggestedPrompts.map((suggestion, idx) => (
           <button
             key={idx}
             onClick={() => onSelectPrompt(suggestion.prompt, suggestion.chips)}
-            className="group flex items-start gap-3 rounded-xl border p-3 text-left transition-all hover:border-primary/30 hover:bg-primary/5 hover:shadow-sm"
+            className="group flex items-start gap-3 border border-border bg-card p-3 text-left transition-all hover:border-foreground/40"
           >
-            <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+            <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-claw-red transition-colors" />
             <div className="min-w-0">
-              <p className="text-sm font-medium leading-snug">
+              <p className="text-[12px] font-medium leading-snug text-foreground">
                 {suggestion.prompt}
               </p>
               <div className="mt-1.5 flex items-center gap-1">
@@ -482,6 +728,10 @@ function EmptyConversation({
 }
 
 // ──────────────────────────────────────────────
+// Watch Your Agent Work modal
+// ──────────────────────────────────────────────
+
+// ──────────────────────────────────────────────
 // Prompt input bar
 // ──────────────────────────────────────────────
 
@@ -503,6 +753,11 @@ function PromptInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      textareaRef.current?.blur();
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (value.trim() && !disabled) {
@@ -521,10 +776,10 @@ function PromptInput({
   }, [value]);
 
   return (
-    <div className="border-t bg-background p-4">
-      {/* Context chips */}
+    <div className="border-t border-border bg-card p-4">
+      {/* Context chip toggles */}
       <div className="mb-3 flex items-center gap-1.5 flex-wrap">
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mr-1">
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mr-1">
           Context
         </span>
         {contextChips.map((chip) => {
@@ -536,9 +791,9 @@ function PromptInput({
                 <button
                   onClick={() => onToggleChip(chip.id)}
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all",
+                    "inline-flex items-center gap-1 border px-2 py-0.5 text-[11px] font-medium transition-all",
                     isActive ? chip.activeColor : chip.color,
-                    "hover:shadow-sm",
+                    "hover:opacity-80",
                   )}
                 >
                   <Icon className="h-3 w-3" />
@@ -565,14 +820,14 @@ function PromptInput({
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask anything… (Enter to send, Shift+Enter for new line)"
-            className="min-h-[44px] max-h-[160px] resize-none pr-4 py-3 text-sm rounded-xl"
+            className="min-h-[44px] max-h-[160px] resize-none pr-4 py-3 text-sm"
             rows={1}
             disabled={disabled}
           />
         </div>
         <Button
           size="icon"
-          className="h-11 w-11 shrink-0 rounded-xl"
+          className="h-11 w-11 shrink-0 bg-claw-red hover:bg-claw-red-bright text-white"
           onClick={onSubmit}
           disabled={!value.trim() || disabled}
         >
@@ -591,29 +846,145 @@ function PromptInput({
 }
 
 // ──────────────────────────────────────────────
-// Main Ask Page
+// Main Ask Page (Dashboard)
 // ──────────────────────────────────────────────
+
+// ──────────────────────────────────────────────
+// Hook: useActionIndicator — drives the action step sequence
+// ──────────────────────────────────────────────
+
+function useActionIndicator() {
+  const [steps, setSteps] = useState<ActionIndicatorStep[]>([]);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [isActive, setIsActive] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { setActionIndicator, clearActionIndicator } = useAppStore();
+
+  const stop = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setIsActive(false);
+    setCurrentStepIndex(0);
+    setSteps([]);
+    clearActionIndicator();
+  }, [clearActionIndicator]);
+
+  const start = useCallback(
+    (chips: AskContextChip[]) => {
+      // Pick the sequence based on the first active chip, or default
+      const primaryChip = chips[0] ?? "default";
+      const sequence =
+        ACTION_SEQUENCES[primaryChip] ?? ACTION_SEQUENCES.default;
+      setSteps(sequence);
+      setCurrentStepIndex(0);
+      setIsActive(true);
+      // Set initial state in global store for top bar pill
+      if (sequence.length > 0) {
+        setActionIndicator(sequence[0].phase, sequence[0].label);
+      }
+    },
+    [setActionIndicator],
+  );
+
+  // Auto-advance through steps + sync to global store
+  useEffect(() => {
+    if (!isActive || steps.length === 0) return;
+
+    const current = steps[currentStepIndex];
+    if (!current) return;
+
+    // Sync current step to global store for the top bar pill
+    setActionIndicator(current.phase, current.label);
+
+    // If we're at the last step (done), don't auto-advance
+    if (currentStepIndex >= steps.length - 1) return;
+
+    // Advance to next step after a delay
+    const delay =
+      current.phase === "thinking" ? 600 : 500 + Math.random() * 400;
+    timerRef.current = setTimeout(() => {
+      setCurrentStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
+    }, delay);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [isActive, currentStepIndex, steps, setActionIndicator]);
+
+  return { steps, currentStepIndex, isActive, start, stop };
+}
 
 export default function AskPage() {
   useDocumentTitle("Ask");
-  const [conversations, setConversations] =
-    useState<AskConversation[]>(mockConversations);
-  const [activeConversationId, setActiveConversationId] = useState<
+
+  const {
+    demoMode,
+    savedSessions,
+    setSavedSessions,
+    activeSessionId: storedActiveSessionId,
+    setActiveSessionId: storeSetActiveSessionId,
+  } = useAppStore();
+
+  // Initialize conversations from persisted store, falling back to mock data
+  const [conversations, setConversationsLocal] = useState<AskConversation[]>(
+    () => (savedSessions.length > 0 ? savedSessions : mockConversations),
+  );
+  const [activeConversationId, setActiveConversationIdLocal] = useState<
     string | null
-  >(null);
+  >(storedActiveSessionId);
+
+  // Wrap setConversations to also persist to store
+  const setConversations = useCallback(
+    (
+      updater:
+        | AskConversation[]
+        | ((prev: AskConversation[]) => AskConversation[]),
+    ) => {
+      setConversationsLocal((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater;
+        setSavedSessions(next);
+        return next;
+      });
+    },
+    [setSavedSessions],
+  );
+
+  // Wrap setActiveConversationId to also persist to store
+  const setActiveConversationId = useCallback(
+    (id: string | null) => {
+      setActiveConversationIdLocal(id);
+      storeSetActiveSessionId(id);
+    },
+    [storeSetActiveSessionId],
+  );
   const [promptValue, setPromptValue] = useState("");
   const [activeChips, setActiveChips] = useState<Set<AskContextChip>>(
     new Set(["email", "calendar"]),
   );
   const [isThinking, setIsThinking] = useState(false);
   const [sidebarSearch, setSidebarSearch] = useState("");
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [hoveredSession, setHoveredSession] = useState<string | null>(null);
+  const [generationError, setGenerationError] = useState(false);
+  const [lastFailedPrompt, setLastFailedPrompt] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const actionIndicator = useActionIndicator();
 
   const activeConversation = conversations.find(
     (c) => c.id === activeConversationId,
   );
+
+  // Online/offline detection
+  useEffect(() => {
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -637,6 +1008,9 @@ export default function AskPage() {
   const handleSubmit = () => {
     if (!promptValue.trim() || isThinking) return;
 
+    setGenerationError(false);
+    setLastFailedPrompt(null);
+
     const userMessage: AskMessage = {
       id: `msg-${Date.now()}`,
       role: "user",
@@ -646,7 +1020,6 @@ export default function AskPage() {
     };
 
     if (activeConversation) {
-      // Add to existing conversation
       setConversations((prev) =>
         prev.map((c) =>
           c.id === activeConversationId
@@ -654,12 +1027,12 @@ export default function AskPage() {
                 ...c,
                 messages: [...c.messages, userMessage],
                 updatedAt: new Date().toISOString(),
+                status: "running" as const,
               }
             : c,
         ),
       );
     } else {
-      // Create new conversation
       const newConv: AskConversation = {
         id: `conv-${Date.now()}`,
         title:
@@ -669,13 +1042,20 @@ export default function AskPage() {
         messages: [userMessage],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        summary: "Processing…",
+        modeTag: "Draft first",
+        status: "running",
       };
       setConversations((prev) => [newConv, ...prev]);
       setActiveConversationId(newConv.id);
     }
 
+    const sentPrompt = promptValue.trim();
     setPromptValue("");
     setIsThinking(true);
+
+    // Start action indicator sequence
+    actionIndicator.start(Array.from(activeChips));
 
     // Simulate assistant response
     setTimeout(
@@ -690,48 +1070,64 @@ export default function AskPage() {
             "Would you like me to:\n- Draft a response\n- Create a calendar event\n- Save a note about this",
           timestamp: new Date().toISOString(),
           context: Array.from(activeChips),
+          cardType: "answer",
         };
 
         setConversations((prev) =>
-          prev.map((c) =>
-            c.id === activeConversationId ||
-            c.id === prev.find((pc) => pc.messages.includes(userMessage))?.id
-              ? {
-                  ...c,
-                  messages: [...c.messages, assistantMessage],
-                  updatedAt: new Date().toISOString(),
-                }
-              : c,
-          ),
+          prev.map((c) => {
+            const isTarget =
+              c.id === activeConversationId ||
+              c.messages.some((m) => m.id === userMessage.id);
+            if (isTarget) {
+              return {
+                ...c,
+                messages: [...c.messages, assistantMessage],
+                updatedAt: new Date().toISOString(),
+                status: "completed" as const,
+                summary: `Analyzed and responded to your request`,
+              };
+            }
+            return c;
+          }),
         );
 
         setIsThinking(false);
+        actionIndicator.stop();
+        setLastFailedPrompt(null);
       },
       1500 + Math.random() * 1000,
     );
   };
 
-  // Handle selecting a suggested prompt
+  const handleCancelThinking = () => {
+    setIsThinking(false);
+    actionIndicator.stop();
+  };
+
+  const handleRetry = () => {
+    setGenerationError(false);
+    if (lastFailedPrompt) {
+      setPromptValue(lastFailedPrompt);
+    }
+  };
+
+  const handleCopyLastPrompt = () => {
+    if (lastFailedPrompt) {
+      navigator.clipboard.writeText(lastFailedPrompt);
+    }
+  };
+
   const handleSelectPrompt = (prompt: string, chips: AskContextChip[]) => {
     setActiveChips(new Set(chips));
     setPromptValue(prompt);
     setActiveConversationId(null);
   };
 
-  // Handle creating a new conversation
   const handleNewConversation = () => {
     setActiveConversationId(null);
     setPromptValue("");
   };
 
-  // Handle pinning
-  const handlePin = (id: string) => {
-    setConversations((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)),
-    );
-  };
-
-  // Handle deleting
   const handleDelete = (id: string) => {
     setConversations((prev) => prev.filter((c) => c.id !== id));
     if (activeConversationId === id) {
@@ -750,24 +1146,25 @@ export default function AskPage() {
         : true,
     )
     .sort((a, b) => {
-      // Pinned first, then by updatedAt
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
 
+  // For demo mode, pick 2 pinned prompts
+  const demoPinnedPrompts = demoMode ? suggestedPrompts.slice(0, 2) : [];
+
   return (
     <div className="flex h-full">
-      {/* ── Conversation List Sidebar ── */}
-      <div
-        className={cn(
-          "flex flex-col border-r bg-muted/30 transition-all duration-200",
-          showSidebar ? "w-72 lg:w-80" : "w-0 overflow-hidden",
-        )}
-      >
+      {/* ══════════════════════════════════════════════
+          LEFT COLUMN — Session Boxes
+          ══════════════════════════════════════════════ */}
+      <div className="hidden md:flex w-72 lg:w-80 flex-col border-r border-border bg-background shrink-0">
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Conversations</h2>
+        <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+            Sessions
+          </h2>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -779,7 +1176,7 @@ export default function AskPage() {
                 <Plus className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>New conversation</TooltipContent>
+            <TooltipContent>New session</TooltipContent>
           </Tooltip>
         </div>
 
@@ -789,45 +1186,47 @@ export default function AskPage() {
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search conversations…"
+              placeholder="Search sessions…"
               value={sidebarSearch}
               onChange={(e) => setSidebarSearch(e.target.value)}
-              className="w-full rounded-md border bg-background py-1.5 pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full border border-border bg-card py-1.5 pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-claw-red"
             />
           </div>
         </div>
 
-        {/* Conversation list */}
-        <ScrollArea className="flex-1 px-2 py-2">
+        {/* Session boxes grid */}
+        <ScrollArea className="flex-1 px-3 py-2">
           {filteredConversations.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
-              <MessageSquare className="h-8 w-8 text-muted-foreground/40" />
+            <div className="flex flex-col items-center gap-3 px-4 py-12 text-center">
+              <MessageSquare className="h-8 w-8 text-muted-foreground/30" />
               <p className="text-xs text-muted-foreground">
                 {sidebarSearch
-                  ? "No conversations match your search"
-                  : "No conversations yet"}
+                  ? "No sessions match your search"
+                  : "No sessions yet"}
               </p>
             </div>
           ) : (
-            <div className="space-y-0.5">
+            <div className="space-y-2">
               {filteredConversations.map((conv) => (
-                <ConversationItem
+                <SessionBox
                   key={conv.id}
                   conversation={conv}
                   isActive={activeConversationId === conv.id}
                   onClick={() => setActiveConversationId(conv.id)}
-                  onPin={() => handlePin(conv.id)}
                   onDelete={() => handleDelete(conv.id)}
+                  isHovered={hoveredSession === conv.id}
+                  onHover={() => setHoveredSession(conv.id)}
+                  onLeave={() => setHoveredSession(null)}
                 />
               ))}
             </div>
           )}
         </ScrollArea>
 
-        {/* Stats */}
-        <div className="border-t px-4 py-2.5">
+        {/* Session count */}
+        <div className="border-t border-border px-4 py-2.5">
           <p className="text-[10px] text-muted-foreground">
-            {conversations.length} conversation
+            {conversations.length} session
             {conversations.length !== 1 ? "s" : ""} ·{" "}
             {conversations.reduce((sum, c) => sum + c.messages.length, 0)}{" "}
             messages
@@ -835,58 +1234,30 @@ export default function AskPage() {
         </div>
       </div>
 
-      {/* ── Main Chat Area ── */}
+      {/* ══════════════════════════════════════════════
+          RIGHT COLUMN — Active Chat / Empty State
+          ══════════════════════════════════════════════ */}
       <div className="flex flex-1 flex-col min-w-0">
+        {/* Offline banner */}
+        {isOffline && <OfflineBanner />}
+
         {/* Chat header */}
         {activeConversation && (
-          <div className="flex items-center justify-between border-b px-4 py-2.5">
+          <div className="flex items-center justify-between border-b border-border px-4 py-2.5 bg-card">
             <div className="flex items-center gap-2 min-w-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 md:hidden"
-                onClick={() => setShowSidebar(!showSidebar)}
-              >
-                <ChevronRight
-                  className={cn(
-                    "h-4 w-4 transition-transform",
-                    showSidebar && "rotate-180",
-                  )}
-                />
-              </Button>
-              <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <h3 className="truncate text-sm font-medium">
+              <MessageSquare className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <h3 className="truncate text-sm font-semibold text-foreground">
                 {activeConversation.title}
               </h3>
               <Badge
-                variant="secondary"
+                variant="outline"
                 className="text-[10px] h-5 font-normal shrink-0"
               >
-                {activeConversation.messages.length} messages
+                {activeConversation.messages.length} msgs
               </Badge>
             </div>
 
-            <div className="flex items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => handlePin(activeConversation.id)}
-                  >
-                    {activeConversation.pinned ? (
-                      <PinOff className="h-3.5 w-3.5" />
-                    ) : (
-                      <Pin className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {activeConversation.pinned ? "Unpin" : "Pin"} conversation
-                </TooltipContent>
-              </Tooltip>
-
+            <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -894,20 +1265,20 @@ export default function AskPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem className="gap-2">
-                    <Bookmark className="h-3.5 w-3.5" />
+                  <DropdownMenuItem className="gap-2 text-xs">
+                    <Bookmark className="h-3 w-3" />
                     Save as shortcut
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="gap-2">
-                    <Copy className="h-3.5 w-3.5" />
+                  <DropdownMenuItem className="gap-2 text-xs">
+                    <Copy className="h-3 w-3" />
                     Copy conversation
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="gap-2 text-destructive focus:text-destructive"
+                    className="gap-2 text-xs text-destructive focus:text-destructive"
                     onClick={() => handleDelete(activeConversation.id)}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3 w-3" />
                     Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -916,28 +1287,62 @@ export default function AskPage() {
           </div>
         )}
 
+        {/* Demo mode pinned prompts */}
+        {demoMode && !activeConversation && demoPinnedPrompts.length > 0 && (
+          <div className="border-b border-border bg-card px-4 py-2 flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mr-2">
+              Demo
+            </span>
+            {demoPinnedPrompts.map((p, i) => (
+              <button
+                key={i}
+                onClick={() => handleSelectPrompt(p.prompt, p.chips)}
+                className="text-[11px] border border-border px-2 py-1 text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-all"
+              >
+                {p.prompt}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Messages area */}
         {activeConversation ? (
           <>
             <ScrollArea className="flex-1">
-              <div className="mx-auto max-w-3xl space-y-6 p-6">
+              <div className="mx-auto max-w-3xl space-y-3 p-4 sm:p-6">
                 {/* Conversation start marker */}
-                <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5" />
-                  <span className="text-xs">
+                <div className="flex items-center justify-center gap-2 text-muted-foreground pb-2">
+                  <Clock className="h-3 w-3" />
+                  <span className="text-[10px] uppercase tracking-widest">
                     Started {formatRelativeTime(activeConversation.createdAt)}
                   </span>
                 </div>
 
                 {activeConversation.messages.map((message, idx) => (
-                  <MessageBubble
+                  <ChatCard
                     key={message.id}
                     message={message}
                     isLast={idx === activeConversation.messages.length - 1}
                   />
                 ))}
 
-                {isThinking && <ThinkingIndicator />}
+                {isThinking && actionIndicator.isActive && (
+                  <ActionIndicator
+                    steps={actionIndicator.steps}
+                    currentStepIndex={actionIndicator.currentStepIndex}
+                    onCancel={handleCancelThinking}
+                  />
+                )}
+
+                {generationError && (
+                  <MessageErrorState
+                    onRetry={handleRetry}
+                    onCopyPrompt={
+                      lastFailedPrompt ? handleCopyLastPrompt : undefined
+                    }
+                    lastPrompt={lastFailedPrompt ?? undefined}
+                  />
+                )}
 
                 <div ref={messagesEndRef} />
               </div>
@@ -954,7 +1359,33 @@ export default function AskPage() {
           </>
         ) : (
           <>
-            <EmptyConversation onSelectPrompt={handleSelectPrompt} />
+            {/* Mobile session boxes */}
+            {conversations.length > 0 && (
+              <div className="md:hidden border-b border-border bg-background px-3 py-3">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 px-1">
+                  Recent Sessions
+                </h3>
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                  {filteredConversations.slice(0, 6).map((conv) => (
+                    <button
+                      key={conv.id}
+                      onClick={() => setActiveConversationId(conv.id)}
+                      className="shrink-0 w-48 border border-border bg-card p-2.5 text-left transition-all hover:border-foreground/40"
+                    >
+                      <h4 className="text-[11px] font-semibold truncate text-foreground">
+                        {conv.title}
+                      </h4>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {formatRelativeTime(conv.updatedAt)}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <EmptyState onSelectPrompt={handleSelectPrompt} />
+
             <PromptInput
               value={promptValue}
               onChange={setPromptValue}

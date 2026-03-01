@@ -10,22 +10,14 @@ import {
 
 import { useNavigate } from "react-router-dom";
 import {
-  Inbox,
   MessageSquare,
-  ShieldCheck,
-  Clock,
   Plug,
-  Glasses,
   Settings,
   Search,
   Send,
   CalendarPlus,
   FileText,
-  Home,
-  HelpCircle,
-  Lock,
-  CreditCard,
-  LayoutDashboard,
+  LogOut,
 } from "lucide-react";
 
 interface CommandAction {
@@ -51,46 +43,22 @@ export function CommandBar({ open, onOpenChange }: CommandBarProps) {
   };
 
   const actions: CommandAction[] = [
-    // App pages
+    // App pages — only Chat, Connections, Settings
     {
-      id: "dashboard",
-      label: "Dashboard",
-      icon: <LayoutDashboard className="mr-2 h-4 w-4" />,
+      id: "chat",
+      label: "Chat",
+      icon: <MessageSquare className="mr-2 h-4 w-4" />,
       action: () => go("/app"),
       group: "Navigate",
-      keywords: ["overview", "home", "stats", "summary"],
-    },
-    {
-      id: "inbox",
-      label: "Inbox",
-      icon: <Inbox className="mr-2 h-4 w-4" />,
-      action: () => go("/app/inbox"),
-      group: "Navigate",
-      keywords: ["messages", "mail", "notifications"],
-    },
-    {
-      id: "ask",
-      label: "Ask Assistant",
-      icon: <MessageSquare className="mr-2 h-4 w-4" />,
-      action: () => go("/app/ask"),
-      group: "Navigate",
-      keywords: ["chat", "prompt", "question", "assistant"],
-    },
-    {
-      id: "approvals",
-      label: "Approvals",
-      icon: <ShieldCheck className="mr-2 h-4 w-4" />,
-      action: () => go("/app/approvals"),
-      group: "Navigate",
-      keywords: ["pending", "confirm", "review", "queue"],
-    },
-    {
-      id: "timeline",
-      label: "Timeline",
-      icon: <Clock className="mr-2 h-4 w-4" />,
-      action: () => go("/app/timeline"),
-      group: "Navigate",
-      keywords: ["history", "receipts", "audit", "log"],
+      keywords: [
+        "ask",
+        "chat",
+        "prompt",
+        "question",
+        "assistant",
+        "dashboard",
+        "home",
+      ],
     },
     {
       id: "connections",
@@ -98,15 +66,7 @@ export function CommandBar({ open, onOpenChange }: CommandBarProps) {
       icon: <Plug className="mr-2 h-4 w-4" />,
       action: () => go("/app/connections"),
       group: "Navigate",
-      keywords: ["integrations", "apps", "services", "sync"],
-    },
-    {
-      id: "devices",
-      label: "Devices",
-      icon: <Glasses className="mr-2 h-4 w-4" />,
-      action: () => go("/app/devices"),
-      group: "Navigate",
-      keywords: ["glasses", "pair", "hardware"],
+      keywords: ["integrations", "apps", "services", "sync", "tools"],
     },
     {
       id: "settings",
@@ -114,31 +74,38 @@ export function CommandBar({ open, onOpenChange }: CommandBarProps) {
       icon: <Settings className="mr-2 h-4 w-4" />,
       action: () => go("/app/settings"),
       group: "Navigate",
-      keywords: ["preferences", "account", "profile", "safety"],
+      keywords: [
+        "preferences",
+        "account",
+        "profile",
+        "safety",
+        "theme",
+        "appearance",
+      ],
     },
 
     // Quick actions
     {
-      id: "new-ask",
-      label: "New conversation",
+      id: "new-session",
+      label: "New session",
       icon: <MessageSquare className="mr-2 h-4 w-4" />,
-      action: () => go("/app/ask"),
+      action: () => go("/app"),
       group: "Quick Actions",
-      keywords: ["new", "chat", "prompt"],
+      keywords: ["new", "chat", "prompt", "conversation"],
     },
     {
       id: "draft-reply",
       label: "Draft a reply",
       icon: <Send className="mr-2 h-4 w-4" />,
-      action: () => go("/app/ask"),
+      action: () => go("/app"),
       group: "Quick Actions",
-      keywords: ["reply", "respond", "message"],
+      keywords: ["reply", "respond", "message", "email"],
     },
     {
       id: "create-event",
       label: "Create calendar event",
       icon: <CalendarPlus className="mr-2 h-4 w-4" />,
-      action: () => go("/app/ask"),
+      action: () => go("/app"),
       group: "Quick Actions",
       keywords: ["meeting", "schedule", "calendar"],
     },
@@ -146,7 +113,7 @@ export function CommandBar({ open, onOpenChange }: CommandBarProps) {
       id: "capture-note",
       label: "Capture a note",
       icon: <FileText className="mr-2 h-4 w-4" />,
-      action: () => go("/app/ask"),
+      action: () => go("/app"),
       group: "Quick Actions",
       keywords: ["remember", "save", "note"],
     },
@@ -154,39 +121,18 @@ export function CommandBar({ open, onOpenChange }: CommandBarProps) {
       id: "search-web",
       label: "Search the web",
       icon: <Search className="mr-2 h-4 w-4" />,
-      action: () => go("/app/ask"),
+      action: () => go("/app"),
       group: "Quick Actions",
       keywords: ["google", "lookup", "find", "browse"],
     },
-
-    // Public pages
+    // Account
     {
-      id: "site-home",
-      label: "Home",
-      icon: <Home className="mr-2 h-4 w-4" />,
-      action: () => go("/"),
-      group: "Site",
-    },
-    {
-      id: "site-how-it-works",
-      label: "How it works",
-      icon: <HelpCircle className="mr-2 h-4 w-4" />,
-      action: () => go("/how-it-works"),
-      group: "Site",
-    },
-    {
-      id: "site-security",
-      label: "Security",
-      icon: <Lock className="mr-2 h-4 w-4" />,
-      action: () => go("/security"),
-      group: "Site",
-    },
-    {
-      id: "site-pricing",
-      label: "Pricing",
-      icon: <CreditCard className="mr-2 h-4 w-4" />,
-      action: () => go("/pricing"),
-      group: "Site",
+      id: "sign-out",
+      label: "Sign out",
+      icon: <LogOut className="mr-2 h-4 w-4" />,
+      action: () => go("/login"),
+      group: "Account",
+      keywords: ["logout", "sign out", "exit"],
     },
   ];
 
