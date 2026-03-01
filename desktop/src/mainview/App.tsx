@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react"
+import clawLogoSvg from "./claw-logo.svg"
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -32,12 +33,22 @@ interface SetupStep {
 
 // ─── Provider & Model Data (current as of March 2026) ────────────────────────
 
+// Provider logos — using real SVG brand marks from CDN / inline
+const PROVIDER_LOGOS: Record<string, string> = {
+  anthropic: "https://cdn.simpleicons.org/anthropic/191919",
+  openai: "https://cdn.simpleicons.org/openai/191919",
+  google: "https://cdn.simpleicons.org/google/191919",
+  minimax: "https://cdn.simpleicons.org/minutemailer/191919", // closest available icon
+  fireworks: "https://cdn.simpleicons.org/fireship/191919",
+  managed: "https://cdn.simpleicons.org/sparkasse/dc2626",
+}
+
 const PROVIDERS: Provider[] = [
   {
     id: "anthropic",
     name: "Anthropic",
-    icon: "🟣",
-    color: "#7c3aed",
+    icon: "",
+    color: "#191919",
     models: [
       { id: "claude-opus-4.6", name: "Claude Opus 4.6", badge: "New" },
       { id: "claude-sonnet-4.6", name: "Claude Sonnet 4.6", badge: "New" },
@@ -48,7 +59,7 @@ const PROVIDERS: Provider[] = [
   {
     id: "openai",
     name: "OpenAI",
-    icon: "🟢",
+    icon: "",
     color: "#10a37f",
     models: [
       { id: "gpt-5.2", name: "GPT-5.2", badge: "New" },
@@ -60,7 +71,7 @@ const PROVIDERS: Provider[] = [
   {
     id: "google",
     name: "Google",
-    icon: "🔵",
+    icon: "",
     color: "#4285f4",
     models: [
       { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", badge: "New" },
@@ -71,7 +82,7 @@ const PROVIDERS: Provider[] = [
   {
     id: "minimax",
     name: "MiniMax",
-    icon: "🟡",
+    icon: "",
     color: "#eab308",
     models: [
       { id: "minimax-m1", name: "MiniMax M1", badge: "New" },
@@ -81,7 +92,7 @@ const PROVIDERS: Provider[] = [
   {
     id: "fireworks",
     name: "Fireworks AI",
-    icon: "🔥",
+    icon: "",
     color: "#f97316",
     models: [
       { id: "fireworks-deepseek-v3", name: "DeepSeek V3", badge: "Fast" },
@@ -93,8 +104,8 @@ const PROVIDERS: Provider[] = [
 
 const FREE_CREDITS_PROVIDER: Provider = {
   id: "managed",
-  name: "Free Credits",
-  icon: "✨",
+  name: "Clawed",
+  icon: "",
   color: "#dc2626",
   models: [
     { id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5", badge: "Included" },
@@ -121,13 +132,14 @@ function getMachineName(): string {
 
 function ClawLogo({ size = 48 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <rect width="32" height="32" rx="8" fill="#dc2626" />
-      <path
-        d="M10 22c-2-2-2-5.5 0-7.5L11.5 13M14 19c-2-2-2-5.5 0-7.5L15.5 10M18 16c-2-2-2-5.5 0-7.5L19.5 7M22 22l-6-3-6 3"
-        stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-      />
-    </svg>
+    <img
+      src={clawLogoSvg}
+      alt="Clawed"
+      width={size}
+      height={size}
+      className="rounded-lg"
+      style={{ width: size, height: size }}
+    />
   )
 }
 
@@ -154,6 +166,21 @@ function PendingDot() {
     <div className="w-5 h-5 flex items-center justify-center">
       <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
     </div>
+  )
+}
+
+function ProviderLogo({ providerId, size = 20 }: { providerId: string; size?: number }) {
+  const src = PROVIDER_LOGOS[providerId]
+  if (!src) return <div style={{ width: size, height: size }} className="rounded bg-gray-200" />
+  return (
+    <img
+      src={src}
+      alt=""
+      width={size}
+      height={size}
+      className="object-contain"
+      style={{ width: size, height: size }}
+    />
   )
 }
 
@@ -229,10 +256,10 @@ function ProviderScreen({
         onClick={onFreeCredits}
         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-red-200 bg-red-50/50 hover:bg-red-50 transition-colors text-left group"
       >
-        <span className="text-xl">✨</span>
+        <ClawLogo size={24} />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900">Use free credits</p>
-          <p className="text-[11px] text-gray-400">Claude Sonnet 4.5 · No API key needed</p>
+          <p className="text-sm font-semibold text-gray-900">Clawed</p>
+          <p className="text-[11px] text-gray-400">Claude Sonnet 4.5 · Powered by clawed.chat</p>
         </div>
         <span className="text-[10px] font-bold uppercase tracking-wider text-red-500 bg-red-100 px-2 py-0.5 rounded-full">
           Recommended
@@ -251,9 +278,9 @@ function ProviderScreen({
           <button
             key={p.id}
             onClick={() => onSelect(p)}
-            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm transition-all text-left"
+            className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm transition-all text-left"
           >
-            <span className="text-base">{p.icon}</span>
+            <ProviderLogo providerId={p.id} size={22} />
             <div className="min-w-0">
               <p className="text-[13px] font-semibold text-gray-800 leading-tight">{p.name}</p>
               <p className="text-[10px] text-gray-400 leading-tight">{p.models.length} models</p>
@@ -306,8 +333,8 @@ function ApiKeyScreen({
         >
           ← Back
         </button>
-        <h2 className="text-lg font-bold tracking-tight text-gray-900 flex items-center gap-2">
-          <span>{provider.icon}</span> {provider.name}
+        <h2 className="text-lg font-bold tracking-tight text-gray-900 flex items-center gap-2.5">
+          <ProviderLogo providerId={provider.id} size={24} /> {provider.name}
         </h2>
         <p className="mt-0.5 text-xs text-gray-400">
           Pick a model and enter your API key.
