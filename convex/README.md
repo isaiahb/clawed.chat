@@ -1,105 +1,90 @@
-# convex/ — Database Schema & Server Functions
+# Welcome to your Convex functions directory!
 
-> Convex is the real-time database for clawed.chat. It stores users, instances, and API keys, and pushes live updates to the dashboard.
+Write your Convex functions here.
+See https://docs.convex.dev/functions for more.
 
-## Why Convex
-
-- **Hackathon sponsor** — checkbox for judges
-- **Real-time by default** — dashboard shows live instance status (provisioning → running → sleeping) without polling
-- **No migrations** — schema changes are instant during prototyping
-- **Free tier** — more than enough for hackathon + early users
-
-## Setup
-
-Convex lives at the **monorepo root** (not inside `app/`). This is Convex's convention — their CLI expects `convex/` relative to where you run it.
-
-```bash
-# from repo root
-bunx convex dev
-```
-
-This will:
-1. Prompt you to create a project (name it "clawed-chat")
-2. Generate `convex/_generated/` (gitignored)
-3. Give you a `CONVEX_URL` for your `.env`
-4. Start watching for schema/function changes
-
-Keep `bunx convex dev` running in a separate terminal during development.
-
-## Schema
-
-Three tables, matching the SPEC:
-
-### `users`
-| Field | Type | Description |
-|-------|------|-------------|
-| `clerkId` | `string` | Clerk user ID (from OAuth) |
-| `email` | `string` | User email |
-| `name` | `string` | Display name |
-
-### `instances`
-| Field | Type | Description |
-|-------|------|-------------|
-| `userId` | `Id<"users">` | Owner reference |
-| `type` | `"cloud" \| "local"` | Cloud VM or local Mac |
-| `status` | `string` | `provisioning`, `running`, `stopped`, `stopping`, `starting`, `destroying`, `destroyed`, `error` |
-| `subdomain` | `string` | e.g., `alice` → `alice.clawed.chat` |
-| `ip` | `string?` | VM external IP (null while provisioning) |
-| `gcpVmName` | `string?` | GCP Compute Engine instance name |
-| `gcpZone` | `string?` | GCP zone |
-| `browserUseSessionId` | `string?` | Browser Use browser ID |
-| `browserUseLiveUrl` | `string?` | Embeddable live view URL |
-| `llmProvider` | `string` | `anthropic`, `openai`, `google`, `minimax` |
-| `lastActiveAt` | `number?` | Timestamp — used for auto sleep/wake |
-
-### `apiKeys`
-| Field | Type | Description |
-|-------|------|-------------|
-| `userId` | `Id<"users">` | Owner reference |
-| `provider` | `string` | `anthropic`, `openai`, `google`, `minimax` |
-| `encryptedKey` | `string` | Encrypted API key (never stored plaintext) |
-
-## Server Functions
-
-| File | Functions | Description |
-|------|-----------|-------------|
-| `users.ts` | `getOrCreate`, `getByClerkId` | User CRUD, called after Clerk auth |
-| `instances.ts` | `create`, `get`, `list`, `updateStatus`, `updateDetails`, `remove` | Instance lifecycle, called by services |
-
-## How Services Talk to Convex
-
-The Hono backend (in `app/`) uses the **Convex HTTP client** (`ConvexHttpClient`) to call mutations and queries:
+A query function that takes two arguments looks like:
 
 ```ts
-import {ConvexHttpClient} from "convex/browser"
-import {api} from "../convex/_generated/api"
+// convex/myFunctions.ts
+import { query } from "./_generated/server";
+import { v } from "convex/values";
 
-const convex = new ConvexHttpClient(process.env.CONVEX_URL!)
+export const myQueryFunction = query({
+  // Validators for arguments.
+  args: {
+    first: v.number(),
+    second: v.string(),
+  },
 
-// Write
-await convex.mutation(api.instances.create, {userId, subdomain, ...})
+  // Function implementation.
+  handler: async (ctx, args) => {
+    // Read the database as many times as you need here.
+    // See https://docs.convex.dev/database/reading-data.
+    const documents = await ctx.db.query("tablename").collect();
 
-// Read
-const instance = await convex.query(api.instances.get, {id})
+    // Arguments passed from the client are properties of the args object.
+    console.log(args.first, args.second);
+
+    // Write arbitrary JavaScript here: filter, aggregate, build derived data,
+    // remove non-public properties, or create new objects.
+    return documents;
+  },
+});
 ```
 
-The React frontend uses the **Convex React client** for real-time subscriptions:
+Using this query function in a React component looks like:
 
-```tsx
-import {useQuery} from "convex/react"
-import {api} from "../../convex/_generated/api"
-
-// Live-updating — re-renders when instance status changes in Convex
-const instance = useQuery(api.instances.get, {id: instanceId})
+```ts
+const data = useQuery(api.myFunctions.myQueryFunction, {
+  first: 10,
+  second: "hello",
+});
 ```
 
-## Conventions
+A mutation function looks like:
 
-- One file per table (e.g., `users.ts`, `instances.ts`)
-- Mutations for writes, queries for reads
-- Keep functions small — business logic lives in `app/src/backend/services/`, not here
-- No semicolons, double quotes, trailing commas, `{thing}` not `{ thing }`
+```ts
+// convex/myFunctions.ts
+import { mutation } from "./_generated/server";
+import { v } from "convex/values";
 
-## Generated Files
+export const myMutationFunction = mutation({
+  // Validators for arguments.
+  args: {
+    first: v.string(),
+    second: v.string(),
+  },
 
-`convex/_generated/` is auto-generated by the Convex CLI and **gitignored**. It contains typed API bindings based on your schema. Don't edit these files — they regenerate on every schema change.
+  // Function implementation.
+  handler: async (ctx, args) => {
+    // Insert or modify documents in the database here.
+    // Mutations can also read from the database like queries.
+    // See https://docs.convex.dev/database/writing-data.
+    const message = { body: args.first, author: args.second };
+    const id = await ctx.db.insert("messages", message);
+
+    // Optionally, return a value from your mutation.
+    return await ctx.db.get("messages", id);
+  },
+});
+```
+
+Using this mutation function in a React component looks like:
+
+```ts
+const mutation = useMutation(api.myFunctions.myMutationFunction);
+function handleButtonPress() {
+  // fire and forget, the most common way to use mutations
+  mutation({ first: "Hello!", second: "me" });
+  // OR
+  // use the result once the mutation has completed
+  mutation({ first: "Hello!", second: "me" }).then((result) =>
+    console.log(result),
+  );
+}
+```
+
+Use the Convex CLI to push your functions to a deployment. See everything
+the Convex CLI can do by running `npx convex -h` in your project root
+directory. To learn more, launch the docs with `npx convex docs`.

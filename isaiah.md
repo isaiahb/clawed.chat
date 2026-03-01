@@ -27,12 +27,10 @@ All installed. Just need auth on a few:
 # - mentra CLI 1.0.3
 # - gcloud 558.0.0 (authed, project created)
 # - pulumi 3.224.0 (authed as isaiahb)
-
-# ⏳ Installed, need YOUR auth (interactive browser login):
-bunx convex dev        # → browser opens → create project "clawed-chat" → keep running
+# - convex 1.32.0 (authed, project created, schema pushed)
 ```
 
-**After you auth Convex, agents can push schema and test functions.**
+**All CLI tools authed. Agents are fully unblocked for infra + database work.**
 
 ---
 
@@ -58,25 +56,28 @@ Still need access token for `.env`:
 
 ---
 
-## ⏳ 2. Convex Auth — ~3 min
+## ✅ 2. Convex Auth — DONE
 
-Agents need this to push schema, test queries/mutations, and wire up the database.
+Project created and schema pushed.
 
+- **Project:** `clawed-chat` (team: `isaiah-ballah`)
+- **Deployment:** `dev:adorable-sturgeon-328`
+- **Dashboard:** https://dashboard.convex.dev/d/adorable-sturgeon-328
+- **CONVEX_URL:** `https://adorable-sturgeon-328.convex.cloud`
+- **Schema:** pushed (users, instances, api_keys tables)
+- **Functions:** deployed (users.ts, instances.ts)
+
+When developing, keep this running in a separate terminal:
 ```bash
-# From the REPO ROOT (where convex/ folder lives):
-cd /Users/isaiah/Documents/BallahTech2/clawed.chat
 bunx convex dev
-# Browser opens → sign in → create project "clawed-chat"
-# It will push the schema from convex/schema.ts
-# KEEP THIS TERMINAL RUNNING — it live-syncs schema changes
 ```
 
-Copy the URL it gives you:
+Save for `.env`:
 ```
-CONVEX_URL=https://your-project-123.convex.cloud
+CONVEX_URL=https://adorable-sturgeon-328.convex.cloud
 ```
 
-**After this, agents can:** push schema changes, write server functions, test queries.
+**Agents can now:** push schema changes, write server functions, test queries.
 
 ---
 
@@ -321,7 +322,7 @@ CLERK_SECRET_KEY=sk_
 CLERK_WEBHOOK_SECRET=whsec_
 
 # ─── Database (Convex) ───────────────────────────────────────────────────────
-CONVEX_URL=https://your-project.convex.cloud
+CONVEX_URL=https://adorable-sturgeon-328.convex.cloud
 
 # ─── Browser Use ─────────────────────────────────────────────────────────────
 BROWSER_USE_API_KEY=bu_
@@ -362,10 +363,10 @@ KEY_ENCRYPTION_SECRET=            # openssl rand -hex 32
 - [x] gcloud installed, authed, project `clawed-chat` created
 - [x] GCP: billing, APIs, service account, key, firewall rule — all done
 - [x] pulumi CLI installed (v3.224.0)
-- [x] convex CLI installed (v1.32.0)
+- [x] convex CLI installed (v1.32.0), authed, project created
 - [x] SA key moved to `~/.config/gcloud/`
 - [x] `pulumi whoami` → `isaiahb`
-- [ ] `bunx convex dev` → project created, schema pushed
+- [x] `bunx convex dev` → project `clawed-chat` created, schema pushed, functions deployed
 - [ ] Clerk app created with Google OAuth + webhook
 - [ ] Browser Use API key obtained + tested
 - [ ] Cloudflare zone ID + API token
