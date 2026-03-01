@@ -161,33 +161,10 @@ function buildConnectRequest(nonce: string): object {
     },
   }
 
-  // Add device identity if available (stronger auth)
-  if (deviceIdentity.deviceId && deviceIdentity.privateKeyPem) {
-    // Build v3 auth payload for signing
-    const payloadParts = [
-      "v3",
-      deviceIdentity.deviceId,
-      CLIENT_ID,
-      CLIENT_MODE,
-      ROLE,
-      SCOPES.join(","),
-      String(signedAtMs),
-      GATEWAY_TOKEN,
-      nonce,
-      platform,
-      "", // deviceFamily (empty)
-    ]
-    const payload = payloadParts.join("|")
-    const signature = signPayload(deviceIdentity.privateKeyPem, payload)
-
-    params.device = {
-      id: deviceIdentity.deviceId,
-      publicKey: publicKeyRawBase64Url(deviceIdentity.publicKeyPem),
-      signature,
-      signedAt: signedAtMs,
-      nonce,
-    }
-  }
+  // NOTE: Device identity (Ed25519 pairing) is intentionally skipped.
+  // It requires the device to be pre-paired with the gateway, which
+  // our cloud VM doesn't support yet. Token-only auth works fine.
+  // The device identity code is kept above for future use.
 
   return {
     type: "req",
