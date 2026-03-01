@@ -2,7 +2,7 @@
  * clawed.chat — Fullstack Entry Point
  *
  * Dev:  bun dev        → runtime bundling + HMR
- * Prod: bun run start  → development: { hmr: false }, lazy cached minified bundles
+ * Prod: bun run start  → development: false, cached minified bundles
  *
  * The server always runs from source (Bun handles TS natively).
  * bunfig.toml configures plugins (tailwind, react-dedupe) and env inlining.
@@ -75,13 +75,7 @@ const publicPath = `${process.cwd()}/src/public/assets`
 Bun.serve({
   port: PORT,
   idleTimeout: 120,
-  // Bun 1.3.10 needs the dev bundler pipeline active for HTML routes to work.
-  // Setting development to `false` or omitting it breaks jsxDEV at runtime.
-  // In production: keep bundler active (object, not false) but disable HMR + console.
-  // React/Clerk prod mode is controlled by NODE_ENV=production in systemd.
-  development: isDevelopment
-    ? { hmr: true, console: true }
-    : { hmr: false, console: false },
+  development: isDevelopment ? { hmr: true, console: true } : false,
   routes: {
     // ── Backend routes (more-specific, matched before "/*") ──────────
     //
