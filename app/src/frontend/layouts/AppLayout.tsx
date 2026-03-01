@@ -1,75 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react"
 import {
   NavLink,
   Outlet,
   useLocation,
   Link,
-  useNavigate,
-} from "react-router-dom";
+} from "react-router-dom"
 import {
-  MessageSquare,
+  Server,
   Plug,
   Settings,
-  Sun,
-  Monitor,
-  ChevronDown,
-  LogOut,
-  User,
   Search,
   Command,
-  Loader2,
-  Zap,
-  CheckCircle2,
-  AlertTriangle,
-} from "lucide-react";
-import { Button } from "../components/ui/button";
-import { UserButton } from "@clerk/clerk-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
+  Glasses,
+} from "lucide-react"
+import { Button } from "../components/ui/button"
+import { UserButton } from "@clerk/clerk-react"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "../components/ui/tooltip";
-import { useAppStore } from "../stores/app-store";
-import { cn } from "../lib/utils";
-import { CommandBar } from "../components/shared/CommandBar";
-import type { ActionIndicatorPhase } from "../types";
-
-// ── Agent status config ──
-const agentStatusConfig = {
-  live: {
-    label: "Agent Live",
-    dotClass: "bg-emerald-500",
-    pillClass: "border-emerald-300 bg-emerald-50 text-emerald-700",
-  },
-  idle: {
-    label: "Agent Idle",
-    dotClass: "bg-gray-400",
-    pillClass: "border-border bg-muted text-muted-foreground",
-  },
-  provisioning: {
-    label: "Provisioning",
-    dotClass: "bg-amber-500 animate-pulse",
-    pillClass: "border-amber-300 bg-amber-50 text-amber-700",
-  },
-  offline: {
-    label: "Agent Offline",
-    dotClass: "bg-gray-300",
-    pillClass: "border-border bg-muted text-muted-foreground",
-  },
-  error: {
-    label: "Agent Error",
-    dotClass: "bg-red-500",
-    pillClass: "border-red-300 bg-red-50 text-red-700",
-  },
-} as const;
+} from "../components/ui/tooltip"
+import { useAppStore } from "../stores/app-store"
+import { cn } from "../lib/utils"
+import { CommandBar } from "../components/shared/CommandBar"
 
 // ── Claw Logo SVG — sharp, no rounded corners ──
 function ClawLogo({ className }: { className?: string }) {
@@ -122,174 +75,118 @@ function ClawLogo({ className }: { className?: string }) {
         opacity="0.4"
       />
     </svg>
-  );
+  )
 }
 
-// ── Agent Status Pill ──
-function AgentStatusPill() {
-  const { agentStatus, setAgentStatus } = useAppStore();
-  const config = agentStatusConfig[agentStatus];
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          className={cn(
-            "status-pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.04em] border cursor-pointer transition-all hover:opacity-80",
-            config.pillClass,
-          )}
-        >
-          <span
-            className={cn("h-1.5 w-1.5 rounded-full shrink-0", config.dotClass)}
-          />
-          {config.label}
-          <ChevronDown className="h-3 w-3 opacity-50 ml-0.5" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="center" className="w-44">
-        <DropdownMenuLabel className="text-xs">Agent Status</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {(
-          Object.entries(agentStatusConfig) as [
-            keyof typeof agentStatusConfig,
-            (typeof agentStatusConfig)[keyof typeof agentStatusConfig],
-          ][]
-        ).map(([key, cfg]) => (
-          <DropdownMenuItem
-            key={key}
-            onClick={() => setAgentStatus(key)}
-            className={cn("gap-2 text-xs", agentStatus === key && "bg-accent")}
-          >
-            <span className={cn("h-1.5 w-1.5 rounded-full", cfg.dotClass)} />
-            {cfg.label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-// ── Top Bar Action Indicator Pill ──
-// Shows what the assistant is doing, persistent in top bar next to agent status
-function ActionIndicatorPill() {
-  const { actionIndicatorPhase, actionIndicatorLabel } = useAppStore();
-
-  if (actionIndicatorPhase === "idle") return null;
-
-  const phaseConfig: Record<
-    ActionIndicatorPhase,
-    { icon: React.ReactNode; pillClass: string }
-  > = {
-    idle: { icon: null, pillClass: "" },
-    thinking: {
-      icon: <Loader2 className="h-3 w-3 animate-spin" />,
-      pillClass: "border-amber-300 bg-amber-50 text-amber-700",
-    },
-    acting: {
-      icon: <Zap className="h-3 w-3 animate-pulse" />,
-      pillClass: "border-claw-red/30 bg-red-50 text-claw-red",
-    },
-    done: {
-      icon: <CheckCircle2 className="h-3 w-3" />,
-      pillClass: "border-emerald-300 bg-emerald-50 text-emerald-700",
-    },
-    error: {
-      icon: <AlertTriangle className="h-3 w-3" />,
-      pillClass: "border-red-300 bg-red-50 text-red-700",
-    },
-  };
-
-  const config = phaseConfig[actionIndicatorPhase] ?? phaseConfig.thinking;
+// ── Glasses Connection Pill ──
+function GlassesStatusPill() {
+  // TODO: wire to real useMentraAuth() — for now detect via a simple check
+  // import { useMentraAuth } from "@mentra/react"
+  // const mentra = useMentraAuth()
+  // const isConnected = mentra.isAuthenticated
+  const isConnected = false
 
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-[0.03em] border transition-all",
-        config.pillClass,
+        "status-pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.04em] border transition-all",
+        isConnected
+          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+          : "border-border/50 bg-muted/30 text-muted-foreground",
       )}
     >
-      {config.icon}
-      <span className="max-w-[120px] truncate">{actionIndicatorLabel}</span>
+      <Glasses className="h-3 w-3" />
+      {isConnected ? (
+        <>
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+          Glasses Connected
+        </>
+      ) : (
+        <>
+          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+          Glasses Offline
+        </>
+      )}
     </div>
-  );
+  )
 }
 
 export default function AppLayout() {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const location = useLocation()
   const {
     commandBarOpen,
     setCommandBarOpen,
     theme,
-    setTheme,
-    accountName,
-    accountEmail,
-  } = useAppStore();
+  } = useAppStore()
 
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(false)
 
   // Detect mobile
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
+  }, [])
 
   // Keyboard shortcut: Cmd+K / Ctrl+K for command bar
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setCommandBarOpen(!commandBarOpen);
+        e.preventDefault()
+        setCommandBarOpen(!commandBarOpen)
       }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [commandBarOpen, setCommandBarOpen]);
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [commandBarOpen, setCommandBarOpen])
 
   // Apply theme to document
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove("dark", "light");
+    const root = document.documentElement
+    root.classList.remove("dark", "light")
     if (theme === "dark") {
-      root.classList.add("dark");
+      root.classList.add("dark")
     } else if (theme === "light") {
-      root.classList.add("light");
+      root.classList.add("light")
     } else {
       const prefersDark = window.matchMedia(
         "(prefers-color-scheme: dark)",
-      ).matches;
-      root.classList.toggle("dark", prefersDark);
-      root.classList.toggle("light", !prefersDark);
+      ).matches
+      root.classList.toggle("dark", prefersDark)
+      root.classList.toggle("light", !prefersDark)
     }
-  }, [theme]);
+  }, [theme])
+
+  // Nav items
+  const navItems = [
+    { path: "/app/agents", label: "Agents", icon: Server },
+    { path: "/app/connections", label: "Connections", icon: Plug },
+    { path: "/app/settings", label: "Settings", icon: Settings },
+  ]
 
   // Nav link helper
   const navLinkClass = (path: string) => {
-    const isActive =
-      path === "/app"
-        ? location.pathname === "/app" || location.pathname === "/app/"
-        : path === "/app/connections"
-          ? location.pathname.startsWith("/app/connections")
-          : path === "/app/settings"
-            ? location.pathname.startsWith("/app/settings")
-            : false;
+    const isActive = location.pathname.startsWith(path)
+      || (path === "/app/agents" && (location.pathname === "/app" || location.pathname === "/app/"))
 
     return cn(
       "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold uppercase tracking-[0.04em] border transition-all duration-200 backdrop-blur-sm",
       isActive
         ? "border-foreground/30 bg-foreground text-background shadow-sm"
         : "border-border/50 text-muted-foreground hover:border-foreground/30 hover:text-foreground hover:bg-muted/40 active:translate-y-px",
-    );
-  };
+    )
+  }
+
+  // Is the current page a chat page? If so, hide nav chrome for immersion
+  const isChatPage = location.pathname.startsWith("/app/chat/")
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       {/* ── Top Navigation Bar ── */}
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-border/50 bg-card/60 backdrop-blur-xl backdrop-saturate-[1.4] px-4 shadow-[0_1px_3px_oklch(0_0_0/0.04)]">
         {/* Left — Logo */}
-        <Link to="/app" className="group flex items-center gap-2">
+        <Link to="/app/agents" className="group flex items-center gap-2">
           <ClawLogo className="transition-transform group-hover:scale-105" />
           <span
             className="text-sm font-black tracking-tight hidden sm:inline"
@@ -304,24 +201,31 @@ export default function AppLayout() {
           </span>
         </Link>
 
-        {/* Center — Agent Status Pill + Action Indicator */}
+        {/* Center — Glasses Status Pill */}
         <div className="absolute left-1/2 -translate-x-1/2 hidden sm:flex items-center gap-2">
-          <AgentStatusPill />
-          <ActionIndicatorPill />
+          <GlassesStatusPill />
         </div>
 
         {/* Right — Nav links + Actions */}
         <div className="flex items-center gap-2">
-          {/* Mobile agent status */}
+          {/* Mobile glasses status */}
           <div className="sm:hidden">
-            <AgentStatusPill />
+            <GlassesStatusPill />
           </div>
 
-          {/* Chat link */}
-          {!isMobile && (
-            <NavLink to="/app" className={navLinkClass("/app")}>
-              <MessageSquare className="h-3 w-3" />
-              Chat
+          {/* Desktop nav links — hide on chat pages for cleaner look */}
+          {!isMobile && !isChatPage && navItems.map((item) => (
+            <NavLink key={item.path} to={item.path} className={navLinkClass(item.path)}>
+              <item.icon className="h-3 w-3" />
+              {item.label}
+            </NavLink>
+          ))}
+
+          {/* On chat pages, show a compact agents link */}
+          {!isMobile && isChatPage && (
+            <NavLink to="/app/agents" className={navLinkClass("/app/agents")}>
+              <Server className="h-3 w-3" />
+              Agents
             </NavLink>
           )}
 
@@ -347,85 +251,25 @@ export default function AppLayout() {
             </TooltipContent>
           </Tooltip>
 
-          {/* Connections link */}
-          {!isMobile && (
-            <NavLink
-              to="/app/connections"
-              className={navLinkClass("/app/connections")}
-            >
-              <Plug className="h-3 w-3" />
-              Connections
-            </NavLink>
-          )}
-
-          {/* Settings link */}
-          {!isMobile && (
-            <NavLink
-              to="/app/settings"
-              className={navLinkClass("/app/settings")}
-            >
-              <Settings className="h-3 w-3" />
-              Settings
-            </NavLink>
-          )}
-
           {/* Mobile nav icons */}
-          {isMobile && (
-            <>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <NavLink
-                    to="/app"
-                    end
-                    className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-lg border backdrop-blur-sm transition-all duration-200",
-                      location.pathname === "/app" ||
-                        location.pathname === "/app/"
-                        ? "border-foreground/30 bg-foreground text-background shadow-sm"
-                        : "border-border/50 text-muted-foreground hover:border-foreground/30 hover:text-foreground hover:bg-muted/40 active:translate-y-px",
-                    )}
-                  >
-                    <MessageSquare className="h-3.5 w-3.5" />
-                  </NavLink>
-                </TooltipTrigger>
-                <TooltipContent>Chat</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <NavLink
-                    to="/app/connections"
-                    className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-lg border backdrop-blur-sm transition-all duration-200",
-                      location.pathname.startsWith("/app/connections")
-                        ? "border-foreground/30 bg-foreground text-background shadow-sm"
-                        : "border-border/50 text-muted-foreground hover:border-foreground/30 hover:text-foreground hover:bg-muted/40 active:translate-y-px",
-                    )}
-                  >
-                    <Plug className="h-3.5 w-3.5" />
-                  </NavLink>
-                </TooltipTrigger>
-                <TooltipContent>Connections</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <NavLink
-                    to="/app/settings"
-                    className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-lg border backdrop-blur-sm transition-all duration-200",
-                      location.pathname.startsWith("/app/settings")
-                        ? "border-foreground/30 bg-foreground text-background shadow-sm"
-                        : "border-border/50 text-muted-foreground hover:border-foreground/30 hover:text-foreground hover:bg-muted/40 active:translate-y-px",
-                    )}
-                  >
-                    <Settings className="h-3.5 w-3.5" />
-                  </NavLink>
-                </TooltipTrigger>
-                <TooltipContent>Settings</TooltipContent>
-              </Tooltip>
-            </>
-          )}
+          {isMobile && !isChatPage && navItems.map((item) => (
+            <Tooltip key={item.path}>
+              <TooltipTrigger asChild>
+                <NavLink
+                  to={item.path}
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-lg border backdrop-blur-sm transition-all duration-200",
+                    (location.pathname.startsWith(item.path) || (item.path === "/app/agents" && location.pathname === "/app"))
+                      ? "border-foreground/30 bg-foreground text-background shadow-sm"
+                      : "border-border/50 text-muted-foreground hover:border-foreground/30 hover:text-foreground hover:bg-muted/40 active:translate-y-px",
+                  )}
+                >
+                  <item.icon className="h-3.5 w-3.5" />
+                </NavLink>
+              </TooltipTrigger>
+              <TooltipContent>{item.label}</TooltipContent>
+            </Tooltip>
+          ))}
 
           {/* Account menu managed by Clerk */}
           <UserButton
@@ -446,5 +290,5 @@ export default function AppLayout() {
       {/* ── Command Bar ── */}
       <CommandBar open={commandBarOpen} onOpenChange={setCommandBarOpen} />
     </div>
-  );
+  )
 }

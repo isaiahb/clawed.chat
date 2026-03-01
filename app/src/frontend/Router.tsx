@@ -1,61 +1,59 @@
-import { lazy, Suspense, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { TooltipProvider } from "./components/ui/tooltip";
-import { Toaster } from "./components/ui/sonner";
-import { ScrollToTop } from "./components/shared/ScrollToTop";
-import { IntroSplash } from "./components/shared/IntroSplash";
+import { lazy, Suspense, useState } from "react"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { TooltipProvider } from "./components/ui/tooltip"
+import { Toaster } from "./components/ui/sonner"
+import { ScrollToTop } from "./components/shared/ScrollToTop"
+import { IntroSplash } from "./components/shared/IntroSplash"
 
 // Layouts (eagerly loaded — they wrap everything)
-import SiteLayout from "./layouts/SiteLayout";
-import AppLayout from "./layouts/AppLayout";
+import SiteLayout from "./layouts/SiteLayout"
+import AppLayout from "./layouts/AppLayout"
 
 // ─── Lazy-loaded Site Pages ───
-const Home = lazy(() => import("./pages/Home"));
-const Pricing = lazy(() => import("./pages/Pricing"));
-const Docs = lazy(() => import("./pages/Docs"));
-const SignIn = lazy(() => import("./pages/SignIn"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const Home = lazy(() => import("./pages/Home"))
+const Pricing = lazy(() => import("./pages/Pricing"))
+const Docs = lazy(() => import("./pages/Docs"))
+const SignIn = lazy(() => import("./pages/SignIn"))
+const NotFound = lazy(() => import("./pages/NotFound"))
 
-// ─── Lazy-loaded App Pages (only 3: Ask, Connections, Settings) ───
-const AskPage = lazy(() => import("./pages/app/AskPage"));
-const ConnectionsPage = lazy(() => import("./pages/app/ConnectionsPage"));
-const SettingsPage = lazy(() => import("./pages/app/SettingsPage"));
+// ─── Lazy-loaded App Pages ───
+const AgentsPage = lazy(() => import("./pages/app/AgentsPage"))
+const ChatPage = lazy(() => import("./pages/app/ChatPage"))
+const ConnectionsPage = lazy(() => import("./pages/app/ConnectionsPage"))
+const SettingsPage = lazy(() => import("./pages/app/SettingsPage"))
 
 // ─── Query Client ───
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60 * 5,
       retry: 1,
     },
   },
-});
+})
 
 // ─── Session-based intro logic ───
-// Only show the intro splash once per browser session.
-// After it plays, we stash a flag in sessionStorage so
-// refreshes / navigations within the same tab skip it.
-const INTRO_KEY = "clawed-intro-played";
+const INTRO_KEY = "clawed-intro-played"
 
 function shouldShowIntro(): boolean {
   try {
-    return !sessionStorage.getItem(INTRO_KEY);
+    return !sessionStorage.getItem(INTRO_KEY)
   } catch {
-    return false; // storage blocked → skip intro
+    return false
   }
 }
 
 function markIntroPlayed(): void {
   try {
-    sessionStorage.setItem(INTRO_KEY, "1");
+    sessionStorage.setItem(INTRO_KEY, "1")
   } catch {
     // ignore
   }
 }
 
-// ─── Suspense Fallback (shown during lazy chunk loads) ───
+// ─── Suspense Fallback ───
 function PageLoader() {
   return (
     <div className="flex min-h-[50vh] items-center justify-center bg-background">
@@ -69,20 +67,18 @@ function PageLoader() {
         </span>
       </div>
     </div>
-  );
+  )
 }
 
-// ─── App Router ───
+// ─── Router ───
 
+export default function Router() {
+  const [introComplete, setIntroComplete] = useState(!shouldShowIntro())
 
-export default function App() {
-  const [introComplete, setIntroComplete] = useState(!shouldShowIntro());
-
-  // When the intro finishes (or is skipped), mark it and reveal the app
   const handleIntroComplete = () => {
-    markIntroPlayed();
-    setIntroComplete(true);
-  };
+    markIntroPlayed()
+    setIntroComplete(true)
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -108,7 +104,7 @@ export default function App() {
             <ScrollToTop />
             <Suspense fallback={<PageLoader />}>
               <Routes>
-                {/* ─── Public Site Routes (landing page, pricing, docs) ─── */}
+                {/* ─── Public Site Routes ─── */}
                 <Route element={<SiteLayout />}>
                   <Route index element={<Home />} />
                   <Route path="pricing" element={<Pricing />} />
@@ -124,7 +120,7 @@ export default function App() {
                         <SignIn />
                       </Unauthenticated>
                       <Authenticated>
-                        <Navigate to="/app" replace />
+                        <Navigate to="/app/agents" replace />
                       </Authenticated>
                     </>
                   }
@@ -147,11 +143,23 @@ export default function App() {
                     </>
                   }
                 >
-                  <Route index element={<AskPage />} />
-                  <Route path="ask" element={<Navigate to="/app" replace />} />
+                  {/* /app → redirect to agents list */}
+                  <Route index element={<Navigate to="/app/agents" replace />} />
+
+                  {/* /app/agents — manage your deployed agents */}
+                  <Route path="agents" element={<AgentsPage />} />
+
+                  {/* /app/chat/:instanceId — chat with a specific agent */}
+                  <Route path="chat/:instanceId" element={<ChatPage />} />
+
+                  {/* /app/connections — Composio OAuth integrations */}
                   <Route path="connections" element={<ConnectionsPage />} />
+
+                  {/* /app/settings — account, keys, preferences */}
                   <Route path="settings" element={<SettingsPage />} />
-                  <Route path="*" element={<Navigate to="/app" replace />} />
+
+                  {/* Catch-all within /app */}
+                  <Route path="*" element={<Navigate to="/app/agents" replace />} />
                 </Route>
 
                 {/* ─── 404 Catch-all ─── */}
@@ -181,5 +189,5 @@ export default function App() {
         </div>
       </TooltipProvider>
     </QueryClientProvider>
-  );
+  )
 }

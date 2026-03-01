@@ -74,8 +74,8 @@ export const useAppStore = create<AppState>()(
       toggleCommandBar: () =>
         set((s) => ({ commandBarOpen: !s.commandBarOpen })),
 
-      // Theme — light by default for MVP
-      theme: "light",
+      // Theme — dark by default (matches Parth's design system)
+      theme: "dark",
       setTheme: (theme) => set({ theme }),
 
       // Response style — medium by default
