@@ -1,0 +1,10 @@
+{
+  "name": "clawed-chat-desktop",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'TODO: electrobun dev server'",
+    "build": "echo 'TODO: electrobun build'"
+  }
+}

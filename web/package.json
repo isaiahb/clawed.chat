@@ -1,0 +1,10 @@
+{
+  "name": "clawed-chat-web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'TODO: landing page dev server'",
+    "build": "echo 'TODO: landing page build'"
+  }
+}

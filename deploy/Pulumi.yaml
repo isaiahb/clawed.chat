@@ -1,0 +1,14 @@
+# Pulumi project config for clawed.chat's own infrastructure (CI/CD)
+#
+# This is NOT the per-user provisioning — that lives in
+# app/src/backend/services/instance.pulumi.ts and uses the Automation API.
+#
+# This Pulumi project deploys OUR backend (the Hono/Bun server) to GCP.
+# Runs via GitHub Actions on push to main.
+
+name: clawed-chat-infra
+runtime:
+  name: nodejs
+  options:
+    packagemanager: bun
+description: clawed.chat backend infrastructure — deploys the Hono/Bun server to GCP

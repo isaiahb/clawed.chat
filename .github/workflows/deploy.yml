@@ -1,0 +1,70 @@
+# clawed.chat CI/CD — deploy backend to GCP on push to main
+#
+# Uses Pulumi (deploy/ workspace) to provision/update our own infrastructure.
+# Per-user VM provisioning is handled at runtime by the Automation API,
+# not this workflow.
+#
+# Required GitHub Secrets:
+#   PULUMI_ACCESS_TOKEN    — from app.pulumi.com/account/tokens
+#   GCP_CREDENTIALS_BASE64 — base64-encoded service account JSON key
+#   CLOUDFLARE_API_TOKEN   — from Cloudflare dashboard (Edit zone DNS)
+#
+# Required GitHub Variables:
+#   GCP_PROJECT            — GCP project ID (e.g., clawed-chat-123456)
+#   GCP_ZONE               — GCP zone (e.g., us-west1-a)
+#   CLOUDFLARE_ZONE_ID     — Cloudflare zone ID for clawed.chat
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # manual trigger
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false # don't cancel in-progress deploys
+
+jobs:
+  deploy:
+    name: Deploy to GCP
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+        working-directory: deploy
+
+      - name: Setup GCP credentials
+        run: |
+          echo "${{ secrets.GCP_CREDENTIALS_BASE64 }}" | base64 -d > /tmp/gcp-key.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
+
+      - name: Setup Pulumi
+        uses: pulumi/actions@v6
+        with:
+          command: up
+          stack-name: prod
+          work-dir: deploy
+          cloud-url: https://api.pulumi.com
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      # TODO: after Pulumi deploys the VM, SSH in and update the app code
+      # This step will be replaced with a proper deploy mechanism:
+      #   Option A: Docker image push + restart
+      #   Option B: rsync + systemctl restart
+      #   Option C: Pulumi handles the full deploy via startup script
+      #
+      # - name: Deploy app code to server
+      #   run: |
+      #     echo "TODO: deploy app code to GCP VM"
