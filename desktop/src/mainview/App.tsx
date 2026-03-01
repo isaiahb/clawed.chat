@@ -8,7 +8,21 @@ const HEARTBEAT_INTERVAL_MS = 30_000
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Screen = "auth" | "progress" | "connected"
+type Screen = "welcome" | "provider" | "apikey" | "progress" | "connected"
+
+interface Provider {
+  id: string
+  name: string
+  icon: string
+  models: Model[]
+  color: string
+}
+
+interface Model {
+  id: string
+  name: string
+  badge?: string
+}
 
 interface SetupStep {
   label: string
@@ -16,27 +30,102 @@ interface SetupStep {
   durationMs: number
 }
 
-const SETUP_STEPS: SetupStep[] = [
-  { label: "Checking system requirements", detail: "macOS 14+, 8 GB RAM", durationMs: 600 },
-  { label: "Installing Bun runtime", detail: "Package manager & JS runtime", durationMs: 900 },
-  { label: "Installing OpenClaw agent", detail: "AI agent framework v2026.2", durationMs: 1200 },
-  { label: "Configuring your workspace", detail: "Gateway, auth & plugins", durationMs: 800 },
-  { label: "Connecting to clawed.chat", detail: "Registering this machine", durationMs: 1000 },
-  { label: "Starting agent gateway", detail: "Verifying connectivity", durationMs: 700 },
+// ─── Provider & Model Data (current as of March 2026) ────────────────────────
+
+const PROVIDERS: Provider[] = [
+  {
+    id: "anthropic",
+    name: "Anthropic",
+    icon: "🟣",
+    color: "#7c3aed",
+    models: [
+      { id: "claude-opus-4.6", name: "Claude Opus 4.6", badge: "New" },
+      { id: "claude-sonnet-4.6", name: "Claude Sonnet 4.6", badge: "New" },
+      { id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5" },
+      { id: "claude-haiku-3.5", name: "Claude Haiku 3.5", badge: "Fast" },
+    ],
+  },
+  {
+    id: "openai",
+    name: "OpenAI",
+    icon: "🟢",
+    color: "#10a37f",
+    models: [
+      { id: "gpt-5.2", name: "GPT-5.2", badge: "New" },
+      { id: "gpt-4.1", name: "GPT-4.1" },
+      { id: "o3", name: "o3", badge: "Reasoning" },
+      { id: "o4-mini", name: "o4-mini", badge: "Fast" },
+    ],
+  },
+  {
+    id: "google",
+    name: "Google",
+    icon: "🔵",
+    color: "#4285f4",
+    models: [
+      { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", badge: "New" },
+      { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", badge: "Fast" },
+      { id: "gemini-2.0-pro", name: "Gemini 2.0 Pro" },
+    ],
+  },
+  {
+    id: "minimax",
+    name: "MiniMax",
+    icon: "🟡",
+    color: "#eab308",
+    models: [
+      { id: "minimax-m1", name: "MiniMax M1", badge: "New" },
+      { id: "minimax-text-01", name: "MiniMax Text 01" },
+    ],
+  },
+  {
+    id: "fireworks",
+    name: "Fireworks AI",
+    icon: "🔥",
+    color: "#f97316",
+    models: [
+      { id: "fireworks-deepseek-v3", name: "DeepSeek V3", badge: "Fast" },
+      { id: "fireworks-llama-4-maverick", name: "Llama 4 Maverick" },
+      { id: "fireworks-qwen-3-235b", name: "Qwen 3 235B" },
+    ],
+  },
 ]
 
-// ─── Tiny SVG icons (no deps) ────────────────────────────────────────────────
+const FREE_CREDITS_PROVIDER: Provider = {
+  id: "managed",
+  name: "Free Credits",
+  icon: "✨",
+  color: "#dc2626",
+  models: [
+    { id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5", badge: "Included" },
+  ],
+}
 
-function ClawLogo({ className = "" }: { className?: string }) {
+const SETUP_STEPS: SetupStep[] = [
+  { label: "Checking system requirements", detail: "macOS, 8 GB RAM", durationMs: 500 },
+  { label: "Installing Bun runtime", detail: "Package manager & JS runtime", durationMs: 800 },
+  { label: "Installing OpenClaw agent", detail: "AI agent framework v2026.2", durationMs: 1100 },
+  { label: "Writing provider credentials", detail: "Storing API key securely", durationMs: 600 },
+  { label: "Configuring workspace & plugins", detail: "Gateway, auth & channel plugin", durationMs: 800 },
+  { label: "Connecting to clawed.chat", detail: "Registering this machine", durationMs: 900 },
+  { label: "Starting agent gateway", detail: "Verifying connectivity", durationMs: 600 },
+]
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function getMachineName(): string {
+  return "Isaiah's MacBook"
+}
+
+// ─── Inline SVGs ─────────────────────────────────────────────────────────────
+
+function ClawLogo({ size = 48 }: { size?: number }) {
   return (
-    <svg className={className} viewBox="0 0 32 32" fill="none">
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
       <rect width="32" height="32" rx="8" fill="#dc2626" />
       <path
         d="M10 22c-2-2-2-5.5 0-7.5L11.5 13M14 19c-2-2-2-5.5 0-7.5L15.5 10M18 16c-2-2-2-5.5 0-7.5L19.5 7M22 22l-6-3-6 3"
-        stroke="white"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
       />
     </svg>
   )
@@ -51,7 +140,7 @@ function CheckCircle() {
   )
 }
 
-function Spinner() {
+function SpinnerSVG() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="spin">
       <circle cx="10" cy="10" r="8" stroke="#e5e7eb" strokeWidth="2" />
@@ -63,84 +152,260 @@ function Spinner() {
 function PendingDot() {
   return (
     <div className="w-5 h-5 flex items-center justify-center">
-      <div className="w-[6px] h-[6px] rounded-full bg-gray-300" />
+      <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
     </div>
   )
 }
 
-function ExternalLinkIcon() {
+function ArrowRight() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="inline ml-1 -mt-px">
-      <path d="M5.5 2.5h-2a1 1 0 00-1 1v7a1 1 0 001 1h7a1 1 0 001-1v-2M8.5 2.5h3m0 0v3m0-3L7 7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="inline">
+      <path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function getMachineName(): string {
-  return "Isaiah's MacBook"
+function KeyIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="inline text-gray-400">
+      <path d="M10 1a4 4 0 00-3.87 5.03L2 10.17V14h3.83l.17-.17v-2h2v-2h2l1.03-1.03A4 4 0 0010 1z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="11" cy="5" r="1" fill="currentColor" />
+    </svg>
+  )
 }
 
-// ─── Auth Screen ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCREEN 1 — Welcome
+// ═══════════════════════════════════════════════════════════════════════════════
 
-function AuthScreen({ onSignIn }: { onSignIn: () => void }) {
+function WelcomeScreen({ onGetStarted }: { onGetStarted: () => void }) {
   return (
-    <div className="animate-in flex flex-col items-center text-center max-w-sm mx-auto">
-      {/* Logo */}
-      <div className="mb-6">
-        <ClawLogo className="w-16 h-16 claw-icon-glow rounded-2xl" />
+    <div className="animate-in flex flex-col items-center text-center">
+      <div className="mb-5">
+        <ClawLogo size={64} />
       </div>
 
-      <h1 className="text-[26px] font-bold tracking-tight text-gray-900">
+      <h1 className="text-2xl font-bold tracking-tight text-gray-900">
         Welcome to Clawed
       </h1>
 
-      <p className="mt-2 text-[15px] leading-relaxed text-gray-500">
+      <p className="mt-2.5 text-sm leading-relaxed text-gray-500 max-w-[300px]">
         Set up your personal AI agent on this Mac.
         <br />
         It only takes about 30 seconds.
       </p>
 
-      <button
-        onClick={onSignIn}
-        className="btn-claw mt-8 w-full max-w-[260px]"
-      >
-        Sign in to get started
+      <button onClick={onGetStarted} className="btn-claw mt-8 w-full max-w-[260px]">
+        Get started
       </button>
-
-      <p className="mt-5 text-xs text-gray-400 leading-relaxed">
-        Opens your browser to sign in with your clawed.chat account.
-      </p>
     </div>
   )
 }
 
-// ─── Progress Screen ─────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCREEN 2 — Pick your provider
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function ProviderScreen({
+  onSelect,
+  onFreeCredits,
+}: {
+  onSelect: (provider: Provider) => void
+  onFreeCredits: () => void
+}) {
+  return (
+    <div className="animate-in w-full flex flex-col gap-5">
+      <div className="text-center">
+        <h2 className="text-lg font-bold tracking-tight text-gray-900">
+          Choose your AI provider
+        </h2>
+        <p className="mt-1 text-xs text-gray-400">
+          Bring your own API key, or use free demo credits.
+        </p>
+      </div>
+
+      {/* Free credits option */}
+      <button
+        onClick={onFreeCredits}
+        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-red-200 bg-red-50/50 hover:bg-red-50 transition-colors text-left group"
+      >
+        <span className="text-xl">✨</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900">Use free credits</p>
+          <p className="text-[11px] text-gray-400">Claude Sonnet 4.5 · No API key needed</p>
+        </div>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-red-500 bg-red-100 px-2 py-0.5 rounded-full">
+          Recommended
+        </span>
+      </button>
+
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-[10px] uppercase tracking-widest text-gray-300 font-medium">or bring your key</span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
+
+      {/* Provider grid */}
+      <div className="grid grid-cols-2 gap-2">
+        {PROVIDERS.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => onSelect(p)}
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm transition-all text-left"
+          >
+            <span className="text-base">{p.icon}</span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-gray-800 leading-tight">{p.name}</p>
+              <p className="text-[10px] text-gray-400 leading-tight">{p.models.length} models</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCREEN 3 — Model + API Key
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function ApiKeyScreen({
+  provider,
+  onContinue,
+  onBack,
+}: {
+  provider: Provider
+  onContinue: (model: Model, apiKey: string) => void
+  onBack: () => void
+}) {
+  const [selectedModel, setSelectedModel] = useState<Model>(provider.models[0])
+  const [apiKey, setApiKey] = useState("")
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  const isValid = apiKey.trim().length > 8
+
+  const placeholders: Record<string, string> = {
+    anthropic: "sk-ant-...",
+    openai: "sk-...",
+    google: "AIza...",
+    minimax: "eyJ...",
+    fireworks: "fw_...",
+  }
+
+  return (
+    <div className="animate-in w-full flex flex-col gap-5">
+      {/* Back + title */}
+      <div>
+        <button
+          onClick={onBack}
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors mb-3 flex items-center gap-1"
+        >
+          ← Back
+        </button>
+        <h2 className="text-lg font-bold tracking-tight text-gray-900 flex items-center gap-2">
+          <span>{provider.icon}</span> {provider.name}
+        </h2>
+        <p className="mt-0.5 text-xs text-gray-400">
+          Pick a model and enter your API key.
+        </p>
+      </div>
+
+      {/* Model selection */}
+      <div>
+        <label className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2 block">
+          Model
+        </label>
+        <div className="flex flex-wrap gap-1.5">
+          {provider.models.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => setSelectedModel(m)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                selectedModel.id === m.id
+                  ? "bg-gray-900 text-white shadow-sm"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {m.name}
+              {m.badge && (
+                <span className={`ml-1.5 text-[9px] uppercase tracking-wider ${
+                  selectedModel.id === m.id ? "text-gray-400" : "text-gray-400"
+                }`}>
+                  {m.badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* API Key input */}
+      <div>
+        <label className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5">
+          <KeyIcon /> API Key
+        </label>
+        <input
+          ref={inputRef}
+          type="password"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          placeholder={placeholders[provider.id] || "Paste your API key"}
+          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-300 transition-all font-mono"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && isValid) onContinue(selectedModel, apiKey.trim())
+          }}
+        />
+        <p className="mt-1.5 text-[10px] text-gray-400">
+          Stored locally on this machine. Never sent to clawed.chat.
+        </p>
+      </div>
+
+      {/* Continue */}
+      <button
+        onClick={() => onContinue(selectedModel, apiKey.trim())}
+        disabled={!isValid}
+        className={`btn-claw w-full ${!isValid ? "opacity-40 cursor-not-allowed" : ""}`}
+      >
+        Continue <ArrowRight />
+      </button>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCREEN 4 — Setup Progress
+// ═══════════════════════════════════════════════════════════════════════════════
 
 function ProgressScreen({
   steps,
   currentStep,
   done,
+  modelName,
+  providerName,
 }: {
   steps: SetupStep[]
   currentStep: number
   done: boolean
+  modelName: string
+  providerName: string
 }) {
   const waitingForAuth = currentStep < 0
-  const pct = done ? 100 : waitingForAuth ? 0 : Math.round((currentStep / steps.length) * 100)
+  const pct = done ? 100 : waitingForAuth ? 0 : Math.round(((currentStep + 1) / steps.length) * 100)
 
   return (
-    <div className="animate-in w-full max-w-md mx-auto flex flex-col gap-6">
-      {/* Header */}
-      <div className="text-center flex flex-col items-center gap-2">
-        <ClawLogo className="w-8 h-8 rounded-lg" />
-        <h2 className="text-xl font-bold tracking-tight text-gray-900">
-          {done ? "All set!" : waitingForAuth ? "Waiting for sign-in…" : "Setting up your agent…"}
+    <div className="animate-in w-full flex flex-col gap-5">
+      <div className="text-center flex flex-col items-center gap-1.5">
+        <ClawLogo size={28} />
+        <h2 className="text-lg font-bold tracking-tight text-gray-900">
+          {done ? "All set!" : waitingForAuth ? "Signing you in…" : "Setting up your agent…"}
         </h2>
-        <p className="text-xs text-gray-400 tracking-wide">
+        <p className="text-[11px] text-gray-400">
           {done
-            ? "Your agent is ready."
+            ? `${modelName} on ${providerName} — ready to go`
             : waitingForAuth
               ? "Complete sign-in in your browser"
               : `Step ${Math.min(currentStep + 1, steps.length)} of ${steps.length}`}
@@ -160,31 +425,27 @@ function ProgressScreen({
         {steps.map((step, i) => {
           const status = waitingForAuth
             ? "pending"
-            : i < currentStep ? "done" : i === currentStep && !done ? "running" : done ? "done" : "pending"
+            : i < currentStep ? "done"
+              : i === currentStep && !done ? "running"
+                : done ? "done" : "pending"
 
           return (
             <div
               key={i}
               className={`flex items-center gap-3 px-4 py-3 transition-all duration-300 ${
-                status === "running"
-                  ? "bg-red-50/60"
-                  : status === "pending"
-                    ? "opacity-40"
+                status === "running" ? "bg-red-50/60"
+                  : status === "pending" ? "opacity-35"
                     : ""
               }`}
             >
               <div className="flex-shrink-0">
                 {status === "done" && <CheckCircle />}
-                {status === "running" && <Spinner />}
+                {status === "running" && <SpinnerSVG />}
                 {status === "pending" && <PendingDot />}
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-gray-800 leading-snug">
-                  {step.label}
-                </p>
-                <p className="text-[11px] text-gray-400 leading-snug">
-                  {step.detail}
-                </p>
+                <p className="text-[13px] font-semibold text-gray-800 leading-snug">{step.label}</p>
+                <p className="text-[11px] text-gray-400 leading-snug">{step.detail}</p>
               </div>
             </div>
           )
@@ -194,72 +455,72 @@ function ProgressScreen({
   )
 }
 
-// ─── Connected Screen ────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// SCREEN 5 — Connected
+// ═══════════════════════════════════════════════════════════════════════════════
 
-function ConnectedScreen({ onOpenDashboard }: { onOpenDashboard: () => void }) {
+function ConnectedScreen({
+  modelName,
+  providerName,
+  onOpenDashboard,
+}: {
+  modelName: string
+  providerName: string
+  onOpenDashboard: () => void
+}) {
   return (
-    <div className="animate-in flex flex-col items-center text-center max-w-sm mx-auto">
+    <div className="animate-in flex flex-col items-center text-center">
       {/* Status badge */}
       <div className="mb-5 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-green-50 border border-green-200">
         <span className="w-2 h-2 rounded-full bg-green-500 status-pulse" />
         <span className="text-xs font-semibold text-green-700 tracking-wide">Agent Online</span>
       </div>
 
-      <h1 className="text-[26px] font-bold tracking-tight text-gray-900">
+      <h1 className="text-2xl font-bold tracking-tight text-gray-900">
         Your agent is running
       </h1>
 
-      <p className="mt-2 text-sm leading-relaxed text-gray-500 max-w-xs">
-        This Mac is now a personal AI agent connected to your clawed.chat account.
-        Chat from the web, your phone, or smart glasses.
+      <p className="mt-2 text-sm leading-relaxed text-gray-500 max-w-[310px]">
+        This Mac is now a personal AI agent. Chat from the web, your phone, or smart glasses.
       </p>
 
       {/* Info card */}
-      <div className="mt-6 w-full rounded-2xl border border-gray-200/80 bg-white shadow-sm overflow-hidden divide-y divide-gray-100">
+      <div className="mt-5 w-full rounded-2xl border border-gray-200/80 bg-white shadow-sm overflow-hidden divide-y divide-gray-100 text-left">
         <InfoRow label="Machine" value={getMachineName()} />
-        <InfoRow label="Model" value="Claude Haiku 3.5" />
+        <InfoRow label="Provider" value={providerName} />
+        <InfoRow label="Model" value={modelName} />
         <InfoRow label="Gateway" value="localhost:18789" />
-        <InfoRow label="Status" value="Connected" valueClassName="text-green-600" />
+        <InfoRow label="Status" value="Connected" valueClass="text-green-600" />
       </div>
 
-      <button
-        onClick={onOpenDashboard}
-        className="btn-claw mt-7 w-full max-w-[260px]"
-      >
-        Open dashboard
-        <ExternalLinkIcon />
+      <button onClick={onOpenDashboard} className="btn-claw mt-6 w-full max-w-[260px]">
+        Open dashboard ↗
       </button>
 
-      <p className="mt-5 text-xs text-gray-400 leading-relaxed">
+      <p className="mt-4 text-[11px] text-gray-400 leading-relaxed">
         Keep this app running to keep your agent online.
-        <br />
-        Closing it will show your agent as offline.
       </p>
     </div>
   )
 }
 
-function InfoRow({
-  label,
-  value,
-  valueClassName = "",
-}: {
-  label: string
-  value: string
-  valueClassName?: string
-}) {
+function InfoRow({ label, value, valueClass = "" }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="flex items-center justify-between px-4 py-2.5">
-      <span className="text-xs text-gray-400 font-medium">{label}</span>
-      <span className={`text-[13px] font-semibold text-gray-800 ${valueClassName}`}>{value}</span>
+      <span className="text-[11px] text-gray-400 font-medium">{label}</span>
+      <span className={`text-[13px] font-semibold text-gray-800 ${valueClass}`}>{value}</span>
     </div>
   )
 }
 
-// ─── Main App ────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN APP
+// ═══════════════════════════════════════════════════════════════════════════════
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("auth")
+  const [screen, setScreen] = useState<Screen>("welcome")
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null)
   const [currentStep, setCurrentStep] = useState(0)
   const [setupDone, setSetupDone] = useState(false)
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -270,6 +531,8 @@ export default function App() {
     }
   }, [])
 
+  // ── Real API calls ────────────────────────────────────────────────────────
+
   const registerInstance = useCallback(async () => {
     try {
       await fetch(`${BACKEND_URL}/api/desktop/register`, {
@@ -279,7 +542,7 @@ export default function App() {
         body: JSON.stringify({ machine_name: getMachineName(), type: "local" }),
       })
     } catch {
-      // non-fatal
+      // non-fatal for demo
     }
   }, [])
 
@@ -293,13 +556,12 @@ export default function App() {
           credentials: "include",
           body: JSON.stringify({ machine_name: getMachineName() }),
         })
-      } catch {
-        // silent
-      }
+      } catch { /* silent */ }
     }, HEARTBEAT_INTERVAL_MS)
   }, [])
 
-  // Run the fake install progress, then register for real
+  // ── Setup sequence (ticks through steps with timers) ──────────────────────
+
   const runSetupSequence = useCallback(() => {
     setScreen("progress")
     setCurrentStep(0)
@@ -312,7 +574,7 @@ export default function App() {
         setSetupDone(true)
         registerInstance().finally(() => {
           startHeartbeat()
-          setTimeout(() => setScreen("connected"), 600)
+          setTimeout(() => setScreen("connected"), 500)
         })
         return
       }
@@ -326,34 +588,104 @@ export default function App() {
     setTimeout(runNextStep, 400)
   }, [registerInstance, startHeartbeat])
 
-  const handleSignIn = useCallback(() => {
-    // Open real Clerk sign-in in the user's browser
-    window.open(CLERK_SIGN_IN_URL, "_blank")
+  // ── Open URL in system browser (ElectroBun blocks window.open) ────────────
 
-    // Switch to a "waiting for sign-in" state, then after a short
-    // delay (simulating the OAuth callback) proceed with setup.
-    // In production this would listen for a real auth callback via
-    // a localhost server or deep link.
-    setScreen("progress")
-    setCurrentStep(-1) // -1 = "Signing in..." before steps start
+  const openInBrowser = useCallback((url: string) => {
+    // Try multiple approaches — ElectroBun webview blocks window.open
+    const a = document.createElement("a")
+    a.href = url
+    a.target = "_blank"
+    a.rel = "noopener noreferrer"
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
 
-    // Wait for user to complete browser auth, then start setup
-    setTimeout(() => {
-      runSetupSequence()
-    }, 3000)
-  }, [runSetupSequence])
-
-  const handleOpenDashboard = useCallback(() => {
-    window.open(`${BACKEND_URL}/app/agents`, "_blank")
+    // Fallback: also try window.open and location
+    try { window.open(url, "_blank") } catch { /* blocked */ }
   }, [])
 
+  // ── Screen handlers ───────────────────────────────────────────────────────
+
+  const handleGetStarted = useCallback(() => {
+    // Open Clerk sign-in in the system browser
+    openInBrowser(CLERK_SIGN_IN_URL)
+
+    // Show "signing in" state, then move to provider selection
+    setScreen("progress")
+    setCurrentStep(-1) // waiting for auth
+
+    setTimeout(() => {
+      setScreen("provider")
+    }, 2500)
+  }, [openInBrowser])
+
+  const handleFreeCredits = useCallback(() => {
+    setSelectedProvider(FREE_CREDITS_PROVIDER)
+    setSelectedModel(FREE_CREDITS_PROVIDER.models[0])
+    runSetupSequence()
+  }, [runSetupSequence])
+
+  const handleSelectProvider = useCallback((provider: Provider) => {
+    setSelectedProvider(provider)
+    setScreen("apikey")
+  }, [])
+
+  const handleApiKeyContinue = useCallback((model: Model, _apiKey: string) => {
+    setSelectedModel(model)
+    // In production we'd store the key locally. For demo, just proceed.
+    runSetupSequence()
+  }, [runSetupSequence])
+
+  const handleBackToProviders = useCallback(() => {
+    setScreen("provider")
+  }, [])
+
+  const handleOpenDashboard = useCallback(() => {
+    openInBrowser(`${BACKEND_URL}/app/agents`)
+  }, [openInBrowser])
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
-    <div className="w-full h-full flex items-center justify-center p-10 bg-gradient-to-b from-gray-50 to-white">
-      {screen === "auth" && <AuthScreen onSignIn={handleSignIn} />}
-      {screen === "progress" && (
-        <ProgressScreen steps={SETUP_STEPS} currentStep={currentStep} done={setupDone} />
-      )}
-      {screen === "connected" && <ConnectedScreen onOpenDashboard={handleOpenDashboard} />}
+    <div className="w-full h-full flex items-center justify-center p-8 bg-gradient-to-b from-gray-50 to-white overflow-y-auto">
+      <div className="w-full max-w-[420px]">
+        {screen === "welcome" && (
+          <WelcomeScreen onGetStarted={handleGetStarted} />
+        )}
+
+        {screen === "provider" && (
+          <ProviderScreen
+            onSelect={handleSelectProvider}
+            onFreeCredits={handleFreeCredits}
+          />
+        )}
+
+        {screen === "apikey" && selectedProvider && (
+          <ApiKeyScreen
+            provider={selectedProvider}
+            onContinue={handleApiKeyContinue}
+            onBack={handleBackToProviders}
+          />
+        )}
+
+        {screen === "progress" && (
+          <ProgressScreen
+            steps={SETUP_STEPS}
+            currentStep={currentStep}
+            done={setupDone}
+            modelName={selectedModel?.name ?? "Claude Sonnet 4.5"}
+            providerName={selectedProvider?.name ?? "Free Credits"}
+          />
+        )}
+
+        {screen === "connected" && (
+          <ConnectedScreen
+            modelName={selectedModel?.name ?? "Claude Sonnet 4.5"}
+            providerName={selectedProvider?.name ?? "Free Credits"}
+            onOpenDashboard={handleOpenDashboard}
+          />
+        )}
+      </div>
     </div>
   )
 }
