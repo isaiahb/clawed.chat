@@ -14,6 +14,8 @@ import {useQuery} from "convex/react"
 import {useUser} from "@clerk/clerk-react"
 import {api} from "../../../../../convex/_generated/api"
 import {useDocumentTitle} from "../../hooks/useDocumentTitle"
+import {useOpenClaw} from "../../hooks/useOpenClaw"
+import type {ChatDelta} from "../../hooks/useOpenClaw"
 import {Button} from "../../components/ui/button"
 import {
   Tooltip,
@@ -73,11 +75,16 @@ export default function ChatPage() {
   const [input, setInput] = useState("")
   const [sending, setSending] = useState(false)
   const [waitingForAgent, setWaitingForAgent] = useState(false)
+  const [streamingContent, setStreamingContent] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [showBrowser, setShowBrowser] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const lastMessageCountRef = useRef(0)
+  const streamRef = useRef("")
+
+  // OpenClaw WebSocket connection via proxy
+  const {sendMessage: openclawSend, status: openclawStatus, onDelta} = useOpenClaw()
 
   // Real-time message subscription via Convex
   const messages = useQuery(
@@ -95,10 +102,10 @@ export default function ChatPage() {
   const isRunning = instance?.status === "running"
   const hasBrowserUrl = !!instance?.browser_use_live_url
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages or streaming content
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({behavior: "smooth"})
-  }, [messages?.length, waitingForAgent])
+  }, [messages?.length, waitingForAgent, streamingContent])
 
   // Clear "waiting for agent" when a new agent message arrives
   useEffect(() => {
@@ -106,9 +113,71 @@ export default function ChatPage() {
     const agentMessages = messages.filter((m) => m.role === "agent")
     if (agentMessages.length > lastMessageCountRef.current) {
       setWaitingForAgent(false)
+      setStreamingContent("")
+      streamRef.current = ""
     }
     lastMessageCountRef.current = agentMessages.length
   }, [messages])
+
+  // Subscribe to OpenClaw streaming deltas
+  useEffect(() => {
+    const unsubscribe = onDelta((delta: ChatDelta) => {
+      if (delta.state === "delta") {
+        // Gateway sends full accumulated text in each delta
+        if (delta.text) {
+          streamRef.current = delta.text
+          setStreamingContent(delta.text)
+        }
+        return
+      }
+
+      if (delta.state === "final") {
+        const finalContent = delta.text || streamRef.current
+        streamRef.current = ""
+        setStreamingContent("")
+        setWaitingForAgent(false)
+        setSending(false)
+
+        // Write the final response to Convex so it persists
+        if (finalContent && instanceId && user?.id) {
+          fetch(`/api/openclaw/outbound`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${process.env.OPENCLAW_GATEWAY_TOKEN || "REDACTED-ROTATE-ME"}`,
+            },
+            body: JSON.stringify({
+              text: finalContent,
+              peerId: user.id,
+              accountId: "default",
+              instanceId,
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {})
+        }
+        return
+      }
+
+      if (delta.state === "error") {
+        streamRef.current = ""
+        setStreamingContent("")
+        setWaitingForAgent(false)
+        setSending(false)
+        setError(delta.text || "Agent encountered an error")
+        return
+      }
+
+      if (delta.state === "aborted") {
+        streamRef.current = ""
+        setStreamingContent("")
+        setWaitingForAgent(false)
+        setSending(false)
+        return
+      }
+    })
+
+    return unsubscribe
+  }, [onDelta, instanceId, user?.id])
 
   // Focus input on mount
   useEffect(() => {
@@ -130,28 +199,38 @@ export default function ChatPage() {
     setInput("")
     setSending(true)
     setWaitingForAgent(true)
+    setStreamingContent("")
+    streamRef.current = ""
     setError(null)
 
+    // Write user message to Convex immediately (shows in chat instantly)
     try {
-      const res = await fetch(`/api/chat/${instanceId}`, {
+      await fetch(`/api/chat/${instanceId}`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({message: text, source: "web"}),
       })
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error || `Failed to send (${res.status})`)
-      }
-    } catch (err: any) {
-      setError(err.message)
-      setInput(text)
-      setWaitingForAgent(false)
-    } finally {
-      setSending(false)
-      inputRef.current?.focus()
+    } catch {
+      // Non-fatal — message might still go through via WebSocket
     }
-  }, [input, sending, instanceId])
+
+    // Send via WebSocket proxy for real-time streaming response
+    if (openclawStatus === "connected") {
+      try {
+        openclawSend(text)
+      } catch (err: any) {
+        setError(err.message)
+        setInput(text)
+        setWaitingForAgent(false)
+        setSending(false)
+      }
+    } else {
+      // Fallback: the HTTP POST to /api/chat already dispatches to gateway
+      // We just won't get streaming — response comes via Convex subscription
+    }
+
+    inputRef.current?.focus()
+  }, [input, sending, instanceId, openclawSend, openclawStatus])
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -268,6 +347,14 @@ export default function ChatPage() {
             </div>
           )}
 
+          {/* WebSocket connection status */}
+          {openclawStatus === "disconnected" && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs mb-2">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              Agent connection lost. Reconnecting…
+            </div>
+          )}
+
           {isLoadingMessages && (
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-3">
@@ -322,8 +409,22 @@ export default function ChatPage() {
             </div>
           ))}
 
-          {/* Typing indicator */}
-          {waitingForAgent && (
+          {/* Streaming response — shows as the agent types */}
+          {streamingContent && (
+            <div className="flex justify-start">
+              <div className="max-w-[80%] bg-muted/60 text-foreground rounded-2xl rounded-bl-md border border-border/30 px-4 py-2.5">
+                <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                  {streamingContent}
+                </p>
+                <span className="text-[10px] mt-1 block text-muted-foreground">
+                  typing…
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Typing indicator (shown before streaming starts) */}
+          {waitingForAgent && !streamingContent && (
             <div className="flex justify-start">
               <div className="bg-muted/60 border border-border/30 rounded-2xl rounded-bl-md px-4 py-3">
                 <div className="flex items-center gap-1.5">
