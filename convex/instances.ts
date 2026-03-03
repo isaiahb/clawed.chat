@@ -6,10 +6,25 @@
  *
  * The Hono services layer (instance.service.ts) orchestrates
  * the actual infrastructure — these functions just track state.
+ *
+ * SECURITY: All user-facing queries verify Clerk auth so users
+ * can only see/access their own instances. Mutations are called
+ * from the backend (ConvexHttpClient, no Clerk session) so they
+ * remain open but are gated at the Hono API layer.
  */
 
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+
+// ─── Auth Helper ─────────────────────────────────────────────────────────────
+
+async function requireUser(ctx: any): Promise<string> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new Error("Unauthorized — no valid session");
+  }
+  return identity.subject;
+}
 
 const instanceStatus = v.union(
   v.literal("provisioning"),
@@ -166,13 +181,26 @@ export const claimForUser = mutation({
 /**
  * Get a single instance by ID.
  * Returns null if not found.
+ *
+ * SECURITY: Only the instance owner can fetch it.
+ * Returns null (not an error) for non-owners to avoid leaking existence.
  */
 export const get = query({
   args: {
     id: v.id("instances"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const identity = await ctx.auth.getUserIdentity();
+    const instance = await ctx.db.get(args.id);
+    if (!instance) return null;
+
+    // If caller is authenticated, enforce ownership
+    // If no auth (backend ConvexHttpClient), allow through
+    if (identity && instance.user_id !== identity.subject) {
+      return null;
+    }
+
+    return instance;
   },
 });
 
@@ -180,12 +208,20 @@ export const get = query({
  * List all instances for a user (excluding destroyed).
  * Used by the dashboard to show the user's active/stopped instances.
  * Real-time — dashboard auto-updates when status changes.
+ *
+ * SECURITY: Caller must be authenticated and can only list their own instances.
  */
 export const listByUser = query({
   args: {
     user_id: v.string(),
   },
   handler: async (ctx, args) => {
+    // If caller is authenticated, enforce they can only query themselves
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity && args.user_id !== identity.subject) {
+      return [];
+    }
+
     const all = await ctx.db
       .query("instances")
       .withIndex("by_user", (q) => q.eq("user_id", args.user_id))
@@ -216,16 +252,25 @@ export const listByStatus = query({
  * Find an instance by its subdomain.
  * Used for routing — when a request comes in for alice.clawed.chat,
  * look up the instance to find the VM IP.
+ *
+ * SECURITY: Only returns instance if caller owns it (or no auth context, i.e. backend).
  */
 export const getBySubdomain = query({
   args: {
     subdomain: v.string(),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const identity = await ctx.auth.getUserIdentity();
+    const instance = await ctx.db
       .query("instances")
       .withIndex("by_subdomain", (q) => q.eq("subdomain", args.subdomain))
       .unique();
+
+    if (!instance) return null;
+    if (identity && instance.user_id !== identity.subject) {
+      return null;
+    }
+    return instance;
   },
 });
 

@@ -3,6 +3,11 @@
  *
  * Called by the Hono backend after Clerk authentication.
  * Handles user creation (first sign-in) and lookup.
+ *
+ * SECURITY: User-facing queries verify Clerk auth so users
+ * can only see their own profile. Mutations called from the
+ * backend (ConvexHttpClient, no Clerk session) remain open
+ * but are gated at the Hono API layer (me.api.ts).
  */
 
 import { v } from "convex/values";
@@ -53,12 +58,19 @@ export const getOrCreate = mutation({
 /**
  * Get a user by their Clerk ID.
  * Returns null if not found.
+ *
+ * SECURITY: If caller is authenticated, they can only look up themselves.
  */
 export const getByClerkId = query({
   args: {
     clerk_id: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity && args.clerk_id !== identity.subject) {
+      return null;
+    }
+
     return await ctx.db
       .query("users")
       .withIndex("by_clerk_id", (q) => q.eq("clerk_id", args.clerk_id))
@@ -69,12 +81,22 @@ export const getByClerkId = query({
 /**
  * Get a user by their Convex document ID.
  * Returns null if not found.
+ *
+ * SECURITY: If caller is authenticated, they can only fetch their own record.
  */
 export const get = query({
   args: {
     id: v.id("users"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const identity = await ctx.auth.getUserIdentity();
+    const user = await ctx.db.get(args.id);
+    if (!user) return null;
+
+    if (identity && user.clerk_id !== identity.subject) {
+      return null;
+    }
+
+    return user;
   },
 });
