@@ -201,6 +201,82 @@ export const mockConnections: Connection[] = [
     error: "Token expired. Please reconnect.",
     capability: "Read your repositories, issues, and pull requests",
   },
+  {
+    id: "conn-7",
+    provider: "twitter",
+    name: "Twitter / X",
+    status: "connected",
+    connectedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
+    scopes: ["Read tweets", "Post tweets", "Read DMs", "Send DMs", "Search"],
+    permissions: [
+      {
+        action: "Read tweets",
+        type: "read",
+        description: "View your timeline, mentions, and bookmarks",
+      },
+      {
+        action: "Search tweets",
+        type: "read",
+        description: "Search public tweets and trends",
+      },
+      {
+        action: "Post tweets",
+        type: "write",
+        description: "Publish tweets and threads on your behalf",
+      },
+      {
+        action: "Read DMs",
+        type: "read",
+        description: "Access your direct message conversations",
+      },
+      {
+        action: "Send DMs",
+        type: "approval",
+        description:
+          "Sending direct messages always requires your approval",
+      },
+    ],
+    icon: "Twitter",
+    lastSync: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
+    capability: "Read timeline, post tweets, and manage DMs",
+  },
+  {
+    id: "conn-8",
+    provider: "discord",
+    name: "Discord",
+    status: "disconnected",
+    scopes: ["Read messages", "Send messages", "List servers", "Manage channels"],
+    permissions: [
+      {
+        action: "Read messages",
+        type: "read",
+        description: "View messages in servers and DMs you belong to",
+      },
+      {
+        action: "List servers",
+        type: "read",
+        description: "See your servers, channels, and members",
+      },
+      {
+        action: "Send messages",
+        type: "write",
+        description: "Post messages to channels on your behalf",
+      },
+      {
+        action: "Manage channels",
+        type: "write",
+        description: "Create threads and manage channel topics",
+      },
+      {
+        action: "Send to new servers",
+        type: "approval",
+        description:
+          "Posting to a server for the first time always requires your OK",
+      },
+    ],
+    icon: "MessageCircle",
+    capability: "Read and send messages across your servers",
+  },
 ];
 
 // ---------------------------------------------------------------------------

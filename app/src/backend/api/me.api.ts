@@ -19,6 +19,9 @@ import {api} from "../../../../convex/_generated/api"
 /** Seeded instance ID — pre-created for the demo before any user logs in */
 const SEED_INSTANCE_ID = process.env.SEED_INSTANCE_ID || ""
 
+/** Only this Clerk user ID can claim the pre-provisioned seed instance */
+const OWNER_CLERK_ID = process.env.OWNER_CLERK_ID || ""
+
 const app = new Hono()
 
 // ─── Convex Client ───────────────────────────────────────────────────────────
@@ -57,15 +60,16 @@ async function getCurrentUser(c: Context) {
     const db = getConvex()
     const user = await db.query(api.users.getByClerkId, {clerk_id: auth.userId})
 
-    // Auto-claim seeded instances on first login
-    // This assigns the pre-created demo instance to the first real user
-    if (SEED_INSTANCE_ID) {
+    // Auto-claim seeded instances on first login — OWNER ONLY
+    // The seed instance points at the pre-provisioned VM with the owner's
+    // API keys, Composio connections, etc. Only the owner should get it.
+    if (SEED_INSTANCE_ID && OWNER_CLERK_ID && auth.userId === OWNER_CLERK_ID) {
       try {
         await db.mutation(api.instances.claimForUser, {
           id: SEED_INSTANCE_ID as any,
           user_id: auth.userId,
         })
-        console.log(`[me] auto-claimed seeded instance ${SEED_INSTANCE_ID} for user ${auth.userId}`)
+        console.log(`[me] auto-claimed seeded instance ${SEED_INSTANCE_ID} for owner ${auth.userId}`)
       } catch (claimErr: any) {
         // Already claimed or doesn't exist — that's fine
         if (!claimErr.message?.includes("already claimed")) {

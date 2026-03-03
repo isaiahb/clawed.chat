@@ -54,6 +54,8 @@ import googleCalendarLogo from "../../assets/logos/google-calendar.svg";
 import notionLogo from "../../assets/logos/notion.svg";
 import linearLogo from "../../assets/logos/linear.svg";
 import githubLogo from "../../assets/logos/github.svg";
+import twitterLogo from "../../assets/logos/twitter.svg";
+import discordLogo from "../../assets/logos/discord.svg";
 
 const logoMap: Record<string, string> = {
   slack: slackLogo,
@@ -62,6 +64,8 @@ const logoMap: Record<string, string> = {
   notion: notionLogo,
   linear: linearLogo,
   github: githubLogo,
+  twitter: twitterLogo,
+  discord: discordLogo,
 };
 
 function getProviderLogo(provider: string): string | null {
@@ -206,6 +210,36 @@ const SERVICE_CATALOG: ServiceCatalogEntry[] = [
       { action: "Edit docs", type: "write", description: "Make changes to existing documents" },
     ],
   },
+  {
+    provider: "twitter",
+    service: "twitter",
+    name: "Twitter / X",
+    icon: "Twitter",
+    capability: "Read timeline, post tweets, and manage DMs",
+    scopes: ["Read tweets", "Post tweets", "Read DMs", "Send DMs", "Search"],
+    permissions: [
+      { action: "Read tweets", type: "read", description: "View your timeline, mentions, and bookmarks" },
+      { action: "Search tweets", type: "read", description: "Search public tweets and trends" },
+      { action: "Post tweets", type: "write", description: "Publish tweets and threads on your behalf" },
+      { action: "Read DMs", type: "read", description: "Access your direct message conversations" },
+      { action: "Send DMs", type: "approval", description: "Sending direct messages always requires your approval" },
+    ],
+  },
+  {
+    provider: "discord",
+    service: "discord",
+    name: "Discord",
+    icon: "MessageCircle",
+    capability: "Read and send messages across your servers",
+    scopes: ["Read messages", "Send messages", "List servers", "Manage channels"],
+    permissions: [
+      { action: "Read messages", type: "read", description: "View messages in servers and DMs you belong to" },
+      { action: "List servers", type: "read", description: "See your servers, channels, and members" },
+      { action: "Send messages", type: "write", description: "Post messages to channels on your behalf" },
+      { action: "Manage channels", type: "write", description: "Create threads and manage channel topics" },
+      { action: "Send to new servers", type: "approval", description: "Posting to a server for the first time always requires your OK" },
+    ],
+  },
 ];
 
 /** Maps backend service name → catalog provider name */
@@ -216,6 +250,11 @@ const SERVICE_TO_PROVIDER: Record<string, string> = {
   slack: "slack",
   notion: "notion",
   linear: "linear",
+  googlesheets: "google-sheets",
+  googledrive: "google-drive",
+  googledocs: "google-docs",
+  twitter: "twitter",
+  discord: "discord",
 };
 
 /** Backend API response shape */
