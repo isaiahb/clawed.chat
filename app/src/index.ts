@@ -1,6 +1,10 @@
 /**
  * clawed.chat — Fullstack Entry Point
  *
+ * SECURITY: The OpenClaw WebSocket proxy (/api/openclaw-ws) verifies
+ * the Clerk session cookie before upgrading. Only the OWNER_CLERK_ID
+ * account can connect to the shared gateway. Everyone else gets 403.
+ *
  * Dev:  bun dev        → runtime bundling + HMR
  * Prod: bun run start  → development: false, cached minified bundles
  *
@@ -21,6 +25,7 @@ import { ClawedChat } from "./backend/ClawedChat"
 import { api } from "./backend/api"
 import { createMentraAuthRoutes } from "@mentra/sdk"
 import { openclawWebSocket } from "./backend/api/openclaw-proxy"
+import { createClerkClient } from "@clerk/backend"
 import indexHtml from "./frontend/index.html"
 
 // Configuration from environment
@@ -28,6 +33,14 @@ const PORT = parseInt(process.env.PORT || "80", 10)
 const PACKAGE_NAME = process.env.PACKAGE_NAME
 const API_KEY = process.env.MENTRAOS_API_KEY
 const COOKIE_SECRET = process.env.COOKIE_SECRET || API_KEY
+const OWNER_CLERK_ID = process.env.OWNER_CLERK_ID || ""
+const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY || ""
+const CLERK_PUBLISHABLE_KEY = process.env.CLERK_PUBLISHABLE_KEY || process.env.BUN_PUBLIC_CLERK_PUBLISHABLE_KEY || ""
+
+// Clerk server-side client for verifying session tokens on WebSocket upgrade
+const clerk = CLERK_SECRET_KEY
+  ? createClerkClient({ secretKey: CLERK_SECRET_KEY, publishableKey: CLERK_PUBLISHABLE_KEY })
+  : null
 
 // Validate required environment variables
 if (!PACKAGE_NAME) {
@@ -88,9 +101,47 @@ Bun.serve({
     //
     // All backend traffic is forwarded to the Hono app.
 
-    "/api/*": (request: Request, server: any) => {
+    "/api/*": async (request: Request, server: any) => {
       // WebSocket upgrade for the OpenClaw proxy endpoint
       if (new URL(request.url).pathname === "/api/openclaw-ws") {
+        // ── SECURITY: Verify Clerk session + owner check before upgrade ──
+        if (!clerk) {
+          console.error("[openclaw-ws] Clerk not configured, rejecting WS upgrade")
+          return new Response("Server misconfigured", { status: 500 })
+        }
+
+        try {
+          const cookieHeader = request.headers.get("cookie") || ""
+          // Clerk stores the session JWT in __session cookie
+          const sessionMatch = cookieHeader.match(/__session=([^;]+)/)
+          const token = sessionMatch?.[1]
+
+          if (!token) {
+            console.warn("[openclaw-ws] No __session cookie, rejecting WS upgrade")
+            return new Response("Unauthorized", { status: 401 })
+          }
+
+          const { userId } = await clerk.authenticateRequest(request, {
+            jwtKey: undefined,
+            authorizedParties: undefined,
+          }).then(r => r.toAuth() || { userId: null })
+
+          if (!userId) {
+            console.warn("[openclaw-ws] Invalid Clerk session, rejecting WS upgrade")
+            return new Response("Unauthorized", { status: 401 })
+          }
+
+          if (OWNER_CLERK_ID && userId !== OWNER_CLERK_ID) {
+            console.warn(`[openclaw-ws] Non-owner rejected: ${userId}`)
+            return new Response("Forbidden", { status: 403 })
+          }
+
+          console.log(`[openclaw-ws] Owner verified, upgrading: ${userId}`)
+        } catch (err: any) {
+          console.error("[openclaw-ws] Auth check failed:", err.message)
+          return new Response("Unauthorized", { status: 401 })
+        }
+
         const upgraded = server.upgrade(request)
         if (upgraded) return undefined
         return new Response("WebSocket upgrade failed", { status: 400 })
