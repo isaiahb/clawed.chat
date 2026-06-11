@@ -12,6 +12,7 @@
     "dev": "bun run --filter clawed-chat-app dev",
     "dev:web": "bun run --filter web dev",
     "dev:desktop": "bun run --filter desktop dev",
+    "dev:glasses": "cd glasses-miniapp && bun run dev",
     "check": "tsc --noEmit",
     "clean": "rm -rf node_modules app/node_modules web/node_modules desktop/node_modules deploy/node_modules"
   },
