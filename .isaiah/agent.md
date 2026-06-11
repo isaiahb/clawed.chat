@@ -241,3 +241,22 @@ For an agent picking up work, do it in this order:
 ---
 
 *Last updated: 2026-03-01 20:00 UTC (session 5 — WS proxy ✅, streaming chat ✅, glasses pipeline ✅, Composio 6 integrations ✅, Browser Use configured ✅, dual-write fix ✅, desktop app redesigned ✅)*
+---
+
+## Session 6 (June 11, 2026) — Buildership rebrand + local miniapp
+
+**Repositioned for [Buildership](https://ship.builders) (June 12–14, Composio × Nebius × Tavily × OpenClaw).** New story: "the glasses channel for OpenClaw" — agent sees/hears/speaks through Mentra Live, writes on G2 HUD. One-click deploy demoted to on-ramp.
+
+Done this session:
+- [x] **Marketing site on Cloudflare Pages** (GCP billing outage workaround) — static export of app frontend, live at clawed-chat-web.pages.dev, full copy rebrand in `Home.tsx`. Deploy recipe in `web/README.md`. NOTE: run wrangler from OUTSIDE app/ — app/.env's DNS-scoped CLOUDFLARE_API_TOKEN shadows OAuth login.
+- [x] **glasses-miniapp/** — MentraOS LOCAL miniapp (new two-layer SDK, vendored from MentraOS dev branch into `.repos/MentraOS`, not yet on npm). AgentController (wake word → gateway → speak/display, proactive whispers) + GatewayClient (direct phone→OpenClaw v3 token handshake, `client.id` MUST be "gateway-client"). 3 passing tests vs mock gateway (`bun test`). Dev: `bun run dev:glasses` → QR → Mentra app dev settings.
+- [x] **Sponsor stack**: `nebius.service.ts` (Token Factory, OpenAI-compatible) + llm-proxy pass-through routing; `tavily.service.ts`; `/api/vision` (camera → Nebius vision → Tavily → spoken answer); `/api/judge` (AI judges interview the live agent — README has the curl).
+- [x] Deleted `parth/` (582MB) + `mentra-mini-app-example/`; fixed root tsconfig `bun-types`→`bun` (this UNMASKED 76 pre-existing strict errors — separate task).
+- [x] `DEMO.md` — boat-day script (3 moments), fallback matrix, X post draft.
+
+Blocked on Isaiah:
+- [ ] Register + public post for Buildership (DUE JUNE 12) — draft in DEMO.md
+- [ ] Check Mentra app has Developer settings → Mini App Development (needs host ≥1.42.0 / beta?)
+- [ ] Claim sponsor credits; NEBIUS_API_KEY, TAVILY_API_KEY, VISION_API_TOKEN into app/.env
+- [ ] Backend home: recommend Nebius VM on credits (GCP still down)
+- [ ] Nothing committed yet — review working tree
