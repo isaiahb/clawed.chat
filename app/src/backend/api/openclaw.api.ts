@@ -62,9 +62,10 @@ async function handleOutbound(c: Context) {
   const token = authHeader.split(" ")[1] ?? ""
 
   // Verify the token matches our expected gateway token
-  // In production this would be per-instance, but for hackathon we use a shared token
-  const expectedToken = process.env.OPENCLAW_GATEWAY_TOKEN || "clawed-default"
-  if (!token || token !== expectedToken) {
+  // In production this would be per-instance, but for hackathon we use a shared token.
+  // No fallback default — if the env var isn't set, the endpoint is closed.
+  const expectedToken = process.env.OPENCLAW_GATEWAY_TOKEN
+  if (!expectedToken || !token || token !== expectedToken) {
     console.warn(`[openclaw] outbound: invalid token (got ${token.slice(0, 8)}...)`)
     return c.json({error: "Invalid instance token"}, 401)
   }

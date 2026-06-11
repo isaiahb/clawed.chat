@@ -144,21 +144,13 @@ export default function ChatPage() {
           setStreamingContent(finalContent)
         }
 
-        // Write the final response to Convex so it persists
+        // Persist the final response via the Clerk-authed chat API
+        // (session cookie auth — no tokens in the client bundle)
         if (finalContent && instanceId && user?.id) {
-          fetch(`/api/openclaw/outbound`, {
+          fetch(`/api/chat/${instanceId}/agent-final`, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer REDACTED-ROTATE-ME`,
-            },
-            body: JSON.stringify({
-              text: finalContent,
-              peerId: user.id,
-              accountId: "default",
-              instanceId,
-              timestamp: Date.now(),
-            }),
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({content: finalContent, source: "web"}),
           }).catch(() => {})
         }
         return
