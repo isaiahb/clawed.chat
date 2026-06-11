@@ -32,20 +32,27 @@ Sponsor scorecard in one demo: **OpenClaw** (is the agent) · **Nebius** (sees +
 
 The whole demo stack runs for roughly **the price of lunch**, self-funded:
 
+Verified prices (June 11, 2026 — docs.nebius.com + OpenRouter's Nebius catalog):
+
 | Thing | Cost |
 | --- | --- |
-| Nebius inference (Kimi/Qwen, pay-as-you-go) | cents — demo traffic is a few hundred K tokens |
-| Nebius smallest VM, ~5 days | ~$5–15 (keeps the all-sponsor story) |
+| Nebius vision: Qwen2.5-VL-72B ($0.25/$0.75 per M) | ~$0.001 per "what am I looking at?" — 1,000 queries ≈ $1 |
+| Nebius text: gpt-oss-120b ($0.15/$0.60 per M) | heavy agent day ≈ $1.35 |
+| Nebius VM: 2 vCPU/8GiB ($0.012/vCPU·h + $0.0032/GiB·h) | ~$1.19/day → ~$6 for the week (+~$0.60 disk) |
 | Tavily | free tier (1,000 credits/mo) covers the demo many times over |
 | Composio | existing free/dev tier, already wired |
 | Cloudflare Pages (site) | $0 |
 
-**$0 alternative for compute:** run OpenClaw + the Bun backend on your own
-Mac (mini or laptop) with a `cloudflared` tunnel for the public `/api/vision`
-+ `/api/judge` URLs. This is maximally on-brand — "self-hosted agent on my
-own hardware" IS the OpenClaw ethos — and on the boat the laptop is in the
-room anyway. Recommended: laptop for the gateway + a $5 Nebius VM for the
-public endpoints, so the judge endpoint stays up after you leave the boat.
+⚠ Kimi K2 is NOT in Nebius's served catalog — default text model is
+`openai/gpt-oss-120b` (env-overridable via `NEBIUS_TEXT_MODEL`).
+
+**$0 alternative for compute:** `./scripts/demo-local.sh` — runs the backend
+on your own Mac and exposes `/api/vision` + `/api/judge` through a free
+Cloudflare quick tunnel (no account needed). Maximally on-brand —
+"self-hosted agent on my own hardware" IS the OpenClaw ethos — and the
+laptop is on the boat anyway. Recommended split: laptop for the gateway +
+a ~$6/week Nebius VM for the public endpoints, so the judge endpoint stays
+up after you leave the boat.
 
 ## Pre-demo checklist
 
