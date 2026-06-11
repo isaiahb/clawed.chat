@@ -17,6 +17,7 @@
 
 import {Hono} from "hono"
 import type {Context} from "hono"
+import {isNebiusConfigured, nebiusRawCompletion, NEBIUS_TEXT_MODEL, NEBIUS_VISION_MODEL} from "../services/nebius.service"
 
 const app = new Hono()
 
@@ -30,7 +31,20 @@ const ANTHROPIC_VERSION = "2023-06-01"
 const AVAILABLE_MODELS = [
   {id: "claude-sonnet-4-5", name: "Claude Sonnet 4.5"},
   {id: "claude-haiku-4", name: "Claude Haiku 4"},
+  // Nebius Token Factory open models (exposed when NEBIUS_API_KEY is set)
+  ...(isNebiusConfigured()
+    ? [
+        {id: NEBIUS_TEXT_MODEL, name: `${NEBIUS_TEXT_MODEL} (Nebius)`},
+        {id: NEBIUS_VISION_MODEL, name: `${NEBIUS_VISION_MODEL} (Nebius)`},
+      ]
+    : []),
 ]
+
+/** Claude models route to Anthropic (format conversion); everything else
+ * passes through to Nebius verbatim — both sides speak OpenAI format. */
+function isClaudeModel(model: string | undefined): boolean {
+  return !model || model.startsWith("claude")
+}
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
@@ -60,13 +74,28 @@ async function handleChatCompletion(c: Context) {
   // const instance = await convex.query("instances:getByToken", {token: instanceToken})
   // if (!instance) return c.json({error: {message: "Invalid instance token"}}, 401)
 
-  if (!ANTHROPIC_API_KEY) {
-    return c.json({error: {message: "LLM proxy not configured — missing ANTHROPIC_API_KEY", type: "server_error"}}, 500)
-  }
-
   try {
     const body = await c.req.json()
     const {model, messages, stream, max_tokens, temperature, top_p, stop} = body
+
+    // ─── Nebius pass-through (OpenAI ↔ OpenAI, no conversion) ───────────
+    if (!isClaudeModel(model) && isNebiusConfigured()) {
+      const nebiusRes = await nebiusRawCompletion(body)
+      if (!nebiusRes.ok) {
+        const errText = await nebiusRes.text().catch(() => "")
+        console.error(`[llm-proxy] Nebius error (${nebiusRes.status}):`, errText.slice(0, 300))
+        return c.json({error: {message: `Upstream error: ${nebiusRes.status}`, type: "upstream_error"}}, 502)
+      }
+      return new Response(nebiusRes.body, {
+        headers: stream
+          ? {"Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive"}
+          : {"Content-Type": "application/json"},
+      })
+    }
+
+    if (!ANTHROPIC_API_KEY) {
+      return c.json({error: {message: "LLM proxy not configured — missing ANTHROPIC_API_KEY", type: "server_error"}}, 500)
+    }
 
     // Map OpenAI model IDs to Anthropic model IDs
     const anthropicModel = mapToAnthropicModel(model)

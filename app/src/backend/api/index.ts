@@ -35,6 +35,9 @@
  * POST /glasses/voice
  * GET  /glasses/stream/transcription
  *
+ * POST /vision          (miniapp camera → Nebius vision + Tavily)
+ * POST /judge           (AI judges interview the live agent)
+ *
  * POST /desktop/register
  * POST /desktop/heartbeat
  */
@@ -51,6 +54,8 @@ import openclaw from "./openclaw.api"
 import llmProxy from "./llm-proxy.api"
 import glasses from "./glasses.api"
 import desktop from "./desktop.api"
+import vision from "./vision.api"
+import judge from "./judge.api"
 
 const api = new Hono()
 
@@ -79,5 +84,9 @@ api.route("/openclaw", openclaw)
 api.route("/llm-proxy", llmProxy)
 api.route("/glasses", glasses)
 api.route("/desktop", desktop)
+// No Clerk middleware: vision is called by the miniapp's phone-side JS
+// context (bearer token), judge is a public rate-limited endpoint.
+api.route("/vision", vision)
+api.route("/judge", judge)
 
 export {api}
