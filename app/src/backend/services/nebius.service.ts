@@ -15,7 +15,9 @@
 const NEBIUS_API_KEY = process.env.NEBIUS_API_KEY
 const NEBIUS_API_BASE = process.env.NEBIUS_API_BASE || "https://api.studio.nebius.com/v1"
 
-export const NEBIUS_TEXT_MODEL = process.env.NEBIUS_TEXT_MODEL || "moonshotai/Kimi-K2-Instruct"
+// gpt-oss-120b is confirmed in Nebius's served catalog ($0.15/$0.60 per M);
+// Kimi K2 is not served there as of June 2026.
+export const NEBIUS_TEXT_MODEL = process.env.NEBIUS_TEXT_MODEL || "openai/gpt-oss-120b"
 export const NEBIUS_VISION_MODEL = process.env.NEBIUS_VISION_MODEL || "Qwen/Qwen2.5-VL-72B-Instruct"
 
 export function isNebiusConfigured(): boolean {
