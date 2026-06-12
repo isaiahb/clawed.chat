@@ -22,7 +22,7 @@ curl -fsSL https://bun.sh/install | bash && source ~/.bashrc
 
 # App
 sudo mkdir -p /opt/clawed-chat && sudo chown $USER /opt/clawed-chat
-git clone https://github.com/BallahTech/clawed.chat.git /opt/clawed-chat/app
+git clone https://github.com/isaiahb/clawed.chat.git /opt/clawed-chat/app
 cd /opt/clawed-chat/app && bun install
 cp .env.example app/.env   # fill in: Convex, Clerk, NEBIUS_API_KEY, TAVILY_API_KEY,
                            # VISION_API_TOKEN, OPENCLAW_GATEWAY_URL/TOKEN

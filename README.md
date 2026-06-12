@@ -156,7 +156,7 @@ Every folder has a `README.md` with detailed context, conventions, and planned s
 
 ```bash
 # Clone and enter
-git clone https://github.com/BallahTech/clawed.chat.git
+git clone https://github.com/isaiahb/clawed.chat.git
 cd clawed.chat
 
 # Copy environment template and fill in your keys

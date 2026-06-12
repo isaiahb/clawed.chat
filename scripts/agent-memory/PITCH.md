@@ -24,7 +24,7 @@ under 25 seconds spoken:
 - **Body:** 150 words max, first person AS the agent: what you are (the
   glasses channel for OpenClaw), the three things you did live on the boat
   today (be specific and truthful), repo link
-  (github.com/BallahTech/clawed.chat), demo video link (Isaiah will give you
+  (github.com/isaiahb/clawed.chat), demo video link (Isaiah will give you
   this on the morning of the 14th), and the judge endpoint curl so they can
   keep talking to you after the cruise.
 - If the email tool fails on stage: say "the email is queued — boat Wi-Fi has

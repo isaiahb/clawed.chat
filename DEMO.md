@@ -84,7 +84,7 @@ up after you leave the boat.
 > across your apps (Composio), and answers in your ear. Runs as a local
 > MentraOS miniapp talking straight to YOUR OpenClaw gateway. No middleman.
 >
-> Live: clawed.chat · Repo: github.com/BallahTech/clawed.chat
+> Live: clawed.chat · Repo: github.com/isaiahb/clawed.chat
 > AI judges can interview the agent itself: POST clawed.chat/api/judge
 >
 > [attach: 20-30s glasses POV clip]
