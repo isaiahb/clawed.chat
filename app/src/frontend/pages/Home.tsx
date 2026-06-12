@@ -221,9 +221,9 @@ function Hero() {
                 asChild
                 className="gap-2 px-7 h-12 text-muted-foreground hover:text-foreground font-semibold text-[15px] transition-all"
               >
-                <Link to="/app">
+                <Link to="/demo">
                   <Glasses className="h-4 w-4 text-claw-red" />
-                  Watch the demo
+                  Try the glasses
                 </Link>
               </Button>
             </div>

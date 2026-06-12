@@ -13,6 +13,7 @@ import AppLayout from "./layouts/AppLayout"
 
 // ─── Lazy-loaded Site Pages ───
 const Home = lazy(() => import("./pages/Home"))
+const Demo = lazy(() => import("./pages/Demo"))
 const Pricing = lazy(() => import("./pages/Pricing"))
 const Docs = lazy(() => import("./pages/Docs"))
 const SignIn = lazy(() => import("./pages/SignIn"))
@@ -115,6 +116,9 @@ export default function Router() {
                   <Route path="pricing" element={<Pricing />} />
                   <Route path="docs" element={<Docs />} />
                 </Route>
+
+                {/* ─── Glasses POV experience (full-bleed, no chrome) ─── */}
+                <Route path="demo" element={<Demo />} />
 
                 {/* ─── Auth (no layout chrome) ─── */}
                 <Route

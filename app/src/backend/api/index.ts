@@ -43,6 +43,7 @@
  */
 
 import {Hono} from "hono"
+import {cors} from "hono/cors"
 import {clerkMiddleware} from "@hono/clerk-auth"
 import webhooks from "./webhooks.api"
 import me from "./me.api"
@@ -85,7 +86,13 @@ api.route("/llm-proxy", llmProxy)
 api.route("/glasses", glasses)
 api.route("/desktop", desktop)
 // No Clerk middleware: vision is called by the miniapp's phone-side JS
-// context (bearer token), judge is a public rate-limited endpoint.
+// context and the /demo page, judge is a public rate-limited endpoint.
+// CORS open — both are cross-origin from the static marketing site
+// (Pages) and guarded by rate limits / optional bearer tokens instead.
+api.use("/vision/*", cors())
+api.use("/vision", cors())
+api.use("/judge/*", cors())
+api.use("/judge", cors())
 api.route("/vision", vision)
 api.route("/judge", judge)
 
