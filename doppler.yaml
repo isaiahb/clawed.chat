@@ -1,0 +1,3 @@
+setup:
+  project: clawed-chat
+  config: dev

@@ -176,15 +176,16 @@ function Hero() {
             <h1 className="text-[clamp(2.2rem,5vw,3.75rem)] font-black leading-[1.08] tracking-tight animate-slide-up">
               <span className="text-foreground">Your OpenClaw has been</span>
               <br />
-              <WordRotator
-                words={["texting you.", "emailing you.", "messaging you."]}
-                interval={3000}
-                transition="blur"
-                className="min-w-[7ch]"
-                wordClassName="text-gradient-red"
-              />{" "}
+              <span className="text-foreground">texting you for months.</span>
               <br />
-              <span className="text-gradient-red">Now it can see.</span>
+              <span className="text-foreground">Now it can </span>
+              <WordRotator
+                words={["see.", "hear.", "speak."]}
+                interval={1800}
+                transition="blur"
+                className="min-w-[4.5ch]"
+                wordClassName="text-gradient-red"
+              />
             </h1>
 
             {/* Sub */}

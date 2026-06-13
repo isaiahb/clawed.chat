@@ -159,8 +159,12 @@ Every folder has a `README.md` with detailed context, conventions, and planned s
 git clone https://github.com/isaiahb/clawed.chat.git
 cd clawed.chat
 
-# Copy environment template and fill in your keys
-cp .env.example app/.env
+# Secrets — two options:
+#  A) Doppler (recommended): doppler setup  (links to clawed-chat/dev)
+#     then run everything with secrets injected:  bun run dev:secure
+#  B) Plain .env:  cp .env.example app/.env  and fill it in
+cp .env.example app/.env            # option B
+# bun run secrets:pull              # option A: regenerate app/.env from Doppler
 
 # Install all workspace dependencies
 bun install
@@ -168,7 +172,7 @@ bun install
 # Start Convex (separate terminal)
 bunx convex dev
 
-# Start the app
+# Start the app  (or `bun run dev:secure` to inject secrets via Doppler)
 bun run dev
 
 # Glasses miniapp — builds, serves over LAN, prints a QR code.
