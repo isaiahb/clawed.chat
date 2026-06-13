@@ -28,6 +28,26 @@ Pipeline on display: glasses camera → local miniapp → `/api/vision` → **Ne
 
 Sponsor scorecard in one demo: **OpenClaw** (is the agent) · **Nebius** (sees + thinks) · **Tavily** (knows now) · **Composio** (acts).
 
+## The vision (for the investor judges — 20%)
+
+One line: **agents got a brain and hands; they're missing the infrastructure to
+act as real entities — senses, identity, communication, reputation, money. We
+build that layer.**
+
+- "OpenClaw went 0→100k stars in three months — people run persistent,
+  self-hosted agents already. But every one is trapped in a text box: blind,
+  mute, with no identity of its own and no way to talk to other agents."
+- "**Clawed is chapter one: senses.** You can put it on and talk to it today."
+- "Next: agents that **own services** (email any agent can provision via API,
+  with an LLM trust-gate so they can't spam) and **talk to each other** (an MCP
+  bus across Claude Code, Codex, whole agent fleets)."
+- "We're from **Mentra** — we build the smart-glasses OS. We made the thing we
+  most wanted: our agent, on our glasses. And it's the wedge into the whole
+  agent-infrastructure layer."
+
+Full write-up: [VISION.md](VISION.md). Keep the pitch to the senses demo; the
+rest is the roadmap slide, not vaporware — the senses layer is live.
+
 ## Budget reality (no credits until you win)
 
 The whole demo stack runs for roughly **the price of lunch**, self-funded:
