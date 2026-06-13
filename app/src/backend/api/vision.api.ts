@@ -16,7 +16,7 @@
 
 import {Hono} from "hono"
 import type {Context} from "hono"
-import {isNebiusConfigured, nebiusChat, nebiusVision} from "../services/nebius.service"
+import {isNebiusConfigured, nebiusChat, nebiusVision, NEBIUS_VISION_MODEL} from "../services/nebius.service"
 import {isTavilyConfigured, tavilySearch} from "../services/tavily.service"
 
 const VISION_API_TOKEN = process.env.VISION_API_TOKEN
@@ -119,7 +119,9 @@ async function handleVision(c: Context) {
               content: `I looked at: ${parsed.identified ?? "the scene"}\nMy first impression: ${parsed.answer}\nThe user asked: ${question}\n\nLive web results for "${parsed.searchQuery}":\n${context}`,
             },
           ],
-          {maxTokens: 300},
+          // Use the instruct vision model (not the reasoning text model) so the
+          // synthesized answer is clean prose, not leaked chain-of-thought.
+          {model: NEBIUS_VISION_MODEL, maxTokens: 300},
         )
 
         return c.json({answer: answer.trim(), identified: parsed.identified, sources})
