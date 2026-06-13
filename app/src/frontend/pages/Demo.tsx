@@ -107,6 +107,18 @@ export default function Demo() {
     setHud((prev) => [...prev.slice(-3), line]);
   }, []);
 
+  // Attach the camera stream once the live view (and its <video>) is mounted.
+  useEffect(() => {
+    if (phase !== "live") return;
+    const v = videoRef.current;
+    const s = streamRef.current;
+    if (!v || !s) return;
+    v.srcObject = s;
+    v.play().catch(() => {
+      /* autoplay can reject; the muted+playsInline video usually still shows */
+    });
+  }, [phase]);
+
   // ─── Start the experience ──────────────────────────────────────────────────
 
   const putThemOn = async () => {
@@ -117,10 +129,9 @@ export default function Demo() {
         audio: false,
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
+      // The <video> element only mounts in the "live" view, so attach the
+      // stream in an effect AFTER phase flips (see useEffect below) —
+      // attaching here would hit a null ref and leave a black screen.
       setPhase("live");
       pushHud({ role: "system", text: "Connected. Hold the button and ask about what you see." });
       speak("Hey. I'm Clawed. Show me something.");
