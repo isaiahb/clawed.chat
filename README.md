@@ -3,6 +3,7 @@
 > Your OpenClaw has been texting you for months. Now it can see.
 
 **Hackathon:** [Buildership](https://ship.builders) by Composio × Nebius × Tavily × OpenClaw (June 12–14, 2026)
+**Team:** Isaiah, Aryan & Parth — engineers at [Mentra](https://mentra.glass) (the open-source smart-glasses startup behind MentraOS)
 **Domain:** [clawed.chat](https://clawed.chat)
 **Born at:** YC x Browser Use Web Agents Hackathon (Feb 28–Mar 1, 2026)
 

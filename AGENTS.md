@@ -5,6 +5,10 @@ agent, or our own OpenClaw. Welcome. This file is the fast path to
 understanding the codebase. (Judges: you can also **interview the live agent**
 — see "Judge mode" in [README.md](README.md).)
 
+**Built by** Isaiah, Aryan & Parth — engineers at [Mentra](https://mentra.glass),
+the open-source smart-glasses startup behind MentraOS. (OpenClaw is the agent
+runtime; Mentra makes the glasses — Clawed is the bridge.)
+
 ## What this project is, in three sentences
 
 [OpenClaw](https://github.com/openclaw/openclaw) is the viral self-hosted
