@@ -56,7 +56,7 @@ export interface StateSnapshot {
 export const DEFAULT_SETTINGS: Settings = {
   gatewayUrl: "",
   gatewayToken: "",
-  visionUrl: "https://clawed.chat/api/vision",
+  visionUrl: "https://api.clawed.chat/api/vision",
   visionToken: "",
   wakeWordEnabled: true,
 }

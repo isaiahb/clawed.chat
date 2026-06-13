@@ -13,7 +13,7 @@
 Don't take our word for it — **interview the agent yourself**:
 
 ```bash
-curl -X POST https://clawed.chat/api/judge \
+curl -X POST https://api.clawed.chat/api/judge \
   -H "Content-Type: application/json" \
   -d '{"message": "Explain your own architecture. What happens when your user says Hey Clawed?"}'
 ```

@@ -31,7 +31,7 @@ function resolveApiBase(): string {
     const stored = localStorage.getItem("clawed-demo-api");
     if (stored) return stored.replace(/\/$/, "");
   } catch {}
-  return "https://clawed.chat/api";
+  return "https://api.clawed.chat/api";
 }
 
 // ─── Speech helpers (Chrome Web Speech API; degrade to typing) ──────────────
