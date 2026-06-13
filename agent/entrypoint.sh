@@ -44,7 +44,6 @@ cat > "$CFG_DIR/openclaw.json" <<JSON
     }
   },
   "tools": {
-    "comment": "Hard lockdown — conversation only. Sandbox is off (no Docker in container); tool-denial IS the security boundary for this public agent.",
     "deny": ["exec","process","write","edit","apply_patch","browser","web_search","web_fetch","cron","gateway","canvas","nodes","discord"]
   }
 }

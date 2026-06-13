@@ -216,7 +216,9 @@ function askOpenClaw(sessionKey: string, message: string): Promise<string> {
 
       if (msg.type === "event" && msg.event === "chat") {
         const payload = msg.payload || {}
-        if (payload.sessionKey && payload.sessionKey !== sessionKey) return
+        // This WebSocket is dedicated to one chat.send, so any chat event on
+        // it is our reply — don't filter by sessionKey (the gateway may echo a
+        // normalized key that wouldn't match and would drop the reply).
 
         const text = extractText(payload.message)
         if (payload.state === "delta" && text) {
