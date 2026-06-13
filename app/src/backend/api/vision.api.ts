@@ -140,7 +140,11 @@ async function handleVision(c: Context) {
 async function fetchAsDataUrl(photoUrl: string, mimeType?: string): Promise<string> {
   if (photoUrl.startsWith("data:")) return photoUrl
 
-  const res = await fetch(photoUrl)
+  // Some hosts (e.g. Wikimedia) reject fetches without a UA. Glasses/demo
+  // frames arrive as data: URLs and skip this path entirely.
+  const res = await fetch(photoUrl, {
+    headers: {"User-Agent": "clawed.chat-vision/1.0 (+https://clawed.chat)"},
+  })
   if (!res.ok) throw new Error(`Photo fetch failed: ${res.status}`)
 
   const contentLength = Number(res.headers.get("content-length") || 0)
