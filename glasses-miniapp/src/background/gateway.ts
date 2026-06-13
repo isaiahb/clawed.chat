@@ -16,7 +16,7 @@
  *   ← {type:"event", event:"chat", payload:{state, message, runId, ...}}
  */
 
-const PROTOCOL_VERSION = 3
+const PROTOCOL_VERSION = 4
 const REQUEST_TIMEOUT_MS = 30_000
 const RECONNECT_BASE_MS = 2_000
 const RECONNECT_MAX_MS = 30_000

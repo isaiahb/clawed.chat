@@ -171,8 +171,8 @@ function askOpenClaw(sessionKey: string, message: string): Promise<string> {
             id: `connect-${Date.now()}`,
             method: "connect",
             params: {
-              minProtocol: 3,
-              maxProtocol: 3,
+              minProtocol: 4,
+              maxProtocol: 4,
               client: {
                 id: "gateway-client",
                 displayName: "buildership-judge",
@@ -180,6 +180,10 @@ function askOpenClaw(sessionKey: string, message: string): Promise<string> {
                 platform: "linux",
                 mode: "backend",
               },
+              // operator.admin grants operator.write, required for chat.send
+              role: "operator",
+              scopes: ["operator.admin"],
+              caps: [],
               auth: {token: GATEWAY_TOKEN},
             },
           }),

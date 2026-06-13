@@ -136,8 +136,8 @@ export async function sendMessage(config: SendMessageConfig): Promise<SendMessag
         // The nonce is NOT included in connect params (it's only used for device auth).
         // The challenge just proves the client received the event before sending connect.
         const connectParams: Record<string, unknown> = {
-          minProtocol: 3,
-          maxProtocol: 3,
+          minProtocol: 4,
+          maxProtocol: 4,
           client: {
             id: "gateway-client",
             displayName: `${source}:${userId}`,
