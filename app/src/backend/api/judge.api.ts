@@ -19,12 +19,10 @@
 
 import {Hono} from "hono"
 import type {Context} from "hono"
+import {askOpenClaw} from "../services/openclaw-gateway"
 
-const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || "ws://127.0.0.1:18789"
-const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || ""
 const JUDGE_API_TOKEN = process.env.JUDGE_API_TOKEN
 
-const REPLY_TIMEOUT_MS = 60_000
 const MAX_MESSAGE_CHARS = 2_000
 const RATE_LIMIT_PER_MIN = 5
 const MAX_CONCURRENT = 2
@@ -118,131 +116,6 @@ function hashIp(ip: string): string {
     hash = (hash * 31 + ip.charCodeAt(i)) | 0
   }
   return Math.abs(hash).toString(36)
-}
-
-// ─── Gateway round-trip ──────────────────────────────────────────────────────
-
-/**
- * Connect → authenticate (token-only) → chat.send → wait for the final
- * chat event on our sessionKey → return the reply text. One WebSocket per
- * question; the gateway holds the conversation context via sessionKey.
- */
-function askOpenClaw(sessionKey: string, message: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const ws = new WebSocket(GATEWAY_URL)
-    let settled = false
-    let lastDelta = ""
-
-    const finish = (fn: () => void) => {
-      if (settled) return
-      settled = true
-      clearTimeout(timer)
-      try {
-        ws.close()
-      } catch {}
-      fn()
-    }
-
-    const timer = setTimeout(() => {
-      // If we saw streaming text but no final, return what we have
-      finish(() => (lastDelta ? resolve(lastDelta) : reject(new Error("Reply timeout"))))
-    }, REPLY_TIMEOUT_MS)
-
-    ws.addEventListener("error", () => {
-      finish(() => reject(new Error("Gateway connection failed")))
-    })
-
-    ws.addEventListener("close", () => {
-      finish(() => reject(new Error("Gateway closed before replying")))
-    })
-
-    ws.addEventListener("message", (event) => {
-      let msg: any
-      try {
-        msg = JSON.parse(typeof event.data === "string" ? event.data : event.data.toString())
-      } catch {
-        return
-      }
-
-      if (msg.type === "event" && msg.event === "connect.challenge") {
-        ws.send(
-          JSON.stringify({
-            type: "req",
-            id: `connect-${Date.now()}`,
-            method: "connect",
-            params: {
-              minProtocol: 4,
-              maxProtocol: 4,
-              client: {
-                id: "gateway-client",
-                displayName: "buildership-judge",
-                version: "1.0.0",
-                platform: "linux",
-                mode: "backend",
-              },
-              // operator.admin grants operator.write, required for chat.send
-              role: "operator",
-              scopes: ["operator.admin"],
-              caps: [],
-              auth: {token: GATEWAY_TOKEN},
-            },
-          }),
-        )
-        return
-      }
-
-      if (msg.type === "res" && msg.ok && msg.payload?.type === "hello-ok") {
-        ws.send(
-          JSON.stringify({
-            type: "req",
-            id: `judge-send-${Date.now()}`,
-            method: "chat.send",
-            params: {
-              sessionKey,
-              message,
-              deliver: false,
-              idempotencyKey: `judge-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            },
-          }),
-        )
-        return
-      }
-
-      if (msg.type === "res" && !msg.ok) {
-        const error = typeof msg.error === "string" ? msg.error : msg.error?.message
-        finish(() => reject(new Error(error || "Gateway request failed")))
-        return
-      }
-
-      if (msg.type === "event" && msg.event === "chat") {
-        const payload = msg.payload || {}
-        // This WebSocket is dedicated to one chat.send, so any chat event on
-        // it is our reply — don't filter by sessionKey (the gateway may echo a
-        // normalized key that wouldn't match and would drop the reply).
-
-        const text = extractText(payload.message)
-        if (payload.state === "delta" && text) {
-          lastDelta = text
-        } else if (payload.state === "final") {
-          finish(() => resolve(text || lastDelta || "(the agent replied with no text)"))
-        } else if (payload.state === "error") {
-          finish(() => reject(new Error(payload.errorMessage || "Agent run errored")))
-        }
-      }
-    })
-  })
-}
-
-function extractText(message: unknown): string {
-  if (!message || typeof message !== "object") return ""
-  const content = (message as Record<string, unknown>).content
-  if (Array.isArray(content)) {
-    return content
-      .filter((b: any) => b?.type === "text" && typeof b.text === "string")
-      .map((b: any) => b.text)
-      .join("")
-  }
-  return typeof content === "string" ? content : ""
 }
 
 export default app

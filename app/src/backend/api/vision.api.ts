@@ -16,7 +16,8 @@
 
 import {Hono} from "hono"
 import type {Context} from "hono"
-import {isNebiusConfigured, nebiusChat, nebiusVision, NEBIUS_VISION_MODEL} from "../services/nebius.service"
+import {isNebiusConfigured, nebiusVision} from "../services/nebius.service"
+import {askOpenClaw} from "../services/openclaw-gateway"
 import {isTavilyConfigured, tavilySearch} from "../services/tavily.service"
 
 const VISION_API_TOKEN = process.env.VISION_API_TOKEN
@@ -53,8 +54,6 @@ Reply with STRICT JSON, nothing else:
  "identified": "<short name of the main subject, e.g. 'Alcatraz Island' or 'Bosch dishwasher heat pump'>",
  "searchQuery": "<a web search query that would meaningfully improve the answer with live facts, or null if none would>"}`
 
-const SYNTHESIS_SYSTEM = `You are a personal AI agent speaking into your user's ear through smart glasses.
-Combine what you saw with the live web results into ONE conversational answer, 1-3 sentences, no markdown, written to be read aloud. Lead with the most useful fact.`
 
 async function handleVision(c: Context) {
   // Bearer token (miniapp) bypasses the rate limit; anonymous demo
@@ -93,48 +92,65 @@ async function handleVision(c: Context) {
     // unreachable from Nebius) and inline it as a data URL.
     const imageDataUrl = await fetchAsDataUrl(photoUrl, mimeType)
 
-    // 1. Look — identify + draft answer + decide if live facts would help
+    // 1. The agent's EYES — Nebius vision describes the frame + decides if live
+    //    facts would help. (This is the glasses' vision tool, not the answer.)
     const raw = await nebiusVision(imageDataUrl, question, {system: VISION_SYSTEM, maxTokens: 500})
     const parsed = parseVisionJson(raw)
 
-    // 2. Look it up — live web context via Tavily, when worth it
+    // 2. The agent's KNOWLEDGE OF NOW — Tavily live web context, when worth it.
+    let sources: Array<{title: string; url: string}> = []
+    let webContext = ""
     if (parsed.searchQuery && isTavilyConfigured()) {
       try {
         const search = await tavilySearch(parsed.searchQuery, {maxResults: 4})
-        const sources = search.results.slice(0, 3).map((r) => ({title: r.title, url: r.url}))
-
-        // 3. Say it — fold fresh facts into one spoken-ready answer
-        const context = [
-          search.answer ? `Synthesized answer: ${search.answer}` : "",
+        sources = search.results.slice(0, 3).map((r) => ({title: r.title, url: r.url}))
+        webContext = [
+          search.answer ? `Web answer: ${search.answer}` : "",
           ...search.results.map((r) => `- ${r.title}: ${r.content.slice(0, 240)}`),
         ]
           .filter(Boolean)
           .join("\n")
-
-        const answer = await nebiusChat(
-          [
-            {role: "system", content: SYNTHESIS_SYSTEM},
-            {
-              role: "user",
-              content: `I looked at: ${parsed.identified ?? "the scene"}\nMy first impression: ${parsed.answer}\nThe user asked: ${question}\n\nLive web results for "${parsed.searchQuery}":\n${context}`,
-            },
-          ],
-          // Use the instruct vision model (not the reasoning text model) so the
-          // synthesized answer is clean prose, not leaked chain-of-thought.
-          {model: NEBIUS_VISION_MODEL, maxTokens: 300},
-        )
-
-        return c.json({answer: answer.trim(), identified: parsed.identified, sources})
       } catch (err) {
-        console.error("[vision] Tavily lookup failed, returning vision-only answer:", err)
+        console.error("[vision] Tavily lookup failed:", err)
       }
     }
 
-    return c.json({answer: parsed.answer, identified: parsed.identified})
+    // 3. The OpenClaw AGENT answers — its eyes + live facts feed it; IT replies.
+    const ip =
+      c.req.header("cf-connecting-ip") ||
+      c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "demo"
+    const sessionKey = `clawed:glasses:${hashSession(ip)}`
+    const agentMessage = [
+      `Through your smart-glasses camera you can see: ${parsed.answer}`,
+      parsed.identified ? `(It appears to be: ${parsed.identified}.)` : "",
+      webContext ? `Live web context:\n${webContext}` : "",
+      `The user asked you, out loud: "${question}"`,
+      `Reply in 1-3 conversational sentences to be read aloud through the glasses. Lead with the most useful fact. No markdown.`,
+    ]
+      .filter(Boolean)
+      .join("\n\n")
+
+    try {
+      const answer = await askOpenClaw(sessionKey, agentMessage)
+      return c.json({answer: answer.trim(), identified: parsed.identified, sources, via: "openclaw"})
+    } catch (err) {
+      // Agent unreachable → still answer with the vision description so the
+      // glasses aren't left silent.
+      console.error("[vision] OpenClaw round-trip failed, vision-only fallback:", err)
+      return c.json({answer: parsed.answer, identified: parsed.identified, sources, via: "vision-fallback"})
+    }
   } catch (err) {
     console.error("[vision] Pipeline failed:", err)
     return c.json({error: "Vision pipeline failed"}, 502)
   }
+}
+
+/** Stable per-caller session id (so glasses vision keeps conversational context). */
+function hashSession(s: string): string {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
+  return Math.abs(h).toString(36)
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
