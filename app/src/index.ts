@@ -25,6 +25,7 @@ import { ClawedChat } from "./backend/ClawedChat"
 import { api } from "./backend/api"
 import { createMentraAuthRoutes } from "@mentra/sdk"
 import { openclawWebSocket } from "./backend/api/openclaw-proxy"
+import { relayWebSocket, parseRelayUpgrade } from "./backend/api/relay"
 import { createClerkClient } from "@clerk/backend"
 import indexHtml from "./frontend/index.html"
 
@@ -85,13 +86,28 @@ console.log(`clawed.chat running at http://localhost:${PORT} (${isDevelopment ? 
 // Serve static assets — resolved once at startup
 const publicPath = `${process.cwd()}/src/public/assets`
 
+// One websocket handler, dispatched by the tag set at upgrade time:
+//   relay sockets (ws.data.kind === "relay") → the clawed broker
+//   everything else                          → the OpenClaw proxy
+const combinedWebSocket = {
+  open(ws: any) {
+    ws.data?.kind === "relay" ? relayWebSocket.open(ws) : openclawWebSocket.open(ws)
+  },
+  message(ws: any, msg: any) {
+    ws.data?.kind === "relay" ? relayWebSocket.message(ws, msg) : openclawWebSocket.message(ws, msg)
+  },
+  close(ws: any, code: number, reason: string) {
+    ws.data?.kind === "relay" ? relayWebSocket.close(ws) : openclawWebSocket.close(ws, code, reason)
+  },
+}
+
 // Start Bun server
 Bun.serve({
   port: PORT,
   idleTimeout: 120,
   development: isDevelopment ? { hmr: true, console: true } : false,
-  // WebSocket handlers for the OpenClaw proxy
-  websocket: openclawWebSocket,
+  // WebSocket handlers: clawed relay + OpenClaw proxy (dispatched by tag)
+  websocket: combinedWebSocket,
   routes: {
     // ── Backend routes (more-specific, matched before "/*") ──────────
     //
@@ -102,6 +118,16 @@ Bun.serve({
     // All backend traffic is forwarded to the Hono app.
 
     "/api/*": async (request: Request, server: any) => {
+      // Clawed relay upgrade: /api/relay?role=agent|glasses&pair=<code>
+      // Paired by code (the demo's pairing handshake); no Clerk — the code is
+      // the room key. The plugin (agent) and miniapp (glasses) meet here.
+      const relayData = parseRelayUpgrade(request)
+      if (relayData) {
+        const upgraded = server.upgrade(request, { data: relayData })
+        if (upgraded) return undefined
+        return new Response("WebSocket upgrade failed", { status: 400 })
+      }
+
       // WebSocket upgrade for the OpenClaw proxy endpoint
       if (new URL(request.url).pathname === "/api/openclaw-ws") {
         // ── SECURITY: Verify Clerk session + owner check before upgrade ──
