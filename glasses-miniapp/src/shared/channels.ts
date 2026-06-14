@@ -1,17 +1,13 @@
-/**
- * Typed channel registry — single source of truth for the names + payload
- * shapes that flow between the background JSContext and the UI WebView.
- */
+/** Typed UI <-> background channel registry. */
 
 import type {Settings, StateSnapshot} from "./types"
 
 export interface Channels {
   // UI → background
-  "chat:send": {text: string}
-  "chat:clear": Record<string, never>
-  "vision:ask": {question: string}
-  "settings:save": Partial<Settings>
-  "state:request": Record<string, never>
+  "ui:talk": Record<string, never> // toggle push-to-talk (mirror of the glasses button)
+  "ui:photo": Record<string, never> // user taps "what do you see" → capture + send a photo
+  "ui:save-settings": Partial<Settings>
+  "ui:request-state": Record<string, never>
 
   // background → UI
   "state:snapshot": StateSnapshot

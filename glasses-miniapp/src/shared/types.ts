@@ -1,62 +1,40 @@
-/**
- * Cross-boundary types shared between the background JSContext and the
- * UI WebView. Keep this file dependency-free — both bundles inline it.
- */
+/** Shared, dependency-free types for both the background JSContext and UI. */
 
-export type Role = "user" | "agent" | "system"
+export type Role = "you" | "claw" | "system"
 
-export interface ChatMessage {
+export interface ChatLine {
   id: string
   role: Role
   text: string
-  at: number
-  /** "streaming" while deltas are arriving, "done" after final/error. */
-  status: "streaming" | "done" | "error"
-  /** Set when this message came from a vision (camera) query. */
-  vision?: boolean
 }
 
-export type ConnectionStatus =
-  | "unconfigured"
-  | "connecting"
-  | "authenticating"
-  | "connected"
+export type ConnState =
+  | "unpaired" // no pair code yet
+  | "connecting" // dialing the relay
+  | "waiting" // connected to relay, agent (your OpenClaw) not joined yet
+  | "paired" // both ends connected — ready
   | "disconnected"
 
 export interface Settings {
-  /** OpenClaw gateway WebSocket URL, e.g. ws://192.168.1.20:18789 */
-  gatewayUrl: string
-  /** Gateway auth token (token-only auth, no device pairing needed). */
-  gatewayToken: string
-  /** clawed.chat backend endpoint for camera → vision queries. */
-  visionUrl: string
-  /** Bearer token for the vision endpoint. */
-  visionToken: string
-  /** Wake word listening on/off. */
-  wakeWordEnabled: boolean
+  /** Pairing code — must match the connector running next to your OpenClaw. */
+  pairCode: string
+  /** Relay base URL. */
+  relayUrl: string
 }
 
-/** Settings as exposed to the UI — secrets masked to presence flags. */
 export interface PublicSettings {
-  gatewayUrl: string
-  gatewayTokenSet: boolean
-  visionUrl: string
-  visionTokenSet: boolean
-  wakeWordEnabled: boolean
+  pairCode: string
+  relayUrl: string
 }
 
 export interface StateSnapshot {
-  messages: ChatMessage[]
-  connection: ConnectionStatus
-  settings: PublicSettings
-  /** True while the controller is waiting for a follow-up utterance. */
+  lines: ChatLine[]
+  conn: ConnState
   listening: boolean
+  settings: PublicSettings
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  gatewayUrl: "",
-  gatewayToken: "",
-  visionUrl: "https://api.clawed.chat/api/vision",
-  visionToken: "",
-  wakeWordEnabled: true,
+  pairCode: "clawed-demo",
+  relayUrl: "wss://api.clawed.chat/api/relay",
 }

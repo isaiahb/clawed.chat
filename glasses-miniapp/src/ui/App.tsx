@@ -1,48 +1,39 @@
 /**
  * Clawed miniapp UI — a viewer over the always-on background controller.
- *
- * Reads state via "state:snapshot", sends commands over the typed bus.
- * Zero session.* calls here — glasses logic lives in the background layer.
+ * Two screens: Pair (enter the code) and Live (talk / hear / look).
+ * Zero session.* here — everything goes over the typed channel bus.
  */
 
 import {useEffect, useRef, useState} from "react"
 import {MiniappHeader} from "@mentra/miniapp/ui"
-import type {Settings, StateSnapshot} from "../shared/types"
+import type {StateSnapshot} from "../shared/types"
 import {DEFAULT_SETTINGS} from "../shared/types"
 
-const STATUS_LABEL: Record<StateSnapshot["connection"], string> = {
-  unconfigured: "Not configured",
+const STATUS: Record<StateSnapshot["conn"], string> = {
+  unpaired: "Enter your pair code",
   connecting: "Connecting…",
-  authenticating: "Authenticating…",
-  connected: "Connected",
+  waiting: "Waiting for your OpenClaw…",
+  paired: "Connected",
   disconnected: "Reconnecting…",
 }
 
 export function App(): React.JSX.Element {
   const [state, setState] = useState<StateSnapshot | null>(null)
-  const [draft, setDraft] = useState("")
   const [showSettings, setShowSettings] = useState(false)
   const threadRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const unsub = mentra.on("state:snapshot", (snapshot) => setState(snapshot))
-    mentra.send("state:request", {})
+    const unsub = mentra.on("state:snapshot", (s) => setState(s))
+    mentra.send("ui:request-state", {})
     return unsub
   }, [])
 
   useEffect(() => {
     threadRef.current?.scrollTo({top: threadRef.current.scrollHeight, behavior: "smooth"})
-  }, [state?.messages])
+  }, [state?.lines])
 
-  const send = () => {
-    const text = draft.trim()
-    if (!text) return
-    mentra.send("chat:send", {text})
-    setDraft("")
-  }
-
-  const connection = state?.connection ?? "unconfigured"
-  const needsSetup = connection === "unconfigured"
+  const conn = state?.conn ?? "unpaired"
+  const needsPair = conn === "unpaired" || showSettings
 
   return (
     <div className="app">
@@ -55,31 +46,27 @@ export function App(): React.JSX.Element {
         }
       />
 
-      <div className={`status status--${connection}`}>
+      <div className={`status status--${conn}`}>
         <span className="status-dot" />
-        {state?.listening ? "🦞 Listening…" : STATUS_LABEL[connection]}
+        {state?.listening ? "🎙 Listening…" : STATUS[conn]}
       </div>
 
-      {showSettings || needsSetup ? (
-        <SettingsPanel
-          snapshot={state}
-          onSaved={() => setShowSettings(false)}
-        />
+      {needsPair ? (
+        <PairScreen snapshot={state} onSaved={() => setShowSettings(false)} />
       ) : (
         <>
           <div className="thread" ref={threadRef}>
-            {(state?.messages ?? []).length === 0 && (
+            {(state?.lines ?? []).length === 0 && (
               <div className="empty">
                 <div className="empty-claw">🦞</div>
-                <p>Say <strong>“Hey Clawed”</strong> through your glasses,</p>
-                <p>or type to your OpenClaw below.</p>
+                <p>Press the glasses button (or the mic below)</p>
+                <p>and talk to your OpenClaw.</p>
               </div>
             )}
-            {(state?.messages ?? []).map((msg) => (
-              <div key={msg.id} className={`bubble bubble--${msg.role} ${msg.status === "error" ? "bubble--error" : ""}`}>
-                {msg.vision && <span className="vision-tag">👀 vision</span>}
-                <span>{msg.text || "…"}</span>
-                {msg.status === "streaming" && <span className="cursor">▍</span>}
+            {(state?.lines ?? []).map((l) => (
+              <div key={l.id} className={`bubble bubble--${l.role}`}>
+                {l.role === "claw" ? "🦞 " : l.role === "you" ? "" : ""}
+                {l.text}
               </div>
             ))}
           </div>
@@ -88,19 +75,17 @@ export function App(): React.JSX.Element {
             <button
               type="button"
               className="camera-btn"
-              title="Ask about what you're seeing"
-              onClick={() => mentra.send("vision:ask", {question: "What am I looking at?"})}
+              title="Ask what you're looking at"
+              onClick={() => mentra.send("ui:photo", {})}
             >
               👀
             </button>
-            <input
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && send()}
-              placeholder="Message your OpenClaw…"
-            />
-            <button type="button" className="send-btn" onClick={send} disabled={!draft.trim()}>
-              ↑
+            <button
+              type="button"
+              className={`talk-btn ${state?.listening ? "talk-btn--on" : ""}`}
+              onClick={() => mentra.send("ui:talk", {})}
+            >
+              {state?.listening ? "■ Stop & send" : "🎙 Talk"}
             </button>
           </div>
         </>
@@ -109,90 +94,40 @@ export function App(): React.JSX.Element {
   )
 }
 
-function SettingsPanel({
+function PairScreen({
   snapshot,
   onSaved,
 }: {
   snapshot: StateSnapshot | null
   onSaved: () => void
 }): React.JSX.Element {
-  const current = snapshot?.settings
-  const [gatewayUrl, setGatewayUrl] = useState(current?.gatewayUrl ?? "")
-  const [gatewayToken, setGatewayToken] = useState("")
-  const [visionUrl, setVisionUrl] = useState(current?.visionUrl ?? DEFAULT_SETTINGS.visionUrl)
-  const [visionToken, setVisionToken] = useState("")
-  const [wakeWordEnabled, setWakeWordEnabled] = useState(current?.wakeWordEnabled ?? true)
+  const [code, setCode] = useState(snapshot?.settings.pairCode ?? DEFAULT_SETTINGS.pairCode)
 
   const save = () => {
-    const patch: Partial<Settings> = {gatewayUrl: gatewayUrl.trim(), visionUrl: visionUrl.trim(), wakeWordEnabled}
-    // Only overwrite secrets the user actually retyped
-    if (gatewayToken.trim()) patch.gatewayToken = gatewayToken.trim()
-    if (visionToken.trim()) patch.visionToken = visionToken.trim()
-    mentra.send("settings:save", patch)
+    mentra.send("ui:save-settings", {pairCode: code.trim()})
     onSaved()
   }
 
   return (
     <div className="settings">
-      <h2>Connect your OpenClaw</h2>
+      <h2>Pair with your OpenClaw</h2>
       <p className="hint">
-        Clawed talks <em>directly</em> to your own OpenClaw gateway — no middleman cloud. Find your
-        gateway address in OpenClaw’s config (default port 18789).
+        Run the Clawed connector next to your OpenClaw, then enter the same pair
+        code here. Your glasses and your agent meet over the clawed relay — no
+        setup on the agent's machine beyond the connector.
       </p>
-
       <label>
-        Gateway URL
+        Pair code
         <input
-          value={gatewayUrl}
-          onChange={(e) => setGatewayUrl(e.target.value)}
-          placeholder="ws://192.168.1.20:18789"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="clawed-demo"
           autoCapitalize="none"
           autoCorrect="off"
         />
       </label>
-
-      <label>
-        Gateway token {current?.gatewayTokenSet && <span className="set-tag">saved ✓</span>}
-        <input
-          type="password"
-          value={gatewayToken}
-          onChange={(e) => setGatewayToken(e.target.value)}
-          placeholder={current?.gatewayTokenSet ? "••••••••  (leave blank to keep)" : "your gateway token"}
-        />
-      </label>
-
-      <label>
-        Vision endpoint
-        <input
-          value={visionUrl}
-          onChange={(e) => setVisionUrl(e.target.value)}
-          placeholder={DEFAULT_SETTINGS.visionUrl}
-          autoCapitalize="none"
-          autoCorrect="off"
-        />
-      </label>
-
-      <label>
-        Vision token {current?.visionTokenSet && <span className="set-tag">saved ✓</span>}
-        <input
-          type="password"
-          value={visionToken}
-          onChange={(e) => setVisionToken(e.target.value)}
-          placeholder={current?.visionTokenSet ? "••••••••  (leave blank to keep)" : "optional bearer token"}
-        />
-      </label>
-
-      <label className="toggle">
-        <input
-          type="checkbox"
-          checked={wakeWordEnabled}
-          onChange={(e) => setWakeWordEnabled(e.target.checked)}
-        />
-        Listen for “Hey Clawed”
-      </label>
-
-      <button type="button" className="save-btn" onClick={save} disabled={!gatewayUrl.trim()}>
-        Save & connect
+      <button type="button" className="save-btn" onClick={save} disabled={!code.trim()}>
+        Pair & connect
       </button>
     </div>
   )

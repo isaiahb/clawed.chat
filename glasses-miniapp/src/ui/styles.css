@@ -291,3 +291,20 @@ body {
 .save-btn:active {
   background: var(--red-bright);
 }
+
+/* push-to-talk button */
+.talk-btn {
+  flex: 1;
+  height: 48px;
+  border-radius: 24px;
+  border: none;
+  background: var(--red);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+}
+.talk-btn--on {
+  background: var(--red-bright);
+  box-shadow: 0 0 0 4px oklch(0.62 0.24 25 / 0.25);
+  animation: pulse 1.2s infinite;
+}
