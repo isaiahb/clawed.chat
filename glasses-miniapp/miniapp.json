@@ -18,6 +18,7 @@
   ],
   "hardwareRequirements": [
     {"type": "MICROPHONE", "level": "REQUIRED", "description": "Voice commands"},
+    {"type": "BUTTON", "level": "OPTIONAL", "description": "Push-to-talk from glasses button or double-tap"},
     {"type": "CAMERA", "level": "OPTIONAL", "description": "Visual questions (Mentra Live)"},
     {"type": "DISPLAY", "level": "OPTIONAL", "description": "HUD answers (Even Realities G2)"},
     {"type": "SPEAKER", "level": "OPTIONAL", "description": "Spoken answers (Mentra Live)"}

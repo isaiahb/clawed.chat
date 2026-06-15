@@ -17,6 +17,17 @@ const STATUS: Record<StateSnapshot["conn"], string> = {
   disconnected: "Reconnecting…",
 }
 
+const COMPOSIO_TOOLS = [
+  {name: "Gmail", accent: "#ea4335", detail: "Unread + drafts"},
+  {name: "Tavily", accent: "#55c8ff", detail: "Live web search"},
+]
+
+const DEMO_ACTIONS = [
+  "Summarize unread email",
+  "Search the web",
+  "Draft a reply",
+]
+
 export function App(): React.JSX.Element {
   const [state, setState] = useState<StateSnapshot | null>(null)
   const [showSettings, setShowSettings] = useState(false)
@@ -47,8 +58,11 @@ export function App(): React.JSX.Element {
       />
 
       <div className={`status status--${conn}`}>
-        <span className="status-dot" />
-        {state?.listening ? "🎙 Listening…" : STATUS[conn]}
+        <div className="status-copy">
+          <span className="status-dot" />
+          {state?.listening ? "Listening…" : STATUS[conn]}
+        </div>
+        <span className="status-meta">{conn === "paired" ? "OpenClaw live" : state?.settings.pairCode}</span>
       </div>
 
       {needsPair ? (
@@ -56,11 +70,11 @@ export function App(): React.JSX.Element {
       ) : (
         <>
           <div className="thread" ref={threadRef}>
+            <DemoPanel conn={conn} />
             {(state?.lines ?? []).length === 0 && (
               <div className="empty">
-                <div className="empty-claw">🦞</div>
-                <p>Press the glasses button (or the mic below)</p>
-                <p>and talk to your OpenClaw.</p>
+                <div className="empty-claw" aria-hidden="true">🦞</div>
+                <p>Ready for the next voice command.</p>
               </div>
             )}
             {(state?.lines ?? []).map((l) => (
@@ -82,6 +96,15 @@ export function App(): React.JSX.Element {
             </button>
             <button
               type="button"
+              className="clear-btn"
+              title="Clear chat"
+              disabled={(state?.lines ?? []).length === 0 && !state?.listening}
+              onClick={() => mentra.send("ui:clear", {})}
+            >
+              ✕
+            </button>
+            <button
+              type="button"
               className={`talk-btn ${state?.listening ? "talk-btn--on" : ""}`}
               onClick={() => mentra.send("ui:talk", {})}
             >
@@ -91,6 +114,44 @@ export function App(): React.JSX.Element {
         </>
       )}
     </div>
+  )
+}
+
+function DemoPanel({conn}: {conn: StateSnapshot["conn"]}): React.JSX.Element {
+  return (
+    <section className="demo-panel" aria-label="Demo status">
+      <div className="agent-card">
+        <div>
+          <p className="eyebrow">OpenClaw + tools</p>
+          <h2>{conn === "paired" ? "Agent paired" : "Relay standby"}</h2>
+        </div>
+        <span className={`link-pill link-pill--${conn}`}>{conn === "paired" ? "Live" : "Syncing"}</span>
+      </div>
+
+      <div className="tool-header">
+        <span>Composio tools</span>
+        <strong>{COMPOSIO_TOOLS.length} ready</strong>
+      </div>
+
+      <div className="tool-strip" aria-label="Connected Composio tools">
+        {COMPOSIO_TOOLS.map((tool) => (
+          <div className="tool-card" key={tool.name} style={{"--accent": tool.accent} as React.CSSProperties}>
+            <span className="tool-dot" />
+            <strong>{tool.name}</strong>
+            <small>{tool.detail}</small>
+          </div>
+        ))}
+      </div>
+
+      <div className="action-list" aria-label="Prepared demo actions">
+        {DEMO_ACTIONS.map((action) => (
+          <div className="action-row" key={action}>
+            <span className="check-dot" />
+            <span>{action}</span>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 

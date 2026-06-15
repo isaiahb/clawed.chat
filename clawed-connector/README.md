@@ -24,6 +24,26 @@ CLAWED_PAIR=clawed-demo node clawed-connector/connector.mjs
 ```
 Reads keys from `app/.env`. Pair code must match the miniapp (default `clawed-demo`).
 
+For the demo tool path, create `clawed-connector/.env` from
+`clawed-connector/.env.example` and set:
+
+```bash
+CLAWED_DEMO_CONTACT_ARIAN=arian@company.com
+CLAWED_DEMO_EMAIL_DRY_RUN=0
+```
+
+Then this exact glasses command is handled locally before falling back to
+OpenClaw:
+
+```text
+Hey Claude, search the web for information on the Buildershare Packathon and email it to Arian.
+```
+
+The bridge normalizes "Buildershare Packathon" to "Buildership Hackathon", runs
+Tavily, writes a short sourced brief, and sends it with Composio
+`GMAIL_SEND_EMAIL`. If Composio auth is unavailable, it tries the local macOS
+`mail` command as a fallback.
+
 ## 3. The miniapp (serve + QR)
 
 ```bash
@@ -41,4 +61,4 @@ code `clawed-demo` → **Pair & connect**.
 
 ## Env (from app/.env, overridable)
 
-`CLAWED_PAIR` · `OPENCLAW_GATEWAY_TOKEN` · `CLAWED_RELAY` (default `wss://api.clawed.chat/api/relay`) · `LOCAL_GATEWAY` (default `ws://127.0.0.1:18789`) · `NEBIUS_API_KEY` · `NEBIUS_VISION_MODEL`
+`CLAWED_PAIR` · `OPENCLAW_GATEWAY_TOKEN` · `CLAWED_RELAY` (default `wss://api.clawed.chat/api/relay`) · `LOCAL_GATEWAY` (default `ws://127.0.0.1:18789`) · `NEBIUS_API_KEY` · `NEBIUS_VISION_MODEL` · `TAVILY_API_KEY` · `COMPOSIO_API_KEY` · `CLAWED_DEMO_CONTACT_ARIAN`

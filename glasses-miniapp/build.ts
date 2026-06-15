@@ -29,8 +29,29 @@
  */
 
 import {rm} from "fs/promises"
+import {resolve} from "path"
 
 const distDir = "./dist"
+
+const alias = (specifier: string) => new RegExp(`^${specifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`)
+const rootModule = (path: string) => resolve(".", "node_modules", path)
+
+const reactSingletonPlugin = {
+  name: "react-singleton",
+  setup(build: import("bun").PluginBuilder) {
+    const aliases = new Map([
+      ["react", rootModule("react/index.js")],
+      ["react/jsx-runtime", rootModule("react/jsx-runtime.js")],
+      ["react/jsx-dev-runtime", rootModule("react/jsx-dev-runtime.js")],
+      ["react-dom", rootModule("react-dom/index.js")],
+      ["react-dom/client", rootModule("react-dom/client.js")],
+    ])
+
+    for (const [specifier, path] of aliases) {
+      build.onResolve({filter: alias(specifier)}, () => ({path}))
+    }
+  },
+}
 
 // Wipe dist/ so old chunks don't accumulate across builds.
 await rm(distDir, {recursive: true, force: true})
@@ -63,7 +84,7 @@ const uiResult = await Bun.build({
   entrypoints: ["./src/ui/index.html"],
   outdir: `${distDir}/ui`,
   target: "browser",
-  plugins: [],
+  plugins: [reactSingletonPlugin],
   minify: true,
   define,
 })

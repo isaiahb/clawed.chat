@@ -2,8 +2,9 @@
  * Controller — the always-on brain of the Clawed miniapp.
  *
  * Bridges the glasses to the user's OpenClaw via the clawed relay:
- *   - push-to-talk: glasses button (or UI button) toggles capture; on stop the
- *     accumulated transcript is sent to OpenClaw as {type:"stt"}.
+ *   - push-to-talk: glasses double-tap, hardware button, or UI button toggles
+ *     capture; on stop the accumulated transcript is sent to OpenClaw as
+ *     {type:"stt"}.
  *   - {type:"speak"}  from OpenClaw → spoken (Mentra Live) + shown on the lens.
  *   - {type:"request_photo"} → camera photo → {type:"photo", photoUrl}.
  *   - UI "what do you see" → capture a photo and send it with a question.
@@ -36,6 +37,7 @@ export class Controller {
   private capture = ""
   private relay: RelayClient | null = null
   private readonly ui: TypedUI
+  private lastInputToggleAt = 0
 
   constructor(private session: MiniappSession) {
     this.ui = session.ui as unknown as TypedUI
@@ -47,14 +49,16 @@ export class Controller {
 
     // Voice in (only accumulated while in push-to-talk listening mode)
     this.session.transcription.on((d: TranscriptionData) => this.onTranscription(d))
-    // Glasses hardware button = push-to-talk toggle
-    this.session.input.onButtonPress(() => this.toggleTalk())
+    // Glasses hardware button / double-tap = push-to-talk toggle.
+    this.session.input.onButtonPress(() => this.toggleFromInput())
+    this.session.input.onTouch((data) => this.onTouch(data))
 
     // UI bus
     this.ui.onOpen(() => this.pushState())
     this.ui.on("ui:request-state", () => this.pushState())
-    this.ui.on("ui:talk", () => this.toggleTalk())
+    this.ui.on("ui:talk", () => this.toggleFromInput())
     this.ui.on("ui:photo", () => void this.sendPhoto("What am I looking at?"))
+    this.ui.on("ui:clear", () => this.clearTranscript())
     this.ui.on("ui:save-settings", (patch) => void this.saveSettings(patch))
   }
 
@@ -124,6 +128,21 @@ export class Controller {
   }
 
   // ─── push-to-talk ───────────────────────────────────────────────────────────
+  private onTouch(data: unknown): void {
+    const touch = data as {kind?: string; gestureName?: string; gesture_name?: string}
+    const gesture = touch.kind ?? touch.gestureName ?? touch.gesture_name
+    if (gesture === "double_click" || gesture === "double_tap") {
+      this.toggleFromInput()
+    }
+  }
+
+  private toggleFromInput(): void {
+    const now = Date.now()
+    if (now - this.lastInputToggleAt < 350) return
+    this.lastInputToggleAt = now
+    this.toggleTalk()
+  }
+
   private toggleTalk(): void {
     if (!this.listening) {
       this.listening = true
@@ -190,6 +209,14 @@ export class Controller {
   private addLine(role: ChatLine["role"], text: string): void {
     this.lines.push({id: nextId(), role, text})
     if (this.lines.length > MAX_LINES) this.lines = this.lines.slice(-MAX_LINES)
+    this.pushState()
+  }
+
+  private clearTranscript(): void {
+    this.lines = []
+    this.capture = ""
+    this.listening = false
+    this.display("")
     this.pushState()
   }
 
