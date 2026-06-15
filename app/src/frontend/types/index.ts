@@ -8,7 +8,7 @@ export type RiskLevel = "low" | "medium" | "high";
 // ──────────────────────────────────────────────
 // Ask / Assistant
 // ──────────────────────────────────────────────
-export type AskContextChip = "email" | "calendar" | "web" | "notes" | "slack";
+export type AskContextChip = "email" | "calendar" | "web" | "notes" | "slack" | "twitter" | "discord";
 
 export type AssistantState =
   | "idle"
@@ -61,6 +61,20 @@ export const ACTION_SEQUENCES: Record<string, ActionIndicatorStep[]> = {
     { phase: "acting", label: "Opening Slack" },
     { phase: "acting", label: "Reading channels" },
     { phase: "acting", label: "Drafting response" },
+    { phase: "done", label: "Done" },
+  ],
+  twitter: [
+    { phase: "thinking", label: "Thinking…" },
+    { phase: "acting", label: "Opening Twitter" },
+    { phase: "acting", label: "Reading timeline" },
+    { phase: "acting", label: "Composing tweet" },
+    { phase: "done", label: "Done" },
+  ],
+  discord: [
+    { phase: "thinking", label: "Thinking…" },
+    { phase: "acting", label: "Opening Discord" },
+    { phase: "acting", label: "Reading channels" },
+    { phase: "acting", label: "Sending message" },
     { phase: "done", label: "Done" },
   ],
   web: [
@@ -126,6 +140,11 @@ export type ConnectionProvider =
   | "notion"
   | "linear"
   | "github"
+  | "twitter"
+  | "discord"
+  | "google-sheets"
+  | "google-drive"
+  | "google-docs"
   | "custom";
 
 export type ConnectionStatus =

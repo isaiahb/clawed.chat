@@ -49,6 +49,9 @@ const getPulumi = () => import("./instance.pulumi")
 //
 // When HACKATHON_MODE=true, deploy() assigns the pre-existing openclaw-agent VM
 // instead of spinning up new infrastructure. Instant deploy for the demo.
+//
+// SECURITY: Only the OWNER_EMAIL account can use the shared VM.
+// Everyone else gets rejected until real per-user provisioning is live.
 
 const HACKATHON_MODE = process.env.HACKATHON_MODE === "true"
 const HACKATHON_VM_IP = process.env.OPENCLAW_GATEWAY_URL
@@ -56,6 +59,11 @@ const HACKATHON_VM_IP = process.env.OPENCLAW_GATEWAY_URL
   : "10.138.0.3"
 const HACKATHON_VM_NAME = "openclaw-agent"
 const HACKATHON_VM_ZONE = "us-west1-a"
+
+/** Only this Clerk user ID can use the pre-provisioned hackathon VM.
+ *  Set OWNER_CLERK_ID in .env to your Clerk user ID.
+ *  Find it: Clerk Dashboard → Users → click your account → User ID */
+const OWNER_CLERK_ID = process.env.OWNER_CLERK_ID || ""
 
 // ─── Convex Client ───────────────────────────────────────────────────────────
 
@@ -101,8 +109,15 @@ export async function deploy(config: DeployConfig): Promise<DeployResult> {
   const db = getConvex()
 
   // ── Hackathon Mode: assign existing VM instantly ─────────────────────
-  if (HACKATHON_MODE) {
+  // SECURITY: Only the owner gets the pre-provisioned VM.
+  // Everyone else falls through to normal Pulumi provisioning.
+  if (HACKATHON_MODE && OWNER_CLERK_ID && userId === OWNER_CLERK_ID) {
     return deployHackathon(config)
+  }
+
+  if (HACKATHON_MODE && userId !== OWNER_CLERK_ID) {
+    console.warn(`[instance] hackathon mode: rejecting non-owner deploy (user=${userId})`)
+    throw new Error("Instance provisioning is not yet available. Please contact the admin.")
   }
 
   // ── Normal Mode: provision new VM via Pulumi ─────────────────────────
@@ -154,6 +169,10 @@ export async function deploy(config: DeployConfig): Promise<DeployResult> {
  * Hackathon mode deploy — assigns the existing openclaw-agent VM to the user.
  * No Pulumi, no new VM, no waiting. Instant "deploy".
  *
+ * SECURITY: Only the owner account (OWNER_EMAIL) can use the shared VM.
+ * The shared VM has the owner's API keys, Composio connections, etc.
+ * Letting any authenticated user access it would be a security breach.
+ *
  * If the user already has an instance, returns it.
  * If not, creates a new record pointing at the shared VM.
  */
@@ -161,9 +180,27 @@ async function deployHackathon(config: DeployConfig): Promise<DeployResult> {
   const {userId, llmProvider, managed} = config
   const db = getConvex()
 
-  // Check if user already has an instance
+  // ── SECURITY: Only the owner can use the shared hackathon VM ─────────
+  // The shared VM has the owner's Anthropic key, Composio tokens, etc.
+  // Giving any random authenticated user access = giving them your keys.
+  if (!OWNER_CLERK_ID) {
+    throw new Error(
+      "OWNER_CLERK_ID is not set — hackathon mode is disabled for safety. " +
+      "Set it in .env to your Clerk user ID to enable the shared VM."
+    )
+  }
+
+  if (userId !== OWNER_CLERK_ID) {
+    console.warn(`[instance] BLOCKED: user ${userId} tried to deploy on shared hackathon VM (owner: ${OWNER_CLERK_ID})`)
+    throw new Error(
+      "Cloud instances are not yet available for your account. " +
+      "Please check back soon or set up a local OpenClaw instance."
+    )
+  }
+
+  // Check if owner already has an instance
   const existing = await db.query(api.instances.listByUser, {user_id: userId})
-  if (existing.length > 0) {
+  if (existing.length > 0 && existing[0]) {
     const inst = existing[0]
     console.log(`[instance] hackathon: user already has instance ${inst._id}`)
     return {

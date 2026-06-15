@@ -30,6 +30,7 @@ import {
   Loader2,
   Send,
   AlertTriangle,
+  Trash2,
 } from "lucide-react"
 import {cn} from "../../lib/utils"
 
@@ -78,6 +79,7 @@ export default function ChatPage() {
   const [streamingContent, setStreamingContent] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [showBrowser, setShowBrowser] = useState(false)
+  const [clearing, setClearing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const lastMessageCountRef = useRef(0)
@@ -144,21 +146,13 @@ export default function ChatPage() {
           setStreamingContent(finalContent)
         }
 
-        // Write the final response to Convex so it persists
+        // Persist the final response via the Clerk-authed chat API
+        // (session cookie auth — no tokens in the client bundle)
         if (finalContent && instanceId && user?.id) {
-          fetch(`/api/openclaw/outbound`, {
+          fetch(`/api/chat/${instanceId}/agent-final`, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer REDACTED-ROTATE-ME`,
-            },
-            body: JSON.stringify({
-              text: finalContent,
-              peerId: user.id,
-              accountId: "default",
-              instanceId,
-              timestamp: Date.now(),
-            }),
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({content: finalContent, source: "web"}),
           }).catch(() => {})
         }
         return
@@ -244,6 +238,29 @@ export default function ChatPage() {
     inputRef.current?.focus()
   }, [input, sending, instanceId, openclawSend, openclawStatus])
 
+  const clearChat = useCallback(async () => {
+    if (!instanceId || clearing) return
+
+    setClearing(true)
+    setError(null)
+    setWaitingForAgent(false)
+    setStreamingContent("")
+    streamRef.current = ""
+
+    try {
+      const res = await fetch(`/api/chat/${instanceId}`, {method: "DELETE"})
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || "Failed to clear chat")
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to clear chat")
+    } finally {
+      setClearing(false)
+      inputRef.current?.focus()
+    }
+  }, [instanceId, clearing])
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
@@ -273,6 +290,7 @@ export default function ChatPage() {
 
   const isLoadingMessages = messages === undefined
   const statusDot = STATUS_DOT[instance?.status ?? ""] ?? "bg-muted-foreground"
+  const canClearChat = !!((messages?.length ?? 0) > 0 || streamingContent || waitingForAgent || error)
 
   return (
     <div className="flex h-full">
@@ -310,6 +328,26 @@ export default function ChatPage() {
           </div>
 
           <div className="flex items-center gap-1.5">
+            {messages && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={clearChat}
+                    disabled={clearing || !canClearChat}
+                  >
+                    {clearing
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <Trash2 className="h-3.5 w-3.5" />
+                    }
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Clear chat</TooltipContent>
+              </Tooltip>
+            )}
+
             {/* Watch Agent toggle */}
             {hasBrowserUrl && (
               <Tooltip>

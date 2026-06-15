@@ -35,7 +35,7 @@ const CLIENT_ID = "gateway-client"
 const CLIENT_MODE = "backend"
 const ROLE = "operator"
 const SCOPES = ["operator.admin"]
-const PROTOCOL_VERSION = 3
+const PROTOCOL_VERSION = 4
 
 // ─── Device Identity (Ed25519) ───────────────────────────────────────────────
 //

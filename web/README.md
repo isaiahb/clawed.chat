@@ -1,58 +1,34 @@
-# web/ — clawed.chat Landing Page
+# web/ — clawed.chat Marketing Site (Cloudflare Pages)
 
-> Marketing site at clawed.chat. Deployed to Cloudflare Pages. Separate from the app.
+> The marketing site at clawed.chat is a **static export of the app's React
+> frontend** (Home, Pricing, Docs are pure client-side pages), deployed to
+> Cloudflare Pages. This folder holds the deploy workflow, not the source —
+> the pages live in `../app/src/frontend/pages/`.
 
-## What This Is
-
-A standalone landing page that:
-
-1. Explains what clawed.chat does (one-click OpenClaw deployment)
-2. Shows features (cloud deploy, smart glasses, stealth browsing, auto sleep/wake)
-3. Has a "Get Started" CTA → redirects to the app dashboard (Clerk sign-in)
-4. SEO-optimized, fast, static
-
-## Why It's Separate
-
-- **Different deploy target:** Cloudflare Pages (static) vs the app (Bun server on GCP)
-- **Different dev cycle:** designer can iterate on marketing copy without touching the product
-- **Different performance profile:** static HTML, no JS framework needed (or minimal)
-
-## Planned Stack
-
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| Framework | TBD — could be plain HTML, Astro, or Bun static site | Keep it simple |
-| Styling | Tailwind CSS | Consistent with app |
-| Deploy | Cloudflare Pages | Free, fast, global CDN |
-| Domain | clawed.chat (root) | App lives at clawed.chat/dashboard or app.clawed.chat |
-
-## Priority
-
-**Low for hackathon.** The app dashboard IS the demo. A simple landing page with hero + CTA is enough. Polish later.
-
-## Structure (planned)
-
-```
-web/
-├── package.json
-├── README.md
-├── src/
-│   ├── index.html        ← landing page
-│   ├── styles.css         ← Tailwind
-│   └── assets/            ← images, icons
-└── wrangler.toml          ← Cloudflare Pages config (if needed)
-```
-
-## Running
+## Deploy
 
 ```bash
-# from repo root
-bun run dev:web
+# from repo root — build the static bundle
+cd app && bun run build
 
-# or from this directory
-bun run dev
+# copy runtime assets the server normally serves at /assets/*
+mkdir -p dist/assets && cp -r src/public/assets/ dist/assets/ && cp src/public/favicon.svg dist/
+rm -f dist/assets/.DS_Store dist/*.js.map
+printf '/* /index.html 200\n' > dist/_redirects   # SPA fallback
+
+# deploy (wrangler OAuth; run from OUTSIDE app/ so app/.env's
+# DNS-scoped CLOUDFLARE_API_TOKEN doesn't shadow your login)
+cd .. && bunx wrangler pages deploy app/dist --project-name clawed-chat-web --branch prod --commit-dirty=true
 ```
 
-## Style
+Production: https://clawed-chat-web.pages.dev (Pages project `clawed-chat-web`,
+production branch `prod`).
 
-- No semicolons, double quotes, trailing commas, `{thing}` not `{ thing }`
+## Notes
+
+- Clerk publishable key + Convex URL are baked in at build time from
+  `app/.env` (`BUN_PUBLIC_*`). Marketing pages + sign-in work fully static;
+  `/app/*` dashboard routes need the Bun backend.
+- To point the root domain here: add `clawed.chat` as a custom domain on the
+  Pages project and remove the A record pointing at the backend VM (it's
+  Pulumi-managed — update `deploy/index.ts` so CI doesn't recreate it).

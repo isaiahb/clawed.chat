@@ -174,21 +174,23 @@ function Hero() {
 
             {/* Headline */}
             <h1 className="text-[clamp(2.2rem,5vw,3.75rem)] font-black leading-[1.08] tracking-tight animate-slide-up">
-              <span className="text-foreground">Your AI agent,</span>
+              <span className="text-foreground">Your OpenClaw has been</span>
               <br />
+              <span className="text-foreground">texting you for months.</span>
+              <br />
+              <span className="text-foreground">Now it can </span>
               <WordRotator
-                words={["deployed", "running", "live", "working"]}
-                interval={3000}
+                words={["see.", "hear.", "speak."]}
+                interval={1800}
                 transition="blur"
-                className="min-w-[3ch]"
+                className="min-w-[4.5ch]"
                 wordClassName="text-gradient-red"
-              />{" "}
-              <span className="text-gradient-red">in 30 seconds.</span>
+              />
             </h1>
 
             {/* Sub */}
             <p className="mt-5 text-[16px] sm:text-[17px] leading-relaxed text-muted-foreground animate-fade-in [animation-delay:200ms]">
-              Clawed Chat gives you a fully deployed{" "}
+              Clawed connects the glasses on your face to the{" "}
               <a
                 href="https://github.com/openclaw/openclaw"
                 target="_blank"
@@ -197,8 +199,9 @@ function Hero() {
               >
                 OpenClaw
               </a>{" "}
-              agent — on your hardware or in the cloud. Watch it work live. Talk
-              to it from smart glasses. Control it from anywhere.
+              on your hardware. It sees what you see, hears what you hear,
+              speaks in your ear — or writes on your lens. Same agent, same
+              memory, out in the world with you.
             </p>
 
             {/* CTAs */}
@@ -209,7 +212,7 @@ function Hero() {
                 className="group/btn gap-2 px-7 h-12 bg-claw-red hover:bg-claw-red-bright text-white font-bold text-[15px] transition-all active:translate-y-px shadow-md hover:shadow-lg hover:shadow-claw-red/20"
               >
                 <Link to="/sign-in">
-                  Deploy your agent
+                  Get your agent
                   <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />
                 </Link>
               </Button>
@@ -219,9 +222,9 @@ function Hero() {
                 asChild
                 className="gap-2 px-7 h-12 text-muted-foreground hover:text-foreground font-semibold text-[15px] transition-all"
               >
-                <Link to="/app">
+                <Link to="/demo">
                   <Glasses className="h-4 w-4 text-claw-red" />
-                  Try the demo
+                  Try the glasses
                 </Link>
               </Button>
             </div>
@@ -230,39 +233,41 @@ function Hero() {
             <div className="mt-8 flex items-center gap-4 text-[12px] text-muted-foreground animate-fade-in [animation-delay:600ms]">
               <span className="flex items-center gap-1.5 rounded-full bg-card/50 border border-border/40 px-3 py-1 backdrop-blur-sm">
                 <Check className="h-3 w-3 text-claw-red" />
-                Free tier available
+                Works with Mentra Live & Even G2
               </span>
               <span className="flex items-center gap-1.5 rounded-full bg-card/50 border border-border/40 px-3 py-1 backdrop-blur-sm">
                 <Check className="h-3 w-3 text-claw-red" />
-                Smart glasses ready
+                Runs on your phone
               </span>
               <span className="hidden sm:flex items-center gap-1.5 rounded-full bg-card/50 border border-border/40 px-3 py-1 backdrop-blur-sm">
                 <Check className="h-3 w-3 text-claw-red" />
-                No DevOps required
+                Open-source agent
               </span>
             </div>
 
-            {/* Hackathon attribution */}
+            {/* Sponsor stack attribution */}
             <div className="mt-5 animate-fade-in [animation-delay:800ms]">
-              <span className="inline-flex items-center gap-2 text-[11px] text-muted-foreground/70">
-                Built with
-                <a
-                  href="https://browser-use.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 font-semibold text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 decoration-dotted decoration-muted-foreground/30 hover:decoration-foreground/40"
-                >
-                  Browser Use
-                </a>
-                ·
-                <a
-                  href="https://mentra.glass"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 font-semibold text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 decoration-dotted decoration-muted-foreground/30 hover:decoration-foreground/40"
-                >
-                  MentraOS
-                </a>
+              <span className="inline-flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground/70">
+                Runs on
+                {[
+                  { name: "OpenClaw", href: "https://github.com/openclaw/openclaw" },
+                  { name: "Nebius", href: "https://nebius.com" },
+                  { name: "Tavily", href: "https://tavily.com" },
+                  { name: "Composio", href: "https://composio.dev" },
+                  { name: "MentraOS", href: "https://mentra.glass" },
+                ].map((s, i) => (
+                  <span key={s.name} className="inline-flex items-center gap-2">
+                    {i > 0 && <span aria-hidden>·</span>}
+                    <a
+                      href={s.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 font-semibold text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 decoration-dotted decoration-muted-foreground/30 hover:decoration-foreground/40"
+                    >
+                      {s.name}
+                    </a>
+                  </span>
+                ))}
               </span>
             </div>
           </div>
@@ -302,24 +307,24 @@ function HowItWorks() {
   const steps: { number: string; title: string; description: string; icon: typeof Zap }[] = [
     {
       number: "01",
-      title: "Deploy",
+      title: "See",
       description:
-        "Pick a provider, paste your API key (or use ours), click deploy. Your OpenClaw agent is live on a dedicated VM in under 30 seconds.",
-      icon: Cloud,
+        "Look at something and ask. Your agent grabs a frame from your glasses camera, recognizes what's in front of you, and looks it up live on the web.",
+      icon: Eye,
     },
     {
       number: "02",
-      title: "Chat",
+      title: "Act",
       description:
-        "Send tasks from your dashboard or smart glasses. Your agent browses the web, manages files, sends emails — whatever you need.",
-      icon: Terminal,
+        "It acts across Gmail, Calendar, Slack and 250+ apps, searches the live web, browses with a real browser — with everything it already knows about you.",
+      icon: Zap,
     },
     {
       number: "03",
-      title: "Watch",
+      title: "Hear",
       description:
-        "See your agent's browser in real-time via Browser Use. Watch it click, scroll, and complete tasks — live from your dashboard.",
-      icon: Eye,
+        "The answer comes back as a voice in your ear on Mentra Live, or as silent text on your Even G2 lens. No phone out of pocket, no screens.",
+      icon: Radio,
     },
   ];
 
@@ -332,7 +337,7 @@ function HowItWorks() {
         >
           <Tag icon={Sparkles}>How It Works</Tag>
           <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
-            Three steps. <span className="text-gradient-red">That's it.</span>
+            See. Act. <span className="text-gradient-red">Hear it done.</span>
           </h2>
         </div>
 
@@ -376,6 +381,80 @@ function HowItWorks() {
 // 3 · Problem / Solution
 // ──────────────────────────────────────────────
 
+// ─── Sponsor Stack ───────────────────────────────────────────────────────────
+
+const SPONSOR_ORGANS = [
+  {
+    name: "OpenClaw",
+    organ: "The soul",
+    icon: Terminal,
+    href: "https://github.com/openclaw/openclaw",
+    blurb: "Your agent itself — open-source, self-hosted, 100k+ stars. Clawed is a first-class OpenClaw channel, like WhatsApp or Telegram.",
+  },
+  {
+    name: "Nebius",
+    organ: "The brain & eyes",
+    icon: Cpu,
+    href: "https://nebius.com",
+    blurb: "Token Factory runs the reasoning and the vision models that recognize what you're looking at. The VMs run there too.",
+  },
+  {
+    name: "Tavily",
+    organ: "The now",
+    icon: Eye,
+    href: "https://tavily.com",
+    blurb: "Live web search built for agents. See a landmark, a product, a poster — your agent looks it up as it happens.",
+  },
+  {
+    name: "Composio",
+    organ: "The hands",
+    icon: Zap,
+    href: "https://composio.dev",
+    blurb: "Gmail, Calendar, Slack, GitHub and 250+ apps. When your agent says it's done, it actually did it.",
+  },
+];
+
+function SponsorStack() {
+  return (
+    <section className="relative py-20 sm:py-24">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <Tag icon={Sparkles}>The Stack</Tag>
+          <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
+            Every organ is <span className="text-gradient-red">an open platform.</span>
+          </h2>
+          <p className="mt-3 text-[13px] text-muted-foreground">
+            No black boxes. Your agent's soul, brain, eyes, and hands are all tech you can run yourself.
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {SPONSOR_ORGANS.map((s) => (
+            <a
+              key={s.name}
+              href={s.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-6 transition-all duration-300 hover:border-claw-red/25 hover:-translate-y-0.5 hover:shadow-[0_4px_24px_oklch(0_0_0/0.08)]"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-claw-red/10 border border-claw-red/15">
+                <s.icon className="h-5 w-5 text-claw-red" />
+              </div>
+              <div className="mt-4 text-[11px] font-semibold uppercase tracking-wider text-claw-red/80">
+                {s.organ}
+              </div>
+              <div className="mt-1 text-lg font-black tracking-tight text-foreground group-hover:text-claw-red transition-colors">
+                {s.name}
+              </div>
+              <p className="mt-2 text-[12.5px] leading-relaxed text-muted-foreground">{s.blurb}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ProblemSolution() {
   const { ref: headerRef, isRevealed: headerRevealed } = useScrollReveal();
   const { ref: withoutRef, isRevealed: withoutRevealed } = useScrollReveal({
@@ -395,14 +474,15 @@ function ProblemSolution() {
         >
           <Tag icon={Zap}>The Problem</Tag>
           <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
-            OpenClaw is <span className="text-gradient-red">incredible</span>.
+            OpenClaw can do <span className="text-gradient-red">anything</span>.
             <br />
-            Setting it up is not.
+            If you're at a keyboard.
           </h2>
           <p className="mt-4 text-muted-foreground leading-relaxed max-w-lg">
-            OpenClaw is the hottest open-source AI agent — it browses the web,
-            manages files, sends emails, controls your desktop. The hard part?
-            Getting it running.
+            The most capable agent on earth lives in a chat thread. It already
+            runs your email, your calendar, your code — but the moment you
+            stand up and walk away, it's blind and mute. Clawed makes your
+            agent ambient. It goes where you go.
           </p>
         </div>
 
@@ -425,10 +505,10 @@ function ProblemSolution() {
 
             <div className="space-y-3">
               {[
-                "SSH into servers, configure Docker",
-                "Manage API keys, DNS, firewalls",
-                "Hours of DevOps setup",
-                "Something breaks, give up",
+                "Type a message, wait at your desk",
+                "Describe what you're looking at in words",
+                "Copy-paste photos into chat threads",
+                "Agent stuck in a terminal",
               ].map((item) => (
                 <div
                   key={item}
@@ -484,10 +564,10 @@ function ProblemSolution() {
 
             <div className="space-y-3 relative z-10">
               {[
-                "One-click cloud deploy or Mac companion app",
-                "Talk to your agent via smart glasses",
-                "Watch it work — live desktop stream",
-                "Dashboard for status, channels & skills",
+                "Your agent sees through your camera",
+                "Speaks straight into your ear",
+                "Writes on your lens display",
+                "Same memory, same soul, everywhere",
               ].map((item, i) => (
                 <div
                   key={item}
@@ -530,9 +610,14 @@ function DeploymentOptions() {
         >
           <Tag icon={Server}>Deploy your way</Tag>
           <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
-            Your hardware or ours.{" "}
-            <span className="text-gradient-red">You choose.</span>
+            Bring your OpenClaw.{" "}
+            <span className="text-gradient-red">Or hatch one here.</span>
           </h2>
+          <p className="mt-4 text-muted-foreground leading-relaxed">
+            Already running OpenClaw on a Mac mini in your closet? Point Clawed
+            at your gateway and go. Don't have one yet? We'll spin one up for
+            you in 30 seconds.
+          </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-5">
@@ -649,14 +734,15 @@ function GlassesSection() {
         >
           <Tag icon={Glasses}>Smart Glasses</Tag>
           <h2 className="mt-4 text-3xl sm:text-4xl font-black tracking-tight leading-[1.1] text-foreground">
-            Your agent, <span className="text-gradient-red">on your face.</span>
+            No middleman.{" "}
+            <span className="text-gradient-red">Your phone, your agent.</span>
           </h2>
 
           <p className="mt-6 text-[15px] text-muted-foreground leading-relaxed max-w-xl mx-auto">
-            Put on your smart glasses and talk to your OpenClaw agent by voice.
-            Ask it to check your email, find an article, or summarize meeting
-            notes — hear the answer read back. On your dashboard, watch the
-            agent's desktop stream in real-time.
+            Clawed runs as a local miniapp on your phone and speaks directly to
+            your own OpenClaw gateway. Your voice never routes through someone
+            else's agent cloud — lower latency, and your agent stays yours.
+            Self-hosted soul included.
           </p>
 
           <div className="mt-8 flex flex-wrap justify-center gap-2.5">
@@ -795,15 +881,15 @@ function BetaCTA() {
           </div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.08] text-foreground">
-            Ready to deploy
+            Put your
             <br />
-            <span className="text-gradient-red">your lobster?</span>{" "}
+            <span className="text-gradient-red">lobster on.</span>{" "}
             <span className="inline-block">🦞</span>
           </h2>
 
           <p className="mt-5 text-muted-foreground max-w-md mx-auto leading-relaxed text-[16px]">
-            Deploy your own OpenClaw agent in 30 seconds, watch it work from
-            anywhere, and talk to it from your smart glasses.
+            Connect your OpenClaw to your glasses in two minutes. It's been
+            waiting to meet you.
           </p>
 
           {/* Buttons */}
@@ -1015,18 +1101,17 @@ function NotClaude() {
 // ──────────────────────────────────────────────
 
 export default function Home() {
-  useDocumentTitle(
-    "Clawed Chat — Deploy Your AI Agent. Talk to It on Glasses. 🦞",
-    {
-      suffix: "",
-    },
-  );
+  useDocumentTitle("Clawed — Your OpenClaw, on your face. 🦞", {
+    suffix: "",
+  });
   return (
     <div className="animate-page-enter bg-grid-full">
       <ScrollProgress />
       <Hero />
       <SectionDivider />
       <HowItWorks />
+      <SectionDivider />
+      <SponsorStack />
       <SectionDivider />
       <ProblemSolution />
       <DeploymentOptions />

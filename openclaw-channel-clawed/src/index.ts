@@ -61,11 +61,12 @@ const clawedPlugin = {
     },
     resolveAccount: (cfg: OpenClawConfig, accountId: string): ClawedAccount => {
       // cfg is the plugin-specific config (plugins.entries.<id>.config)
-      // Fall back to hardcoded defaults so the plugin works with empty/missing config
+      // backendUrl may default; the auth token MUST come from config —
+      // no hardcoded fallback secrets.
       return {
         accountId: accountId ?? "default",
         backendUrl: (cfg as any)?.backendUrl ?? "https://clawed.chat",
-        authToken: (cfg as any)?.authToken ?? "REDACTED-ROTATE-ME",
+        authToken: (cfg as any)?.authToken ?? "",
       };
     },
   },

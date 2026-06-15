@@ -23,6 +23,18 @@ import {
 import {
   Plug,
   PlugZap,
+  Mail,
+  CalendarDays,
+  Github,
+  MessageSquare,
+  FileText,
+  SquareKanban,
+  Table,
+  HardDrive,
+  MessageCircle,
+  Globe,
+  Sparkles,
+  LockKeyhole,
   CheckCircle2,
   XCircle,
   AlertTriangle,
@@ -33,7 +45,6 @@ import {
   Shield,
   Loader2,
   Search,
-  Plus,
   Eye,
   Edit3,
   ShieldAlert,
@@ -46,26 +57,109 @@ import type {
   ConnectionPermission,
 } from "../../types";
 
-// ─── Brand logos ─────────────────────────────────────────────────────────────
+// ─── Provider visuals ────────────────────────────────────────────────────────
 
-import slackLogo from "../../assets/logos/slack.svg";
-import gmailLogo from "../../assets/logos/gmail.svg";
-import googleCalendarLogo from "../../assets/logos/google-calendar.svg";
-import notionLogo from "../../assets/logos/notion.svg";
-import linearLogo from "../../assets/logos/linear.svg";
-import githubLogo from "../../assets/logos/github.svg";
-
-const logoMap: Record<string, string> = {
-  slack: slackLogo,
-  gmail: gmailLogo,
-  "google-calendar": googleCalendarLogo,
-  notion: notionLogo,
-  linear: linearLogo,
-  github: githubLogo,
+const providerVisuals: Record<
+  string,
+  { icon: LucideIcon; color: string; tint: string; accent: string }
+> = {
+  gmail: {
+    icon: Mail,
+    color: "text-red-400",
+    tint: "bg-red-500/10",
+    accent: "border-red-500/30",
+  },
+  "google-calendar": {
+    icon: CalendarDays,
+    color: "text-emerald-400",
+    tint: "bg-emerald-500/10",
+    accent: "border-emerald-500/30",
+  },
+  github: {
+    icon: Github,
+    color: "text-zinc-100",
+    tint: "bg-zinc-500/10",
+    accent: "border-zinc-300/20",
+  },
+  slack: {
+    icon: MessageSquare,
+    color: "text-sky-300",
+    tint: "bg-sky-500/10",
+    accent: "border-sky-500/30",
+  },
+  notion: {
+    icon: FileText,
+    color: "text-zinc-100",
+    tint: "bg-zinc-500/10",
+    accent: "border-zinc-300/20",
+  },
+  linear: {
+    icon: SquareKanban,
+    color: "text-violet-300",
+    tint: "bg-violet-500/10",
+    accent: "border-violet-500/30",
+  },
+  "google-sheets": {
+    icon: Table,
+    color: "text-emerald-300",
+    tint: "bg-emerald-500/10",
+    accent: "border-emerald-500/30",
+  },
+  "google-drive": {
+    icon: HardDrive,
+    color: "text-amber-300",
+    tint: "bg-amber-500/10",
+    accent: "border-amber-500/30",
+  },
+  "google-docs": {
+    icon: FileText,
+    color: "text-blue-300",
+    tint: "bg-blue-500/10",
+    accent: "border-blue-500/30",
+  },
+  twitter: {
+    icon: Globe,
+    color: "text-sky-300",
+    tint: "bg-sky-500/10",
+    accent: "border-sky-500/30",
+  },
+  discord: {
+    icon: MessageCircle,
+    color: "text-indigo-300",
+    tint: "bg-indigo-500/10",
+    accent: "border-indigo-500/30",
+  },
+  custom: {
+    icon: Plug,
+    color: "text-muted-foreground",
+    tint: "bg-muted/60",
+    accent: "border-border",
+  },
 };
 
-function getProviderLogo(provider: string): string | null {
-  return logoMap[provider] ?? null;
+const demoTools = [
+  {
+    name: "Gmail",
+    detail: "Composio reads unread mail and stages drafts",
+    icon: Mail,
+    color: "text-red-400",
+  },
+  {
+    name: "Tavily",
+    detail: "Live web search runs from the laptop bridge",
+    icon: Globe,
+    color: "text-sky-300",
+  },
+  {
+    name: "Approval gate",
+    detail: "Anything sensitive stays draft-first",
+    icon: LockKeyhole,
+    color: "text-emerald-300",
+  },
+];
+
+function getProviderVisual(provider: string) {
+  return providerVisuals[provider] ?? providerVisuals.custom!;
 }
 
 // ─── Service catalog ─────────────────────────────────────────────────────────
@@ -206,6 +300,36 @@ const SERVICE_CATALOG: ServiceCatalogEntry[] = [
       { action: "Edit docs", type: "write", description: "Make changes to existing documents" },
     ],
   },
+  {
+    provider: "twitter",
+    service: "twitter",
+    name: "Twitter / X",
+    icon: "Twitter",
+    capability: "Read timeline, post tweets, and manage DMs",
+    scopes: ["Read tweets", "Post tweets", "Read DMs", "Send DMs", "Search"],
+    permissions: [
+      { action: "Read tweets", type: "read", description: "View your timeline, mentions, and bookmarks" },
+      { action: "Search tweets", type: "read", description: "Search public tweets and trends" },
+      { action: "Post tweets", type: "write", description: "Publish tweets and threads on your behalf" },
+      { action: "Read DMs", type: "read", description: "Access your direct message conversations" },
+      { action: "Send DMs", type: "approval", description: "Sending direct messages always requires your approval" },
+    ],
+  },
+  {
+    provider: "discord",
+    service: "discord",
+    name: "Discord",
+    icon: "MessageCircle",
+    capability: "Read and send messages across your servers",
+    scopes: ["Read messages", "Send messages", "List servers", "Manage channels"],
+    permissions: [
+      { action: "Read messages", type: "read", description: "View messages in servers and DMs you belong to" },
+      { action: "List servers", type: "read", description: "See your servers, channels, and members" },
+      { action: "Send messages", type: "write", description: "Post messages to channels on your behalf" },
+      { action: "Manage channels", type: "write", description: "Create threads and manage channel topics" },
+      { action: "Send to new servers", type: "approval", description: "Posting to a server for the first time always requires your OK" },
+    ],
+  },
 ];
 
 /** Maps backend service name → catalog provider name */
@@ -216,6 +340,11 @@ const SERVICE_TO_PROVIDER: Record<string, string> = {
   slack: "slack",
   notion: "notion",
   linear: "linear",
+  googlesheets: "google-sheets",
+  googledrive: "google-drive",
+  googledocs: "google-docs",
+  twitter: "twitter",
+  discord: "discord",
 };
 
 /** Backend API response shape */
@@ -278,25 +407,25 @@ const statusConfig: Record<
   connected: {
     label: "Connected",
     icon: CheckCircle2,
-    className: "text-emerald-700 bg-emerald-50 border-emerald-200",
+    className: "text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
     dotClass: "bg-emerald-500",
   },
   disconnected: {
     label: "Disconnected",
     icon: XCircle,
-    className: "text-muted-foreground bg-muted border-border",
+    className: "text-muted-foreground bg-muted/40 border-border/70",
     dotClass: "bg-muted-foreground/40",
   },
   error: {
     label: "Error",
     icon: AlertTriangle,
-    className: "text-red-700 bg-red-50 border-red-200",
+    className: "text-red-300 bg-red-500/10 border-red-500/25",
     dotClass: "bg-red-500",
   },
   pending: {
     label: "Pending",
     icon: Clock,
-    className: "text-amber-700 bg-amber-50 border-amber-200",
+    className: "text-amber-300 bg-amber-500/10 border-amber-500/25",
     dotClass: "bg-amber-500 animate-pulse",
   },
 };
@@ -310,17 +439,17 @@ const permissionTypeConfig: Record<
   read: {
     label: "Read",
     icon: Eye,
-    badgeClass: "bg-blue-50 text-blue-700 border-blue-200",
+    badgeClass: "bg-blue-500/10 text-blue-300 border-blue-500/25",
   },
   write: {
     label: "Write",
     icon: Edit3,
-    badgeClass: "bg-amber-50 text-amber-700 border-amber-200",
+    badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/25",
   },
   approval: {
     label: "Needs Approval",
     icon: ShieldAlert,
-    badgeClass: "bg-red-50 text-red-700 border-red-200",
+    badgeClass: "bg-red-500/10 text-red-300 border-red-500/25",
   },
 };
 
@@ -363,10 +492,14 @@ function ConnectionTile({
   disconnecting?: boolean;
 }) {
   const [testing, setTesting] = useState(false);
-  const logo = getProviderLogo(connection.provider);
+  const visual = getProviderVisual(connection.provider);
+  const ProviderIcon = visual.icon;
   const status = statusConfig[connection.status];
   const isConnected = connection.status === "connected";
   const isError = connection.status === "error";
+  const readCount = connection.permissions?.filter((p) => p.type === "read").length ?? 0;
+  const writeCount = connection.permissions?.filter((p) => p.type === "write").length ?? 0;
+  const approvalCount = connection.permissions?.filter((p) => p.type === "approval").length ?? 0;
 
   const handleTest = async () => {
     setTesting(true);
@@ -379,47 +512,35 @@ function ConnectionTile({
   return (
     <Card
       className={cn(
-        "group relative transition-all duration-200",
-        isError && "border-red-200 dark:border-red-800/40",
+        "group relative overflow-hidden border-border/70 bg-card/70 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-foreground/20",
+        isConnected && "border-emerald-500/25 shadow-[0_0_0_1px_oklch(0.6_0.16_145/0.08)]",
+        isError && "border-red-500/30",
       )}
     >
-      <CardContent className="p-5">
+      <div className={cn("absolute inset-x-0 top-0 h-0.5", isConnected ? "bg-emerald-400/70" : "bg-claw-red/70")} />
+      <CardContent className="flex min-h-[218px] flex-col p-5">
         {/* Header row */}
         <div className="flex items-start gap-4">
-          {/* Provider icon — official brand logo */}
           <div
             className={cn(
-              "flex h-12 w-12 shrink-0 items-center justify-center transition-all duration-200 border rounded-lg overflow-hidden",
-              isConnected
-                ? "bg-white dark:bg-white/95 border-primary/20 group-hover:border-primary/40 group-hover:shadow-[0_0_0_3px_oklch(0.52_0.22_25/0.06)]"
-                : isError
-                  ? "bg-white dark:bg-white/95 border-red-200 dark:border-red-800/40"
-                  : "bg-muted border-border group-hover:border-foreground/20",
+              "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border transition-all duration-200",
+              visual.tint,
+              visual.accent,
+              !isConnected && !isError && "opacity-75 grayscale",
             )}
           >
-            {logo ? (
-              <img
-                src={logo}
-                alt={connection.name}
-                className={cn(
-                  "h-7 w-7 object-contain",
-                  !isConnected && !isError && "opacity-40 grayscale",
-                )}
-              />
-            ) : (
-              <Plug className="h-6 w-6 text-muted-foreground" />
-            )}
+            <ProviderIcon className={cn("h-6 w-6", visual.color)} />
           </div>
 
           {/* Name + status + capability */}
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-sm truncate text-foreground">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-black tracking-tight text-foreground">
                 {connection.name}
               </h3>
               <Badge
                 variant="outline"
-                className={cn("text-[10px] shrink-0 gap-1", status.className)}
+                className={cn("h-5 shrink-0 gap-1 rounded-full px-2 text-[10px] font-bold uppercase tracking-[0.08em]", status.className)}
               >
                 <span
                   className={cn("h-1.5 w-1.5 rounded-full", status.dotClass)}
@@ -430,10 +551,28 @@ function ConnectionTile({
 
             {/* Capability one-liner */}
             {connection.capability && (
-              <p className="mt-1 text-xs text-muted-foreground leading-snug">
+              <p className="mt-2 text-sm text-muted-foreground leading-snug">
                 {connection.capability}
               </p>
             )}
+
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {readCount > 0 && (
+                <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-1 text-[10px] font-semibold text-blue-300">
+                  {readCount} read
+                </span>
+              )}
+              {writeCount > 0 && (
+                <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-[10px] font-semibold text-amber-300">
+                  {writeCount} write
+                </span>
+              )}
+              {approvalCount > 0 && (
+                <span className="rounded-full border border-red-500/20 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-300">
+                  {approvalCount} approval
+                </span>
+              )}
+            </div>
 
             {/* Connected since / last sync */}
             {isConnected && (
@@ -463,7 +602,7 @@ function ConnectionTile({
         </div>
 
         {/* Actions */}
-        <div className="mt-4 flex items-center gap-2 pt-3 border-t border-border">
+        <div className="mt-auto flex items-center gap-2 border-t border-border/70 pt-4">
           {isConnected ? (
             <>
               <Button
@@ -528,7 +667,7 @@ function ConnectionTile({
               <Button
                 variant="default"
                 size="sm"
-                className="h-7 gap-1.5 text-[11px] bg-claw-red hover:bg-claw-red-bright text-white"
+                className="h-9 gap-1.5 rounded-lg bg-claw-red px-4 text-xs text-white hover:bg-claw-red-bright"
                 onClick={() => onConnect(connection)}
                 disabled={connecting}
               >
@@ -563,7 +702,7 @@ function ConnectionTile({
             <Button
               variant="default"
               size="sm"
-              className="h-7 gap-1.5 text-[11px] bg-claw-red hover:bg-claw-red-bright text-white"
+              className="h-9 gap-1.5 rounded-lg bg-claw-red px-4 text-xs text-white hover:bg-claw-red-bright"
               onClick={() => onConnect(connection)}
               disabled={connecting}
             >
@@ -600,7 +739,8 @@ function PermissionsDialog({
 }) {
   if (!connection) return null;
 
-  const logo = getProviderLogo(connection.provider);
+  const visual = getProviderVisual(connection.provider);
+  const ProviderIcon = visual.icon;
   const status = statusConfig[connection.status];
 
   // Group permissions by type
@@ -614,16 +754,8 @@ function PermissionsDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center border border-border bg-white dark:bg-white/95 rounded-lg overflow-hidden">
-              {logo ? (
-                <img
-                  src={logo}
-                  alt={connection.name}
-                  className="h-6 w-6 object-contain"
-                />
-              ) : (
-                <Plug className="h-5 w-5 text-muted-foreground" />
-              )}
+            <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg border", visual.tint, visual.accent)}>
+              <ProviderIcon className={cn("h-5 w-5", visual.color)} />
             </div>
             <div>
               <DialogTitle className="text-base">{connection.name}</DialogTitle>
@@ -1021,51 +1153,71 @@ export default function ConnectionsPage() {
     (c) => c.status === "connected",
   ).length;
   const errorCount = connections.filter((c) => c.status === "error").length;
+  const disconnectedCount = connections.length - connectedCount - errorCount;
 
   return (
-    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
       {/* Page Header */}
-      <div>
-        <h1 className="text-xl font-black tracking-tight text-foreground">
-          Connect your tools
-        </h1>
-        <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
-          Choose what your agent can access. Each service shows exactly what
-          Clawed can read, write, and when it will ask for approval.
-        </p>
+      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+        <div className="rounded-lg border border-border/70 bg-card/60 p-6 backdrop-blur-xl">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-claw-red/25 bg-claw-red/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-claw-red-bright">
+            <Sparkles className="h-3.5 w-3.5" />
+            Composio control room
+          </div>
+          <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
+            Connect your tools
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+            Pick what OpenClaw can use from your laptop. The demo path is wired
+            for Gmail through Composio and live web search through Tavily, with
+            approval boundaries visible before anything sensitive happens.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-3 overflow-hidden rounded-lg border border-border/70 bg-card/60 backdrop-blur-xl">
+          <div className="flex flex-col justify-between border-r border-border/70 p-4">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            <div>
+              <div className="text-2xl font-black tabular-nums">{connectedCount}</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Connected</div>
+            </div>
+          </div>
+          <div className="flex flex-col justify-between border-r border-border/70 p-4">
+            <Plug className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <div className="text-2xl font-black tabular-nums">{disconnectedCount}</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Available</div>
+            </div>
+          </div>
+          <div className="flex flex-col justify-between p-4">
+            <Shield className="h-4 w-4 text-sky-300" />
+            <div>
+              <div className="text-2xl font-black tabular-nums">{connections.length}</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Total</div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Stats bar */}
-      <div className="flex flex-wrap items-center gap-2.5">
-        <div className="flex items-center gap-2 border border-border bg-card px-3 py-2 transition-colors duration-200 hover:border-emerald-300">
-          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-          <span className="text-sm font-bold tabular-nums">
-            {connectedCount}
-          </span>
-          <span className="text-[11px] text-muted-foreground">connected</span>
-        </div>
-        {errorCount > 0 && (
-          <div className="flex items-center gap-2 border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800/40 px-3 py-2 transition-colors duration-200">
-            <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-            <span className="text-sm font-bold text-red-700 dark:text-red-400 tabular-nums">
-              {errorCount}
-            </span>
-            <span className="text-[11px] text-red-600 dark:text-red-400/80">
-              need attention
-            </span>
-          </div>
-        )}
-        <div className="flex items-center gap-2 border border-border bg-card px-3 py-2 transition-colors duration-200 hover:border-foreground/30">
-          <Plug className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-sm font-bold tabular-nums">
-            {connections.length}
-          </span>
-          <span className="text-[11px] text-muted-foreground">total</span>
-        </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        {demoTools.map((tool) => {
+          const ToolIcon = tool.icon;
+          return (
+            <div key={tool.name} className="flex items-center gap-3 rounded-lg border border-border/70 bg-card/55 p-4 backdrop-blur-xl">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/40">
+                <ToolIcon className={cn("h-5 w-5", tool.color)} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-bold text-foreground">{tool.name}</div>
+                <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{tool.detail}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Filters + Search */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-lg border border-border/70 bg-card/50 p-3 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-1">
           {(
             [
@@ -1077,10 +1229,10 @@ export default function ConnectionsPage() {
             <button
               key={f.key}
               className={cn(
-                "px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.04em] border transition-all duration-200",
+                "rounded-md border px-3 py-2 text-[11px] font-bold uppercase tracking-[0.06em] transition-all duration-200",
                 filter === f.key
                   ? "border-foreground bg-foreground text-background"
-                  : "border-border text-muted-foreground hover:border-foreground hover:text-foreground active:translate-y-px",
+                  : "border-border/70 text-muted-foreground hover:border-foreground/30 hover:text-foreground active:translate-y-px",
               )}
               onClick={() => setFilter(f.key)}
             >
@@ -1089,20 +1241,20 @@ export default function ConnectionsPage() {
           ))}
         </div>
 
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search connections…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8 pl-9 text-xs"
+            className="h-10 rounded-lg border-border/70 bg-background/40 pl-9 text-sm"
           />
         </div>
       </div>
 
       {/* Connection Grid */}
       {filteredConnections.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-2">
           {filteredConnections.map((connection) => {
             const catalogEntry = SERVICE_CATALOG.find((e) => e.provider === connection.provider);
             return (
@@ -1118,23 +1270,6 @@ export default function ConnectionsPage() {
               />
             );
           })}
-
-          {/* Add new connection card */}
-          <Card className="flex items-center justify-center border-dashed min-h-[200px] transition-colors hover:border-foreground/40 cursor-pointer group">
-            <CardContent className="flex flex-col items-center gap-3 p-6 text-center">
-              <div className="flex h-12 w-12 items-center justify-center border border-border bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                <Plus className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">
-                  Add connection
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Connect a new service
-                </p>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       ) : (
         <Card>

@@ -60,6 +60,14 @@ const SERVICE_MAP: Record<string, {toolkit: string; authConfigEnv: string}> = {
     toolkit: "googledocs",
     authConfigEnv: "COMPOSIO_GOOGLEDOCS_AUTH_CONFIG",
   },
+  twitter: {
+    toolkit: "twitter",
+    authConfigEnv: "COMPOSIO_TWITTER_AUTH_CONFIG",
+  },
+  discord: {
+    toolkit: "discord",
+    authConfigEnv: "COMPOSIO_DISCORD_AUTH_CONFIG",
+  },
 }
 
 // ─── Singleton Client ────────────────────────────────────────────────────────

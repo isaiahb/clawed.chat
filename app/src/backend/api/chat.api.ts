@@ -36,6 +36,8 @@ function getConvex(): ConvexHttpClient {
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 app.post("/:instanceId", sendMessage)
+app.post("/:instanceId/agent-final", persistAgentFinal)
+app.delete("/:instanceId", clearMessages)
 
 // ─── Handlers ────────────────────────────────────────────────────────────────
 
@@ -111,6 +113,88 @@ async function sendMessage(c: Context) {
     message: "Message sent",
     dispatched: !!(instance.ip && instance.status === "running"),
   })
+}
+
+/**
+ * POST /:instanceId/agent-final — persist a streamed agent reply.
+ *
+ * The frontend receives agent replies over the WebSocket proxy and calls
+ * this to persist the final text to Convex. Clerk session auth + instance
+ * ownership check — replaces the old pattern of the browser POSTing to
+ * /openclaw/outbound with the shared gateway token baked into the bundle.
+ */
+async function persistAgentFinal(c: Context) {
+  const auth = getAuth(c)
+  if (!auth?.userId) {
+    return c.json({error: "Unauthorized"}, 401)
+  }
+
+  const instanceId = c.req.param("instanceId")
+  const {content, source = "web"} = await c.req.json()
+
+  if (!content) {
+    return c.json({error: "content is required"}, 400)
+  }
+
+  const db = getConvex()
+
+  let instance
+  try {
+    instance = await db.query(api.instances.get, {id: instanceId as any})
+  } catch {
+    return c.json({error: "Instance not found"}, 404)
+  }
+  if (!instance || instance.user_id !== auth.userId) {
+    return c.json({error: "Instance not found"}, 404)
+  }
+
+  try {
+    await db.mutation(api.chatMessages.insert, {
+      user_id: auth.userId,
+      instance_id: instanceId,
+      role: "agent",
+      source: source as "web" | "glasses" | "desktop",
+      content,
+      timestamp: Date.now(),
+    })
+  } catch (err) {
+    console.error("[chat] failed to persist agent message:", err)
+    return c.json({error: "Failed to save message"}, 500)
+  }
+
+  return c.json({success: true})
+}
+
+/** DELETE /:instanceId — clear chat history for an owned instance */
+async function clearMessages(c: Context) {
+  const auth = getAuth(c)
+  if (!auth?.userId) {
+    return c.json({error: "Unauthorized"}, 401)
+  }
+
+  const instanceId = c.req.param("instanceId")
+  const db = getConvex()
+
+  let instance
+  try {
+    instance = await db.query(api.instances.get, {id: instanceId as any})
+  } catch {
+    return c.json({error: "Instance not found"}, 404)
+  }
+
+  if (!instance || instance.user_id !== auth.userId) {
+    return c.json({error: "Instance not found"}, 404)
+  }
+
+  try {
+    const deleted = await db.mutation(api.chatMessages.clearByInstance, {
+      instance_id: instanceId,
+    })
+    return c.json({success: true, deleted})
+  } catch (err) {
+    console.error("[chat] failed to clear messages:", err)
+    return c.json({error: "Failed to clear messages"}, 500)
+  }
 }
 
 export default app

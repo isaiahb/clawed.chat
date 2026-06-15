@@ -180,7 +180,7 @@ function SiteHeader() {
             className="gap-1.5 bg-claw-red hover:bg-claw-red-bright text-white text-[13px] h-8 px-4 shadow-sm hover:shadow-md"
           >
             <Link to="/sign-in">
-              Deploy agent
+              Get your agent
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </Button>
@@ -242,7 +242,7 @@ function SiteHeader() {
                   className="bg-claw-red hover:bg-claw-red-bright text-white gap-1.5"
                 >
                   <Link to="/sign-in" onClick={() => setMobileOpen(false)}>
-                    Deploy agent
+                    Get your agent
                     <ArrowRight className="ml-1 h-3.5 w-3.5" />
                   </Link>
                 </Button>
@@ -298,7 +298,7 @@ function SiteFooter() {
             </div>
             <div>
               <p className="text-[14px] font-semibold text-foreground">
-                Deploy your first agent today
+                Give your OpenClaw senses today
               </p>
               <p className="mt-0.5 text-[12px] text-muted-foreground">
                 Free tier available. No credit card required.
@@ -341,8 +341,8 @@ function SiteFooter() {
               </span>
             </div>
             <p className="text-[13px] text-muted-foreground leading-relaxed max-w-xs mb-6">
-              Deploy your AI agent in 30 seconds. Watch it work. Talk to it on
-              smart glasses. Built on OpenClaw.
+              The glasses channel for OpenClaw. It sees what you see, hears
+              what you hear, and speaks back. 🦞
             </p>
 
             {/* Socials — square, blocky icons */}

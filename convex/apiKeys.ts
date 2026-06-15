@@ -5,22 +5,44 @@
  * Keys are encrypted before storage — only masked versions
  * are ever returned to the frontend.
  *
+ * SECURITY: All user-facing queries verify Clerk auth so users
+ * can only see their own keys. Mutations called from the backend
+ * (ConvexHttpClient, no Clerk session) remain open but are gated
+ * at the Hono API layer (keys.api.ts).
+ *
  * Reference: Design Doc 08
  */
 
-import {v} from "convex/values"
-import {mutation, query} from "./_generated/server"
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+
+// ─── Auth Helper ─────────────────────────────────────────────────────────────
+
+async function requireUser(ctx: any): Promise<string> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new Error("Unauthorized — no valid session");
+  }
+  return identity.subject;
+}
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
 /**
  * List all keys for a user (masked only — never returns encrypted_key).
+ *
+ * SECURITY: If caller is authenticated, they can only list their own.
  */
 export const listByUser = query({
   args: {
     user_id: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity && args.user_id !== identity.subject) {
+      return [];
+    }
+
     const keys = await ctx.db
       .query("api_keys")
       .withIndex("by_user_id", (q) => q.eq("user_id", args.user_id))
@@ -41,6 +63,8 @@ export const listByUser = query({
  * Get a single key by user + provider.
  * Returns the full record including encrypted_key (for backend decryption).
  * Do NOT expose this to the frontend.
+ *
+ * SECURITY: If caller is authenticated, they can only query their own.
  */
 export const getByUserProvider = query({
   args: {
@@ -48,6 +72,11 @@ export const getByUserProvider = query({
     provider: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity && args.user_id !== identity.subject) {
+      return null;
+    }
+
     return await ctx.db
       .query("api_keys")
       .withIndex("by_user_provider", (q) =>

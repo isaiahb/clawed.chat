@@ -12,8 +12,13 @@
     "dev": "bun run --filter clawed-chat-app dev",
     "dev:web": "bun run --filter web dev",
     "dev:desktop": "bun run --filter desktop dev",
+    "dev:glasses": "cd glasses-miniapp && bun run dev",
     "check": "tsc --noEmit",
-    "clean": "rm -rf node_modules app/node_modules web/node_modules desktop/node_modules deploy/node_modules"
+    "clean": "rm -rf node_modules app/node_modules web/node_modules desktop/node_modules deploy/node_modules",
+    "secrets:pull": "doppler secrets download --no-file --format env > app/.env && echo 'app/.env regenerated from Doppler (clawed-chat/dev)'",
+    "dev:secure": "doppler run -- bun run --filter clawed-chat-app dev",
+    "start:secure": "doppler run -- bun run --filter clawed-chat-app start",
+    "build:secure": "doppler run -- bun run --filter clawed-chat-app build"
   },
   "dependencies": {
     "convex": "^1.32.0"

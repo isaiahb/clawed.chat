@@ -4,11 +4,26 @@
  * Manages Composio OAuth connections for external services
  * (Gmail, Google Calendar, GitHub, etc.)
  *
+ * SECURITY: All user-facing queries verify Clerk auth so users
+ * can only see their own connections. Mutations called from the
+ * backend (ConvexHttpClient, no Clerk session) remain open but
+ * are gated at the Hono API layer (connections.api.ts).
+ *
  * Reference: Design Doc 04
  */
 
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+
+// ─── Auth Helper ─────────────────────────────────────────────────────────────
+
+async function requireUser(ctx: any): Promise<string> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new Error("Unauthorized — no valid session");
+  }
+  return identity.subject;
+}
 
 const connectionStatus = v.union(
   v.literal("connected"),
@@ -21,12 +36,19 @@ const connectionStatus = v.union(
 
 /**
  * List all connections for a user.
+ *
+ * SECURITY: If caller is authenticated, they can only list their own.
  */
 export const listByUser = query({
   args: {
     user_id: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity && args.user_id !== identity.subject) {
+      return [];
+    }
+
     return await ctx.db
       .query("connections")
       .withIndex("by_user_id", (q) => q.eq("user_id", args.user_id))
@@ -36,6 +58,8 @@ export const listByUser = query({
 
 /**
  * Get a specific connection by user + service.
+ *
+ * SECURITY: If caller is authenticated, they can only query their own.
  */
 export const getByUserService = query({
   args: {
@@ -43,6 +67,11 @@ export const getByUserService = query({
     service: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity && args.user_id !== identity.subject) {
+      return null;
+    }
+
     return await ctx.db
       .query("connections")
       .withIndex("by_user_service", (q) =>
@@ -54,13 +83,23 @@ export const getByUserService = query({
 
 /**
  * Get a connection by its Convex document ID.
+ *
+ * SECURITY: Only the connection owner can fetch it.
  */
 export const get = query({
   args: {
     id: v.id("connections"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const identity = await ctx.auth.getUserIdentity();
+    const connection = await ctx.db.get(args.id);
+    if (!connection) return null;
+
+    if (identity && connection.user_id !== identity.subject) {
+      return null;
+    }
+
+    return connection;
   },
 });
 

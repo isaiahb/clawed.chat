@@ -1,0 +1,18 @@
+# Keep the Fly build context small + correct
+node_modules
+**/node_modules
+.repos
+.git
+desktop
+deploy
+web
+glasses-miniapp
+parth
+mentra-mini-app-example
+**/dist
+**/*.log
+.env
+**/.env
+!.env.example
+.isaiah
+*.zip

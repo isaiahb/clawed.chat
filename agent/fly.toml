@@ -1,0 +1,26 @@
+## clawed-agent — locked-down judge OpenClaw (PRIVATE network only)
+##
+## No [http_service] and no public IPs → not reachable from the internet.
+## Only clawed-chat (same org) reaches it at clawed-agent.internal:18789,
+## and only via the rate-limited /api/judge proxy.
+##
+## Secrets (Doppler → Fly): NEBIUS_API_KEY, OPENCLAW_GATEWAY_TOKEN only.
+## Deliberately NO Composio / Gmail / Calendar / personal credentials.
+
+app = "clawed-agent"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  OPENCLAW_HEADLESS = "true"
+
+# No [[services]] and no public IP: the gateway is reachable ONLY over Fly's
+# private 6PN at clawed-agent.internal:18789 (an in-container socat relay binds
+# IPv6 → the gateway's loopback). The public internet cannot reach it; only
+# clawed-chat's rate-limited /api/judge talks to it.
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
