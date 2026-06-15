@@ -50,3 +50,6 @@ Thumbs.db
 .cache/
 .isaiah/
 .repos/
+
+# local demo contacts (real emails — never commit)
+clawed-connector/contacts.md

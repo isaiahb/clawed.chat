@@ -22,11 +22,14 @@ eyes, Tavily supplies live knowledge, Composio supplies hands.
 ## Where the interesting code is (read in this order)
 
 1. [glasses-miniapp/src/background/controller.ts](glasses-miniapp/src/background/controller.ts)
-   — AgentController: wake word → command → gateway → speak/display; vision
-   flow; proactive agent whispers. The heart of the product.
-2. [glasses-miniapp/src/background/gateway.ts](glasses-miniapp/src/background/gateway.ts)
-   — direct phone→OpenClaw WebSocket client (v3 protocol, token auth).
-   Tested against a protocol-accurate mock: [glasses-miniapp/test/gateway.test.ts](glasses-miniapp/test/gateway.test.ts).
+   — Controller: push-to-talk (button → capture transcription → send) →
+   speak/display; photo/vision flow. The heart of the product.
+2. [app/src/backend/api/relay.ts](app/src/backend/api/relay.ts) +
+   [clawed-connector/connector.mjs](clawed-connector/connector.mjs)
+   — the channel: the miniapp ([relay.ts](glasses-miniapp/src/background/relay.ts))
+   pairs to a relay broker, and the connector bridges that to a local OpenClaw
+   gateway (v4 protocol, token auth, operator.admin scope). Smoke-tested:
+   [app/test/relay.test.ts](app/test/relay.test.ts).
 3. [app/src/backend/api/vision.api.ts](app/src/backend/api/vision.api.ts)
    — camera frame → Nebius vision → Tavily live search → spoken-ready answer.
 4. [app/src/backend/api/llm-proxy.api.ts](app/src/backend/api/llm-proxy.api.ts)
@@ -41,8 +44,8 @@ eyes, Tavily supplies live knowledge, Composio supplies hands.
 
 ```bash
 bun install                                  # repo root, installs all workspaces
-cd glasses-miniapp && bun install && bun test  # 3 gateway-protocol tests
-bun run typecheck                            # miniapp: clean
+cd app && bun test                           # relay broker + gateway helpers (12 pass)
+cd ../glasses-miniapp && bun run typecheck   # miniapp: clean
 cd ../app && bunx tsc --noEmit               # backend+frontend (known debt: ~76
                                              # strict errors in pre-existing UI
                                              # components, none in this feature work)
@@ -51,8 +54,9 @@ cd .. && bun run dev:glasses                 # dev server + QR for a real phone
 
 ## Honest status (June 2026)
 
-- **Works, tested**: gateway client (mock-gateway tests), static marketing site
-  (live at clawed-chat-web.pages.dev), miniapp builds + dev loop.
+- **Works, tested**: relay broker + gateway helpers (`bun test`, 12 pass), live
+  judge agent (api.clawed.chat/api/judge), static marketing site (live at
+  clawed-chat-web.pages.dev), miniapp builds + dev loop.
 - **Works, needs live keys**: vision pipeline, Nebius LLM routing, judge
   endpoint (gateway round-trip logic mirrors the proven client).
 - **Known debt**: GCP backend is being replaced (see

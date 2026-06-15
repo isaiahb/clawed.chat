@@ -11,7 +11,7 @@ const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || "ws://127.0.0.1:18789"
 const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || ""
 const REPLY_TIMEOUT_MS = 60_000
 
-function extractText(message: unknown): string {
+export function extractText(message: unknown): string {
   if (!message || typeof message !== "object") return ""
   const content = (message as Record<string, unknown>).content
   if (Array.isArray(content)) {
@@ -26,7 +26,7 @@ function extractText(message: unknown): string {
 /** A brand-new session's first agent turn is sometimes a "waking up" meta
  * reply instead of answering. Detect it so we can re-ask on the now-warm
  * session. A real answer won't match these phrases. */
-const COLD_START_RE = /just came online|who am i\??|who are you\??|i('?m| am) (now )?online/i
+export const COLD_START_RE = /just came online|who am i\??|who are you\??|i('?m| am) (now )?online/i
 
 /**
  * Ask the OpenClaw agent and return a real answer. If the first reply is the

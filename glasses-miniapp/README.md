@@ -36,10 +36,10 @@ Key files:
 
 | File | What |
 | --- | --- |
-| `src/background/controller.ts` | AgentController — wake word, command flow, vision flow, output routing |
-| `src/background/gateway.ts` | GatewayClient — OpenClaw v3 handshake + `chat.send` + streaming events |
+| `src/background/controller.ts` | Controller — push-to-talk capture, vision/photo flow, output routing |
+| `src/background/relay.ts` | RelayClient — pairs to the relay broker, JSON message stream |
 | `src/shared/channels.ts` | Typed UI↔background channel registry |
-| `src/ui/App.tsx` | Chat thread + settings panel |
+| `src/ui/App.tsx` | Pair + Live screens (push-to-talk + photo) |
 | `miniapp.json` | Manifest: MICROPHONE + CAMERA permissions, all glasses surfaces optional |
 
 ## Dev loop

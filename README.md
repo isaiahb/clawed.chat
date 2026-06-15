@@ -25,17 +25,17 @@ That's a live OpenClaw instance with this repo in its memory ([judge.api.ts](app
 
 | Criterion | Evidence |
 | --- | --- |
-| Working demo | Live site (clawed-chat-web.pages.dev) · [gateway protocol tests](glasses-miniapp/test/gateway.test.ts) pass · miniapp dev loop boots (QR sideload) · [DEMO.md](DEMO.md) boat-day script |
+| Working demo | Live site (clawed-chat-web.pages.dev) · live agent at [api.clawed.chat/api/judge](https://api.clawed.chat/api/judge) · `bun test` green ([app/test](app/test)) · miniapp dev loop boots (QR sideload) · [DEMO.md](DEMO.md) boat-day script |
 | Integration depth | All four sponsors load-bearing, not decorative — see the table below; OpenClaw integration is a first-class channel plugin, not an API call |
 | Usefulness | Not a toy: gives the 100k-star self-hosted agent ecosystem eyes, ears, and voice; works on two real glasses models with opposite I/O constraints |
-| Code quality | Typed two-layer miniapp, controller pattern per SDK reference, tests, no hardcoded secrets, every folder documented |
+| Code quality | Typed two-layer miniapp, controller pattern per SDK reference, smoke tests on the relay broker + gateway helpers ([app/test](app/test)), no hardcoded secrets, every folder documented |
 | Pitch | [DEMO.md](DEMO.md) — three moments, one of which is you, the judge, wearing the glasses |
 
 **Sponsor integration map:**
 
 | Sponsor | Where | Depth |
 | --- | --- | --- |
-| **OpenClaw** | [openclaw-channel-clawed/](openclaw-channel-clawed/) first-class channel plugin · [gateway.ts](glasses-miniapp/src/background/gateway.ts) v3 protocol client · [openclaw-proxy.ts](app/src/backend/api/openclaw-proxy.ts) | The product IS an OpenClaw channel |
+| **OpenClaw** | [openclaw-channel-clawed/](openclaw-channel-clawed/) first-class channel plugin · [openclaw-gateway.ts](app/src/backend/services/openclaw-gateway.ts) v4 round-trip (token auth, operator.admin) · [openclaw-proxy.ts](app/src/backend/api/openclaw-proxy.ts) | The product IS an OpenClaw channel |
 | **Composio** | [composio.service.ts](app/src/backend/services/composio.service.ts) — 11 OAuth integrations (Gmail, Calendar, GitHub, Slack, Notion, Linear, Sheets, Drive, Docs, Twitter, Discord) | The agent's hands |
 | **Nebius** | [nebius.service.ts](app/src/backend/services/nebius.service.ts) Token Factory inference + vision · [llm-proxy.api.ts](app/src/backend/api/llm-proxy.api.ts) OpenAI-compatible routing | The agent's brain |
 | **Tavily** | [tavily.service.ts](app/src/backend/services/tavily.service.ts) · [vision.api.ts](app/src/backend/api/vision.api.ts) camera frame → identify → live web lookup | The agent's knowledge of *now* |

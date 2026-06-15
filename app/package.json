@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "bun --hot src/index.ts",
     "build": "bun build.ts",
-    "start": "NODE_ENV=production bun src/index.ts"
+    "start": "NODE_ENV=production bun src/index.ts",
+    "test": "bun test"
   },
   "dependencies": {
     "@clerk/backend": "^1.24.0",
